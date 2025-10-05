@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.sun.tools.javac.util.Context;
+import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.yaiba.BODY;
@@ -22,6 +23,7 @@ public class YAIBA extends LinearOpMode {
 
     // TFLite wrapper
     private BODY yaiba;
+    private SensorGoBildaPinpointExample odo;
 
     @Override
     public void runOpMode() {
@@ -119,10 +121,10 @@ public class YAIBA extends LinearOpMode {
 
     // Replace these with your odometry or pose estimate code (encoders, IMU, external)
     private float getAgentX() {
-        return 0f;
+        return odo.getXPose();
     }
     private float getAgentY() {
-        return 0f;
+        return odo.getYPose();
     }
     private float getTargetX() {
         // Example: a fixed waypoint 3 meters ahead

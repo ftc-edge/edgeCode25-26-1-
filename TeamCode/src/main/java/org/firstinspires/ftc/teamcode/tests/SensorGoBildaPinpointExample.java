@@ -83,10 +83,10 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
         The X pod offset refers to how far sideways from the tracking point the
         X (forward) odometry pod is. Left of the center is a positive number,
         right of center is a negative number. the Y pod offset refers to how far forwards from
-        the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
-        backwards is a negative number.
+//        the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
+//        backwards is a negative number.
          */
-        odo.setOffsets(-84.0, -168.0, DistanceUnit.MM); //these are tuned for 3110-0002-0001 Product Insight #1
+        odo.setOffsets(50, -40, DistanceUnit.MM); //these are tuned for 3110-0002-0001 Product Insight #1
 
         /*
         Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
@@ -197,4 +197,17 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
             telemetry.update();
 
         }
-    }}
+
+
+    }
+    public float getXPose(){
+        odo.update();
+        float x = getXPose();
+        return x;
+    }
+    public float getYPose(){
+        odo.update();
+        float y = getYPose();
+        return y;
+    }
+}
