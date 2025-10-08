@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.yaiba;
 import android.content.Context;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.common.FileUtil;
+import org.tensorflow.lite.flex.FlexDelegate;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -38,13 +39,36 @@ public class BODY {
     private static final float CLIP_MAX = 5.0f;
 
     public BODY(Context context) throws IOException {
-        MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "yaiba.tflite");
-        Interpreter.Options options = new Interpreter.Options();
-        options.setNumThreads(2);
-        options.setUseNNAPI(false);
-        tflite = new Interpreter(modelBuffer, options);
+        MappedByteBuffer modelBuffer;
+        try {
+            modelBuffer = FileUtil.loadMappedFile(context, "BODY.tflite");
+        } catch (IOException e) {
+            throw new IOException("Model not found in assets: " + e.getMessage(), e);
+        }
 
-        warmUp();
+        Interpreter.Options options = new Interpreter.Options();
+        FlexDelegate flexDelegate = new FlexDelegate();
+        options.addDelegate(flexDelegate);
+        options.setNumThreads(1);   // keep single thread on Control Hub
+        options.setUseNNAPI(false);
+
+        try {
+            tflite = new Interpreter(modelBuffer, options);
+        } catch (RuntimeException e) {
+            // surface details to caller
+            throw new IOException("Failed to create TFLite Interpreter: " + e.getMessage(), e);
+        }
+//        try {
+//            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "BODY.tflite");
+//            Interpreter.Options options = new Interpreter.Options();
+//            options.setNumThreads(1);
+//            options.setUseNNAPI(false);
+//            tflite = new Interpreter(modelBuffer, options);
+//        } catch (IOException e) {
+//            throw new IOException("BODY access failed", e);
+//        }
+//
+//        warmUp();
     }
 
     private void warmUp() {
@@ -59,6 +83,7 @@ public class BODY {
     }
 
     public float[] runDeterministic(float agentX, float agentY, float targetX, float targetY) {
+        // 1) Prepare padded inputs (batch size 1)
         float[][] obs0 = new float[1][10];
         float[][] obs1 = new float[1][8];
 
@@ -67,24 +92,75 @@ public class BODY {
         obs1[0][0] = targetX;
         obs1[0][1] = targetY;
 
+        // 2) Safe preprocessing: protect against zero std
+        final float EPS = 1e-7f;
         for (int i = 0; i < 10; i++) {
-            float v = (obs0[0][i] - OBS0_MEAN[i]) / OBS0_STD[i];
+            float std = OBS0_STD[i];
+            if (Math.abs(std) < EPS) std = EPS;          // avoid divide-by-zero
+            float v = (obs0[0][i] - OBS0_MEAN[i]) / std;
             obs0[0][i] = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
         }
         for (int i = 0; i < 8; i++) {
-            float v = (obs1[0][i] - OBS1_MEAN[i]) / OBS1_STD[i];
+            float std = OBS1_STD[i];
+            if (Math.abs(std) < EPS) std = EPS;
+            float v = (obs1[0][i] - OBS1_MEAN[i]) / std;
             obs1[0][i] = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
         }
 
+        // 3) Output container (must be allocated)
         float[][] identity2 = new float[1][2];
 
         Object[] inputsArr = new Object[]{obs0, obs1};
-        Map<Integer, Object> outputsMap = new HashMap<>();
-        outputsMap.put(0, identity2); // deterministic action head
-        tflite.runForMultipleInputsOutputs(inputsArr, outputsMap);
 
-        return identity2[0]; // [forward, sideways], each in [-1, +1]
+        // 4) Try index-based outputs (0 then 1). Provide informative exception on failure.
+        RuntimeException lastException = null;
+        // helper to validate populated outputs
+        java.util.function.Predicate<float[][]> validOutput = out ->
+                out != null && out.length >= 1 && out[0] != null && out[0].length >= 2
+                        && Float.isFinite(out[0][0]) && Float.isFinite(out[0][1]);
+
+        // Try index 0
+        try {
+            java.util.Map<Integer, Object> outputs0 = new java.util.HashMap<>();
+            outputs0.put(0, identity2);
+            tflite.runForMultipleInputsOutputs(inputsArr, outputs0);
+
+            if (validOutput.test(identity2)) {
+                return new float[]{ identity2[0][0], identity2[0][1] };
+            } else {
+                throw new RuntimeException("Output at index 0 invalid (null/NaN).");
+            }
+        } catch (RuntimeException e0) {
+            lastException = e0;
+            // fall through to try index 1
+        }
+
+        // Reset container
+        identity2[0][0] = 0f;
+        identity2[0][1] = 0f;
+
+        // Try index 1
+        try {
+            java.util.Map<Integer, Object> outputs1 = new java.util.HashMap<>();
+            outputs1.put(1, identity2);
+            tflite.runForMultipleInputsOutputs(inputsArr, outputs1);
+
+            if (validOutput.test(identity2)) {
+                return new float[]{ identity2[0][0], identity2[0][1] };
+            } else {
+                throw new RuntimeException("Output at index 1 invalid (null/NaN).");
+            }
+        } catch (RuntimeException e1) {
+            String msg = "TFLite inference failed for both output indices. last: "
+                    + (e1.getMessage() == null ? e1.toString() : e1.getMessage())
+                    + " ; earlier: " + (lastException != null ? lastException.getMessage() : "none");
+            // throw a runtime exception so caller (OpMode) can telemetry/log it
+            throw new RuntimeException(msg, e1);
+        }
+
+//        return new float[]{ identity2[0][0], identity2[0][1]};
     }
+
 
     public void close() {
         tflite.close();

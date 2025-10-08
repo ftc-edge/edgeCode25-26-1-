@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.auto;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.sun.tools.javac.util.Context;
 import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
@@ -10,9 +11,15 @@ import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.yaiba.BODY;
 
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
+
 import java.io.IOException;
 
-@Autonomous
+@TeleOp
 public class YAIBA extends LinearOpMode {
     private BODY body;
 
@@ -23,14 +30,35 @@ public class YAIBA extends LinearOpMode {
 
     // TFLite wrapper
     private BODY yaiba;
-    private SensorGoBildaPinpointExample odo;
+    private GoBildaPinpointDriver odo;
+
+    private float[] actions;
+
+    private float targetX;
+    private float targetY;
 
     @Override
     public void runOpMode() {
-        frontLeft  = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
-        backLeft   = hardwareMap.get(DcMotor.class, "backLeft");
-        backRight  = hardwareMap.get(DcMotor.class, "backRight");
+        // 2) Initialize TFLite BODY (YAIBA)
+        try {
+            // BODY expects an Android Context — LinearOpMode is a Context
+            yaiba = new BODY(hardwareMap.appContext);
+            telemetry.addLine("YAIBA Initialized");
+            telemetry.update();
+        } catch (IOException e) {
+            telemetry.addData("YAIBA", "Failed to load model: " + e.getMessage());
+            telemetry.update();
+            // If model fails to load, abort safely
+            //requestOpModeStop();
+        }
+
+        telemetry.addLine("Press PLAY to start YAIBA autonomous");
+        telemetry.update();
+
+        frontLeft  = hardwareMap.get(DcMotor.class, "FLmotor");
+        frontRight = hardwareMap.get(DcMotor.class, "FRmotor");
+        backLeft   = hardwareMap.get(DcMotor.class, "BLmotor");
+        backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
 
         frontLeft.setDirection(DcMotor.Direction.FORWARD);
         frontRight.setDirection(DcMotor.Direction.REVERSE);
@@ -42,25 +70,18 @@ public class YAIBA extends LinearOpMode {
         backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        // 2) Initialize TFLite BODY (YAIBA)
-        try {
-            // BODY expects an Android Context — LinearOpMode is a Context
-            yaiba = new BODY(hardwareMap.appContext);
-        } catch (IOException e) {
-            telemetry.addData("YAIBA", "Failed to load model: " + e.getMessage());
-            telemetry.update();
-            // If model fails to load, abort safely
-            requestOpModeStop();
-            return;
-        }
+        odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
+        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.resetPosAndIMU();
 
-        telemetry.addLine("Press PLAY to start YAIBA autonomous");
-        telemetry.update();
         waitForStart();
 
         // --- Autonomous loop ---
         // This demo will run until stop requested. In a real match, use a time limit or state machine.
         while (opModeIsActive()) {
+
+            odo.update();
 
             // --------- Get your robot state (agentX, agentY) and desired target (targetX, targetY) ----------
             // IMPORTANT: Replace the placeholders below with your odometry/localization output.
@@ -68,16 +89,16 @@ public class YAIBA extends LinearOpMode {
             // our example puts agent coords into obs_0[0..1] and target into obs_1[0..1].
             float agentX = getAgentX();   // TODO: implement from odometry or sensors
             float agentY = getAgentY();   // TODO
-            float targetX = getTargetX(); // TODO: e.g., a waypoint or vision result
-            float targetY = getTargetY(); // TODO
+            checkTarget();
 
             // If you don't have odometry yet, use a simple demo target:
             // float agentX = 0f, agentY = 0f, targetX = 3f, targetY = 0f;
-
+            telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
+            telemetry.update();
             // 3) Run inference (deterministic head)
-            float[] action = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
-            float forward = clamp(action[0], -1f, 1f);    // [-1, 1]
-            float strafe  = clamp(action[1], -1f, 1f);    // [-1, 1]
+            actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
+            float forward = clamp(actions[0], -1f, 1f);    // [-1, 1]
+            float strafe  = clamp(actions[1], -1f, 1f);    // [-1, 1]
 
             // 4) Map normalized actions [-1,1] to motor powers [-1,1]
             // Mecanum mapping (no rotation):
@@ -110,7 +131,6 @@ public class YAIBA extends LinearOpMode {
         }
 
         // Clean up
-        yaiba.close();
     }
 
     // ---- Helper functions / placeholders ----
@@ -121,17 +141,36 @@ public class YAIBA extends LinearOpMode {
 
     // Replace these with your odometry or pose estimate code (encoders, IMU, external)
     private float getAgentX() {
-        return odo.getXPose();
+        float x = 0;
+        Pose2D pose = odo.getPosition();
+        odo.update();
+        x = (float)pose.getX(DistanceUnit.CM);
+        return x;
     }
     private float getAgentY() {
-        return odo.getYPose();
+        float y = 0;
+        Pose2D pose = odo.getPosition();
+        odo.update();
+        y = (float)pose.getY(DistanceUnit.CM);
+        return y;
     }
-    private float getTargetX() {
-        // Example: a fixed waypoint 3 meters ahead
-        return 3f;
-    }
-    private float getTargetY() {
-        return 0f;
+    private void checkTarget(){
+        if(gamepad1.y){
+            targetX = 1219;
+            targetY = 1219;
+        }
+        if(gamepad1.b){
+            targetX = 1219;
+            targetY = -1219;
+        }
+        if(gamepad1.a){
+            targetX = -1219;
+            targetY = -1219;
+        }
+        if(gamepad1.x){
+            targetX = -1219;
+            targetY = 1219;
+        }
     }
 }
 
