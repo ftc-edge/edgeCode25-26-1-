@@ -23,6 +23,7 @@ android {
 
     packagingOptions {
         jniLibs.useLegacyPackaging true
+        exclude "lib/arm64-v8a/libtensorflowlite_flex_jni.so"
     }
 }
 

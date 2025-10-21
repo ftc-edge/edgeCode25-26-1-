@@ -26,3 +26,5 @@ public class motorTest extends OpMode {
         motorOutput = gamepad1.left_stick_y;
     }
 }
+
+//0.4~0.5 power

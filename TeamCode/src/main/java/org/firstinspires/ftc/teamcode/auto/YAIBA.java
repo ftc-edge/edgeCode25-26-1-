@@ -34,22 +34,21 @@ public class YAIBA extends LinearOpMode {
 
     private float[] actions;
 
-    private float targetX;
-    private float targetY;
+    private float targetX = 15f;
+    private float targetY = 0f;
 
     @Override
     public void runOpMode() {
         // 2) Initialize TFLite BODY (YAIBA)
-        try {
-            // BODY expects an Android Context — LinearOpMode is a Context
-            yaiba = new BODY(hardwareMap.appContext);
-            telemetry.addLine("YAIBA Initialized");
+        yaiba = BODY.create(hardwareMap.appContext);
+        if (yaiba == null) {
+            telemetry.addData("MODEL", "Failed to load BODY.tflite");
+            telemetry.addLine("Check: app/src/main/assets/BODY.tflite");
             telemetry.update();
-        } catch (IOException e) {
-            telemetry.addData("YAIBA", "Failed to load model: " + e.getMessage());
+            // Keep going but make sure any inference calls are guarded (yaiba != null).
+        } else {
+            telemetry.addData("MODEL", "Loaded successfully");
             telemetry.update();
-            // If model fails to load, abort safely
-            //requestOpModeStop();
         }
 
         telemetry.addLine("Press PLAY to start YAIBA autonomous");
@@ -73,16 +72,18 @@ public class YAIBA extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        odo.resetPosAndIMU();
+        //odo.resetPosAndIMU();
+        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0);
+        odo.setPosition(startPose);
 
         waitForStart();
 
         // --- Autonomous loop ---
         // This demo will run until stop requested. In a real match, use a time limit or state machine.
         while (opModeIsActive()) {
-
             odo.update();
-
+            Pose2D currentPose = new Pose2D(DistanceUnit.CM, getAgentX(), getAgentY(), AngleUnit.DEGREES, 0);
+            odo.setPosition(currentPose);
             // --------- Get your robot state (agentX, agentY) and desired target (targetX, targetY) ----------
             // IMPORTANT: Replace the placeholders below with your odometry/localization output.
             // The BODY wrapper expects the same ordering you used during training:
@@ -91,8 +92,6 @@ public class YAIBA extends LinearOpMode {
             float agentY = getAgentY();   // TODO
             checkTarget();
 
-            // If you don't have odometry yet, use a simple demo target:
-            // float agentX = 0f, agentY = 0f, targetX = 3f, targetY = 0f;
             telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
             telemetry.update();
             // 3) Run inference (deterministic head)
@@ -116,10 +115,10 @@ public class YAIBA extends LinearOpMode {
             fl /= max; fr /= max; bl /= max; br /= max;
 
             // 5) Apply powers to motors
-            frontLeft.setPower(fl);
-            frontRight.setPower(fr);
-            backLeft.setPower(bl);
-            backRight.setPower(br);
+            frontLeft.setPower(0.25 * fl);
+            frontRight.setPower(0.25 * fr);
+            backLeft.setPower(0.25 * bl);
+            backRight.setPower(0.25 *br);
 
             // Telemetry
             telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
@@ -129,7 +128,7 @@ public class YAIBA extends LinearOpMode {
             telemetry.update();
 
         }
-
+            yaiba.close();
         // Clean up
     }
 
@@ -156,20 +155,20 @@ public class YAIBA extends LinearOpMode {
     }
     private void checkTarget(){
         if(gamepad1.y){
-            targetX = 1219;
-            targetY = 1219;
+            targetX = 121.9f;
+            targetY = 121.9f;
         }
         if(gamepad1.b){
-            targetX = 1219;
-            targetY = -1219;
+            targetX = 121.9f;
+            targetY = -121.9f;
         }
         if(gamepad1.a){
-            targetX = -1219;
-            targetY = -1219;
+            targetX = -121.9f;
+            targetY = -121.9f;
         }
         if(gamepad1.x){
-            targetX = -1219;
-            targetY = 1219;
+            targetX = -121.9f;
+            targetY = 121.9f;
         }
     }
 }
