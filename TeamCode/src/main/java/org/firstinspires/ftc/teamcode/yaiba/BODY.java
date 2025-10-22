@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * BODY - lightweight TFLite wrapper for YAIBA agent.
- *
  * Usage (safe):
  *   BODY yaiba = BODY.create(hardwareMap.appContext);
  *   if (yaiba == null) {
@@ -43,6 +41,8 @@ public class BODY implements AutoCloseable {
     private static final float CLIP_MIN = -5.0f;
     private static final float CLIP_MAX = 5.0f;
 
+    private static final float FIELD_WIDTH = 182.88f;
+
     // TFLite interpreter
     private Interpreter tflite = null;
 
@@ -50,6 +50,8 @@ public class BODY implements AutoCloseable {
      * Original constructor: loads model and may throw IOException on failure.
      * Keeping this so callers that want the exception can use it.
      */
+
+    //important bit
     public BODY(Context context) throws IOException {
         if (context == null) throw new IllegalArgumentException("Context is null");
 
@@ -103,12 +105,22 @@ public class BODY implements AutoCloseable {
         float[][] obs0 = new float[1][10];
         float[][] obs1 = new float[1][8];
 
-        // Example population: adapt to your actual observation layout
+
+        //OBSERVATIONS
         obs0[0][0] = agentX;
         obs0[0][1] = agentY;
-        obs1[0][0] = targetX;
-        obs1[0][1] = targetY;
-        // the remainder of obs0/obs1 should be filled per your model's expectation (zeros as placeholder)
+        obs0[0][2] = targetX;
+        obs0[0][3] = targetY;
+        obs0[0][4] = agentX;
+        obs0[0][5] = FIELD_WIDTH - agentY;
+        obs0[0][6] = FIELD_WIDTH - targetX;
+        obs0[0][7] = agentY;
+        obs0[0][8] = (float)Math.sqrt((agentX - targetX) * (agentX - targetX));
+        obs0[0][9] = (float)Math.sqrt((agentY - targetY) * (agentY - targetY));
+
+        //im gonna be real i dont know how or why we have obs1 but if it aint broke
+
+        //fill unnecessary obs with 0
         for (int i = 4; i < obs0[0].length; i++) obs0[0][i] = 0f;
         for (int i = 0; i < obs1[0].length; i++) obs1[0][i] = 0f;
 
@@ -126,7 +138,7 @@ public class BODY implements AutoCloseable {
             obs1[0][i] = v;
         }
 
-        // Prepare outputs - ensure this matches your model's output shape
+        // create output array
         float[][] identity2 = new float[1][2]; // expected deterministic action head [1,2]
 
         // Run inference using runForMultipleInputsOutputs
@@ -156,6 +168,8 @@ public class BODY implements AutoCloseable {
      * Helpful debug method: prints model input/output info to the log when things fail.
      * You can extend this to dump tensor details (shapes, dtypes) if needed.
      */
+
+    //dont think this is necessary but iiabdfi
     private void dumpModelIoInfo() {
         if (tflite == null) {
             Log.i(TAG, "dumpModelIoInfo: interpreter is null.");
@@ -185,7 +199,7 @@ public class BODY implements AutoCloseable {
             Log.w(TAG, "dumpModelIoInfo failed: " + e.toString(), e);
         }
     }
-
+    //clean up to ensure lag reduction
     @Override
     public void close() {
         if (tflite != null) {
