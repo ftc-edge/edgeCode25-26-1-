@@ -33,10 +33,38 @@ public class BODY implements AutoCloseable {
 
     // Example normalization arrays — REPLACE with exact values used at training time.
     // Update lengths to match model input sizes.
-    private static final float[] OBS0_MEAN = new float[]{0f,0f,0f,0f,0f,0f,0f,0f,0f,0f}; // example length 10
-    private static final float[] OBS0_STD  = new float[]{1f,1f,1f,1f,1f,1f,1f,1f,1f,1f};
-    private static final float[] OBS1_MEAN = new float[]{0f,0f,0f,0f,0f,0f,0f,0f}; // example length 8
-    private static final float[] OBS1_STD  = new float[]{1f,1f,1f,1f,1f,1f,1f,1f};
+    private static final float[] OBS0_MEAN = new float[]{
+            0f,
+            0.5204002857208252f,
+            0.00045128719648346305f,
+            0.5168062448501587f,
+            0.00012761949619743973f,
+            0.521706759929657f,
+            0f,
+            0.5188588500022888f,
+            0f,
+            0.5188588500022888f
+    }; // example length 10
+
+    private static final float[] OBS0_STD = new float[]{
+            1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f
+    };
+
+    private static final float[] OBS1_MEAN = new float[]{
+            1.8187768459320068f,
+            79.99787139892578f,
+            8.203068733215332f,
+            59.998695373535156f,
+            0.9999788403511047f,
+            -6.384268760681152f,
+            19.999467849731445f,
+            0f
+    }; // example length 8
+
+    private static final float[] OBS1_STD = new float[]{
+            1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f
+    };
+
 
     private static final float CLIP_MIN = -5.0f;
     private static final float CLIP_MAX = 5.0f;
@@ -117,25 +145,24 @@ public class BODY implements AutoCloseable {
         obs0[0][7] = agentY;
         obs0[0][8] = (float)Math.sqrt((agentX - targetX) * (agentX - targetX));
         obs0[0][9] = (float)Math.sqrt((agentY - targetY) * (agentY - targetY));
+        obs0[0][10] = 0;
 
         //im gonna be real i dont know how or why we have obs1 but if it aint broke
 
-        //fill unnecessary obs with 0
-        for (int i = 4; i < obs0[0].length; i++) obs0[0][i] = 0f;
         for (int i = 0; i < obs1[0].length; i++) obs1[0][i] = 0f;
 
         // Normalize and clip obs0
         for (int i = 0; i < obs0[0].length && i < OBS0_MEAN.length && i < OBS0_STD.length; i++) {
             float v = (obs0[0][i] - OBS0_MEAN[i]) / OBS0_STD[i];
-            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
-            obs0[0][i] = v;
+//            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
+//            obs0[0][i] = v;
         }
 
         // Normalize and clip obs1
         for (int i = 0; i < obs1[0].length && i < OBS1_MEAN.length && i < OBS1_STD.length; i++) {
             float v = (obs1[0][i] - OBS1_MEAN[i]) / OBS1_STD[i];
-            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
-            obs1[0][i] = v;
+//            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
+//            obs1[0][i] = v;
         }
 
         // create output array

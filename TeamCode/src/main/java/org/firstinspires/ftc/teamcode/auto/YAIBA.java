@@ -40,17 +40,6 @@ public class YAIBA extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        // 2) Initialize TFLite BODY (YAIBA)
-        yaiba = BODY.create(hardwareMap.appContext);
-        if (yaiba == null) {
-            telemetry.addData("MODEL", "Failed to load BODY.tflite");
-            telemetry.addLine("Check: app/src/main/assets/BODY.tflite");
-            telemetry.update();
-            // Keep going but make sure any inference calls are guarded (yaiba != null).
-        } else {
-            telemetry.addData("MODEL", "Loaded successfully");
-            telemetry.update();
-        }
 
         telemetry.addLine("Press PLAY to start YAIBA autonomous");
         telemetry.update();
@@ -74,32 +63,49 @@ public class YAIBA extends LinearOpMode {
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         //odo.resetPosAndIMU();
-        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0);
-        odo.setPosition(startPose);
+        odo.setPosition(new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0));
 
         waitForStart();
 
         // --- Autonomous loop ---
         // This demo will run until stop requested. In a real match, use a time limit or state machine.
         while (opModeIsActive()) {
-            odo.update();
-            Pose2D currentPose = new Pose2D(DistanceUnit.CM, getAgentX(), getAgentY(), AngleUnit.DEGREES, 0);
-            odo.setPosition(currentPose);
+            // 2) Initialize TFLite BODY (YAIBA)
+            yaiba = BODY.create(hardwareMap.appContext);
+            if (yaiba == null) {
+                telemetry.addData("MODEL", "Failed to load BODY.tflite");
+                telemetry.addLine("Check: app/src/main/assets/BODY.tflite");
+                // Keep going but make sure any inference calls are guarded (yaiba != null).
+            } else {
+                telemetry.addData("MODEL", "Loaded successfully");
+            }
+
+            odo.update();                       // 1) update first
+            Pose2D pose = odo.getPosition();    // 2) then read once
+            float agentX = (float) pose.getX(DistanceUnit.CM);
+            float agentY = (float) pose.getY(DistanceUnit.CM);
+
             // --------- Get your robot state (agentX, agentY) and desired target (targetX, targetY) ----------
             // IMPORTANT: Replace the placeholders below with your odometry/localization output.
             // The BODY wrapper expects the same ordering you used during training:
             // our example puts agent coords into obs_0[0..1] and target into obs_1[0..1].
-            float agentX = getAgentX();   // TODO: implement from odometry or sensors
-            float agentY = getAgentY();   // TODO
+            agentX = getAgentX();   // TODO: implement from odometry or sensors
+            agentY = getAgentY();   // TODO
             checkTarget();
 
-            telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
-            telemetry.update();
-            // 3) Run inference (deterministic head)
-            actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
-            float forward = clamp(actions[0], -1f, 1f);    // [-1, 1]
-            float strafe  = clamp(actions[1], -1f, 1f);    // [-1, 1]
+            if (yaiba != null) {
+                actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
+            } else {
+                actions = new float[]{0f, 0f};
+            }
 
+            telemetry.addData("Yaiba Outputs", java.util.Arrays.toString(actions));
+
+            float forward = actions[0];    // [-1, 1]
+            float strafe  = actions[1];    // [-1, 1]
+
+            telemetry.addData("forward", forward);
+            telemetry.addData("strafe", strafe);
             // 4) Map normalized actions [-1,1] to motor powers [-1,1]
             // Mecanum mapping (no rotation):
             // frontLeft  = forward + strafe
@@ -116,10 +122,10 @@ public class YAIBA extends LinearOpMode {
             fl /= max; fr /= max; bl /= max; br /= max;
 
             // 5) Apply powers to motors
-            frontLeft.setPower(0.25 * fl);
-            frontRight.setPower(0.25 * fr);
-            backLeft.setPower(0.25 * bl);
-            backRight.setPower(0.25 *br);
+            frontLeft.setPower(.5 * fl);
+            frontRight.setPower(.5 * fr);
+            backLeft.setPower(.5 * bl);
+            backRight.setPower(.5 *br);
 
 
             // Telemetry
@@ -143,15 +149,15 @@ public class YAIBA extends LinearOpMode {
     // Replace these with your odometry or pose estimate code (encoders, IMU, external)
     private float getAgentX() {
         float x = 0;
-        Pose2D pose = odo.getPosition();
         odo.update();
+        Pose2D pose = odo.getPosition();
         x = (float)pose.getX(DistanceUnit.CM);
         return x;
     }
     private float getAgentY() {
         float y = 0;
-        Pose2D pose = odo.getPosition();
         odo.update();
+        Pose2D pose = odo.getPosition();
         y = (float)pose.getY(DistanceUnit.CM);
         return y;
     }
