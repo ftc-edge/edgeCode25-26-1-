@@ -145,7 +145,6 @@ public class BODY implements AutoCloseable {
         obs0[0][7] = agentY;
         obs0[0][8] = (float)Math.sqrt((agentX - targetX) * (agentX - targetX));
         obs0[0][9] = (float)Math.sqrt((agentY - targetY) * (agentY - targetY));
-        obs0[0][10] = 0;
 
         //im gonna be real i dont know how or why we have obs1 but if it aint broke
 

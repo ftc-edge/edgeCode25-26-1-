@@ -1,24 +1,19 @@
 package org.firstinspires.ftc.teamcode.auto;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.sun.tools.javac.util.Context;
-import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
-
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.yaiba.BODY;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
-import org.firstinspires.ftc.teamcode.yaiba.ModelInputMapper;
-
-import java.io.IOException;
+import org.firstinspires.ftc.teamcode.yaiba.BODY;
 
 @TeleOp
 public class YAIBA extends LinearOpMode {
@@ -40,6 +35,8 @@ public class YAIBA extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         telemetry.addLine("Press PLAY to start YAIBA autonomous");
         telemetry.update();
@@ -134,6 +131,15 @@ public class YAIBA extends LinearOpMode {
             telemetry.addData("action", "fwd=%.2f str=%.2f", forward, strafe);
             telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
             telemetry.update();
+
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("x", 3.7);
+
+            Canvas overlay = packet.fieldOverlay();
+            overlay.setFill("blue");
+            overlay.fillRect(-20, -20, 40, 40);
+
+            FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
         }
             yaiba.close();
