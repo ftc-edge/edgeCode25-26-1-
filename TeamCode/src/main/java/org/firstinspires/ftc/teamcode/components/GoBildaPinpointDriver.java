@@ -666,7 +666,7 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
     }
 
     /**
-     * @return the estimated Y (strafe) velocity of the robot in mm/sec
+     * @return the estimated Y (strafe)< velocity of the robot in mm/sec
      * @deprecated The overflow for this function has a DistanceUnit, which can reduce the chance of unit confusion.
      */
     public double getVelY(){
@@ -718,7 +718,7 @@ public class GoBildaPinpointDriver extends I2cDeviceSynchDevice<I2cDeviceSynchSi
         return new Pose2D(DistanceUnit.CM,
                 xPosition,
                 yPosition,
-                AngleUnit.RADIANS,
+                AngleUnit.DEGREES,
                 //this wraps the hOrientation variable from -180° to +180°
                 ((hOrientation + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI);
     }

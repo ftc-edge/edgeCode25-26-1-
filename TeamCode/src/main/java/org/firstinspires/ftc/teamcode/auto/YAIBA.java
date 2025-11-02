@@ -35,8 +35,23 @@ public class YAIBA extends LinearOpMode {
 
     private float[] actions;
 
-    private float targetX = 15f;
+    private float targetX = 0f;
     private float targetY = 0f;
+
+    private double fl;
+    private double fr;
+    private double bl;
+    private double br;
+    private float forward;
+    private float strafe;
+    private int cooldownCounter = 0;
+
+    public boolean ifMotorFL = true;
+    public boolean ifMotorFR = true;
+    public boolean ifMotorBL = true;
+    public boolean ifMotorBR = true;
+
+    public static final float DISTANCE_TOLERANCE = 0;
 
     @Override
     public void runOpMode() {
@@ -48,6 +63,7 @@ public class YAIBA extends LinearOpMode {
             telemetry.update();
             // Keep going but make sure any inference calls are guarded (yaiba != null).
         } else {
+            telemetry.addData("MODEL", "Loaded successfully");
             telemetry.addData("MODEL", "Loaded successfully");
             telemetry.update();
         }
@@ -73,9 +89,7 @@ public class YAIBA extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        //odo.resetPosAndIMU();
-        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0);
-        odo.setPosition(startPose);
+        odo.resetPosAndIMU();
 
         waitForStart();
 
@@ -83,8 +97,7 @@ public class YAIBA extends LinearOpMode {
         // This demo will run until stop requested. In a real match, use a time limit or state machine.
         while (opModeIsActive()) {
             odo.update();
-            Pose2D currentPose = new Pose2D(DistanceUnit.CM, getAgentX(), getAgentY(), AngleUnit.DEGREES, 0);
-            odo.setPosition(currentPose);
+            Pose2D currentPose = odo.getPosition();
             // --------- Get your robot state (agentX, agentY) and desired target (targetX, targetY) ----------
             // IMPORTANT: Replace the placeholders below with your odometry/localization output.
             // The BODY wrapper expects the same ordering you used during training:
@@ -93,12 +106,18 @@ public class YAIBA extends LinearOpMode {
             float agentY = getAgentY();   // TODO
             checkTarget();
 
-            telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
-            telemetry.update();
+            //telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
             // 3) Run inference (deterministic head)
-            actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
-            float forward = clamp(actions[0], -1f, 1f);    // [-1, 1]
-            float strafe  = clamp(actions[1], -1f, 1f);    // [-1, 1]
+
+//            if(cooldownCounter == 0) {
+                actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
+//                cooldownCounter = 10;
+//            }else{
+//                cooldownCounter--;
+//            }
+
+            strafe = actions[0];    // [-1, 1]
+            forward = actions[1];    // [-1, 1]
 
             // 4) Map normalized actions [-1,1] to motor powers [-1,1]
             // Mecanum mapping (no rotation):
@@ -106,31 +125,43 @@ public class YAIBA extends LinearOpMode {
             // frontRight = forward - strafe
             // backLeft   = forward - strafe
             // backRight  = forward + strafe
-            double fl = forward + strafe;
-            double fr = forward - strafe;
-            double bl = forward - strafe;
-            double br = forward + strafe;
+            fl = forward + strafe;
+            fr = forward - strafe;
+            bl = forward - strafe;
+            br = forward + strafe;
+
+
 
             // Normalise in case any value is outside [-1,1]
             double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
             fl /= max; fr /= max; bl /= max; br /= max;
 
-            // 5) Apply powers to motors
-            frontLeft.setPower(0.25 * fl);
-            frontRight.setPower(0.25 * fr);
-            backLeft.setPower(0.25 * bl);
-            backRight.setPower(0.25 *br);
+            if(Math.hypot(targetX - agentX, targetY - agentY) > DISTANCE_TOLERANCE) {
+                // 5) Apply powers to motors
+                    frontLeft.setPower(fl);
+                    frontRight.setPower(fr);
+                    backLeft.setPower(bl);
+                    backRight.setPower(br);
+            }else{
+                frontLeft.setPower(0);
+                frontRight.setPower(0);
+                backLeft.setPower(0);
+                backRight.setPower(0);
+            }
 
 
             // Telemetry
             telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
             telemetry.addData("target", "(%.2f, %.2f)", targetX, targetY);
-            telemetry.addData("action", "fwd=%.2f str=%.2f", forward, strafe);
+            telemetry.addData("Forward (Original)", actions[1]);
+            telemetry.addData("Forward (Derivative)", forward);
+            telemetry.addData("Strafe (Original", strafe);
             telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
+            telemetry.addData("cooldown counter", cooldownCounter);
             telemetry.update();
 
         }
-            yaiba.close();
+        yaiba.close();
         // Clean up
     }
 
@@ -156,22 +187,8 @@ public class YAIBA extends LinearOpMode {
         return y;
     }
     private void checkTarget(){
-        if(gamepad1.y){
-            targetX = 121.9f;
-            targetY = 121.9f;
-        }
-        if(gamepad1.b){
-            targetX = 121.9f;
-            targetY = -121.9f;
-        }
-        if(gamepad1.a){
-            targetX = -121.9f;
-            targetY = -121.9f;
-        }
-        if(gamepad1.x){
-            targetX = -121.9f;
-            targetY = 121.9f;
-        }
+        targetX = gamepad1.left_stick_x * 91.44f;
+        targetY = gamepad1.left_stick_y * -91.44f;
     }
 }
 

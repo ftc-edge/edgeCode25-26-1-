@@ -102,8 +102,7 @@ public class BODY implements AutoCloseable {
         // Construct observations arrays expected by the model.
         // The shapes below assume model expects obs0 shape [1,10] and obs1 shape [1,8].
         // Replace or adapt to your model's expected shapes & values.
-        float[][] obs0 = new float[1][10];
-        float[][] obs1 = new float[1][8];
+        float[][] obs0 = new float[1][4];
 
 
         //OBSERVATIONS
@@ -111,38 +110,27 @@ public class BODY implements AutoCloseable {
         obs0[0][1] = agentY;
         obs0[0][2] = targetX;
         obs0[0][3] = targetY;
-        obs0[0][4] = agentX;
-        obs0[0][5] = FIELD_WIDTH - agentY;
-        obs0[0][6] = FIELD_WIDTH - targetX;
-        obs0[0][7] = agentY;
-        obs0[0][8] = (float)Math.sqrt((agentX - targetX) * (agentX - targetX));
-        obs0[0][9] = (float)Math.sqrt((agentY - targetY) * (agentY - targetY));
 
-        //im gonna be real i dont know how or why we have obs1 but if it aint broke
-
-        //fill unnecessary obs with 0
-        for (int i = 4; i < obs0[0].length; i++) obs0[0][i] = 0f;
-        for (int i = 0; i < obs1[0].length; i++) obs1[0][i] = 0f;
 
         // Normalize and clip obs0
-        for (int i = 0; i < obs0[0].length && i < OBS0_MEAN.length && i < OBS0_STD.length; i++) {
-            float v = (obs0[0][i] - OBS0_MEAN[i]) / OBS0_STD[i];
-            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
-            obs0[0][i] = v;
-        }
-
-        // Normalize and clip obs1
-        for (int i = 0; i < obs1[0].length && i < OBS1_MEAN.length && i < OBS1_STD.length; i++) {
-            float v = (obs1[0][i] - OBS1_MEAN[i]) / OBS1_STD[i];
-            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
-            obs1[0][i] = v;
-        }
+//        for (int i = 0; i < obs0[0].length && i < OBS0_MEAN.length && i < OBS0_STD.length; i++) {
+//            float v = (obs0[0][i] - OBS0_MEAN[i]) / OBS0_STD[i];
+//            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
+//            obs0[0][i] = v;
+//        }
+//
+//        // Normalize and clip obs1
+//        for (int i = 0; i < obs1[0].length && i < OBS1_MEAN.length && i < OBS1_STD.length; i++) {
+//            float v = (obs1[0][i] - OBS1_MEAN[i]) / OBS1_STD[i];
+//            v = Math.max(CLIP_MIN, Math.min(CLIP_MAX, v));
+//            obs1[0][i] = v;
+//        }
 
         // create output array
         float[][] identity2 = new float[1][2]; // expected deterministic action head [1,2]
 
         // Run inference using runForMultipleInputsOutputs
-        Object[] inputsArr = new Object[]{obs0, obs1};
+        Object[] inputsArr = new Object[]{obs0};
         Map<Integer, Object> outputsMap = new HashMap<>();
         outputsMap.put(0, identity2); // ensure this index matches the model's output order
 
