@@ -33,10 +33,8 @@ public class BODY implements AutoCloseable {
 
     // Example normalization arrays — REPLACE with exact values used at training time.
     // Update lengths to match model input sizes.
-    private static final float[] OBS0_MEAN = new float[]{0f,0f,0f,0f,0f,0f,0f,0f,0f,0f}; // example length 10
-    private static final float[] OBS0_STD  = new float[]{1f,1f,1f,1f,1f,1f,1f,1f,1f,1f};
-    private static final float[] OBS1_MEAN = new float[]{0f,0f,0f,0f,0f,0f,0f,0f}; // example length 8
-    private static final float[] OBS1_STD  = new float[]{1f,1f,1f,1f,1f,1f,1f,1f};
+//    private static final float[] OBS0_MEAN = new float[]{0f,0f,0f,0f,0f,0f,0f,0f,0f,0f}; // example length 10
+//    private static final float[] OBS0_STD  = new float[]{1f,1f,1f,1f,1f,1f,1f,1f,1f,1f};
 
     private static final float CLIP_MIN = -5.0f;
     private static final float CLIP_MAX = 5.0f;
@@ -106,10 +104,11 @@ public class BODY implements AutoCloseable {
 
 
         //OBSERVATIONS
-        obs0[0][0] = agentX;
-        obs0[0][1] = agentY;
-        obs0[0][2] = targetX;
-        obs0[0][3] = targetY;
+        float NORMALIZATION = 91.44f;
+        obs0[0][0] = agentX / NORMALIZATION;
+        obs0[0][1] = agentY / NORMALIZATION;
+        obs0[0][2] = targetX / NORMALIZATION;
+        obs0[0][3] = targetY / NORMALIZATION;
 
 
         // Normalize and clip obs0

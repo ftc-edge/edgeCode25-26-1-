@@ -46,29 +46,22 @@ public class YAIBA extends LinearOpMode {
     private float strafe;
     private int cooldownCounter = 0;
 
-    public boolean ifMotorFL = true;
-    public boolean ifMotorFR = true;
-    public boolean ifMotorBL = true;
-    public boolean ifMotorBR = true;
-
-    public static final float DISTANCE_TOLERANCE = 0;
+    public static final float DISTANCE_TOLERANCE = 5;
 
     @Override
     public void runOpMode() {
-        // 2) Initialize TFLite BODY (YAIBA)
         yaiba = BODY.create(hardwareMap.appContext);
         if (yaiba == null) {
             telemetry.addData("MODEL", "Failed to load BODY.tflite");
             telemetry.addLine("Check: app/src/main/assets/BODY.tflite");
             telemetry.update();
-            // Keep going but make sure any inference calls are guarded (yaiba != null).
         } else {
             telemetry.addData("MODEL", "Loaded successfully");
             telemetry.addData("MODEL", "Loaded successfully");
             telemetry.update();
         }
 
-        telemetry.addLine("Press PLAY to start YAIBA autonomous");
+        telemetry.addLine("YAIBA Ready");
         telemetry.update();
 
         frontLeft  = hardwareMap.get(DcMotor.class, "FLmotor");
@@ -93,38 +86,19 @@ public class YAIBA extends LinearOpMode {
 
         waitForStart();
 
-        // --- Autonomous loop ---
-        // This demo will run until stop requested. In a real match, use a time limit or state machine.
         while (opModeIsActive()) {
             odo.update();
             Pose2D currentPose = odo.getPosition();
-            // --------- Get your robot state (agentX, agentY) and desired target (targetX, targetY) ----------
-            // IMPORTANT: Replace the placeholders below with your odometry/localization output.
-            // The BODY wrapper expects the same ordering you used during training:
-            // our example puts agent coords into obs_0[0..1] and target into obs_1[0..1].
-            float agentX = getAgentX();   // TODO: implement from odometry or sensors
-            float agentY = getAgentY();   // TODO
+
+            float agentX = getAgentX();
+            float agentY = getAgentY();
             checkTarget();
 
-            //telemetry.addData("Yaiba Outputs", yaiba.runDeterministic(agentX, agentY, targetX, targetY));
-            // 3) Run inference (deterministic head)
-
-//            if(cooldownCounter == 0) {
                 actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
-//                cooldownCounter = 10;
-//            }else{
-//                cooldownCounter--;
-//            }
 
-            strafe = actions[0];    // [-1, 1]
-            forward = actions[1];    // [-1, 1]
+            strafe = actions[0];
+            forward = actions[1];
 
-            // 4) Map normalized actions [-1,1] to motor powers [-1,1]
-            // Mecanum mapping (no rotation):
-            // frontLeft  = forward + strafe
-            // frontRight = forward - strafe
-            // backLeft   = forward - strafe
-            // backRight  = forward + strafe
             fl = forward + strafe;
             fr = forward - strafe;
             bl = forward - strafe;
@@ -162,10 +136,8 @@ public class YAIBA extends LinearOpMode {
 
         }
         yaiba.close();
-        // Clean up
     }
 
-    // ---- Helper functions / placeholders ----
 
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
@@ -187,8 +159,19 @@ public class YAIBA extends LinearOpMode {
         return y;
     }
     private void checkTarget(){
-        targetX = gamepad1.left_stick_x * 91.44f;
-        targetY = gamepad1.left_stick_y * -91.44f;
+        if(gamepad1.a){
+            targetX = 91.44f;
+            targetY = 91.44f;
+        }if(gamepad1.b){
+            targetX = -91.44f;
+            targetY = 91.44f;
+        }if(gamepad1.x){
+            targetX = -91.44f;
+            targetY = -91.44f;
+        }if(gamepad1.y){
+            targetX = 91.44f;
+            targetY = -91.44f;
+        }
     }
 }
 
