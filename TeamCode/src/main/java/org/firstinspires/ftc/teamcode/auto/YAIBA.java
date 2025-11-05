@@ -46,7 +46,8 @@ public class YAIBA extends LinearOpMode {
     private float strafe;
     private int cooldownCounter = 0;
 
-    public static final float DISTANCE_TOLERANCE = 5;
+    public static final float DISTANCE_TOLERANCE = 2.5f;
+    private float DTT;
 
     @Override
     public void runOpMode() {
@@ -81,7 +82,7 @@ public class YAIBA extends LinearOpMode {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.resetPosAndIMU();
 
         waitForStart();
@@ -93,6 +94,8 @@ public class YAIBA extends LinearOpMode {
             float agentX = getAgentX();
             float agentY = getAgentY();
             checkTarget();
+
+            DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
                 actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
 
@@ -107,11 +110,10 @@ public class YAIBA extends LinearOpMode {
 
 
             // Normalise in case any value is outside [-1,1]
-            double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
-            fl /= max; fr /= max; bl /= max; br /= max;
+//            double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
+//            fl /= max; fr /= max; bl /= max; br /= max;
 
-            if(Math.hypot(targetX - agentX, targetY - agentY) > DISTANCE_TOLERANCE) {
-                // 5) Apply powers to motors
+            if(DTT > DISTANCE_TOLERANCE) {
                     frontLeft.setPower(fl);
                     frontRight.setPower(fr);
                     backLeft.setPower(bl);
@@ -127,11 +129,10 @@ public class YAIBA extends LinearOpMode {
             // Telemetry
             telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
             telemetry.addData("target", "(%.2f, %.2f)", targetX, targetY);
-            telemetry.addData("Forward (Original)", actions[1]);
-            telemetry.addData("Forward (Derivative)", forward);
-            telemetry.addData("Strafe (Original", strafe);
+            telemetry.addData("Forward", forward);
+            telemetry.addData("Strafe", strafe);
             telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
-            telemetry.addData("cooldown counter", cooldownCounter);
+            telemetry.addData("DTT", DTT);
             telemetry.update();
 
         }
@@ -160,17 +161,17 @@ public class YAIBA extends LinearOpMode {
     }
     private void checkTarget(){
         if(gamepad1.a){
-            targetX = 91.44f;
-            targetY = 91.44f;
+            targetX = 60.96f;
+            targetY = 60.96f;
         }if(gamepad1.b){
-            targetX = -91.44f;
-            targetY = 91.44f;
+            targetX = -60.96f;
+            targetY = 60.96f;
         }if(gamepad1.x){
-            targetX = -91.44f;
-            targetY = -91.44f;
+            targetX = -60.96f;
+            targetY = -60.96f;
         }if(gamepad1.y){
-            targetX = 91.44f;
-            targetY = -91.44f;
+            targetX = 60.96f;
+            targetY = -60.96f;
         }
     }
 }

@@ -41,6 +41,7 @@ public class BODY implements AutoCloseable {
 
     private static final float FIELD_WIDTH = 182.88f;
 
+    public static final float NORMALIZATION = 10f;
     // TFLite interpreter
     private Interpreter tflite = null;
 
@@ -104,11 +105,10 @@ public class BODY implements AutoCloseable {
 
 
         //OBSERVATIONS
-        float NORMALIZATION = 91.44f;
-        obs0[0][0] = agentX * 10f;
-        obs0[0][1] = agentY * 10f;
-        obs0[0][2] = targetX * 10f;
-        obs0[0][3] = targetY * 10f;
+        obs0[0][0] = agentX * NORMALIZATION;
+        obs0[0][1] = agentY * NORMALIZATION;
+        obs0[0][2] = targetX * NORMALIZATION;
+        obs0[0][3] = targetY * NORMALIZATION;
 
 
         // Normalize and clip obs0
