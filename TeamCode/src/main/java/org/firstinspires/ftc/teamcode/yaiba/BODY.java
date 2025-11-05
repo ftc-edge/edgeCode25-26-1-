@@ -63,6 +63,7 @@ public class BODY implements AutoCloseable {
         options.setUseNNAPI(false);
         try {
             tflite = new Interpreter(modelBuffer, options);
+            dumpModelIoInfo();
             Log.i(TAG, "TFLite Interpreter created (builtins-only).");
         } catch (Exception e) {
             Log.e(TAG, "Failed to create TFLite Interpreter: " + e.toString(), e);
@@ -131,7 +132,7 @@ public class BODY implements AutoCloseable {
         // Run inference using runForMultipleInputsOutputs
         Object[] inputsArr = new Object[]{obs0};
         Map<Integer, Object> outputsMap = new HashMap<>();
-        outputsMap.put(0, identity2); // ensure this index matches the model's output order
+        outputsMap.put(3, identity2); // ensure this index matches the model's output order
 
         try {
             tflite.runForMultipleInputsOutputs(inputsArr, outputsMap);
