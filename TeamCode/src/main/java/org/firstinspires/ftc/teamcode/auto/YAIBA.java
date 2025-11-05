@@ -18,6 +18,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.teamcode.yaiba.ModelInputMapper;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
+
 import java.io.IOException;
 
 @TeleOp
@@ -51,6 +56,9 @@ public class YAIBA extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         yaiba = BODY.create(hardwareMap.appContext);
         if (yaiba == null) {
             telemetry.addData("MODEL", "Failed to load BODY.tflite");
@@ -97,7 +105,7 @@ public class YAIBA extends LinearOpMode {
 
             DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
-                actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
+            actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
 
             strafe = actions[0];
             forward = actions[1];
@@ -113,20 +121,70 @@ public class YAIBA extends LinearOpMode {
 //            double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
 //            fl /= max; fr /= max; bl /= max; br /= max;
 
-            if(DTT > DISTANCE_TOLERANCE) {
+            if (DTT > DISTANCE_TOLERANCE) {
                     frontLeft.setPower(fl);
                     frontRight.setPower(fr);
                     backLeft.setPower(bl);
                     backRight.setPower(br);
-            }else{
+            } else {
                 frontLeft.setPower(0);
                 frontRight.setPower(0);
                 backLeft.setPower(0);
                 backRight.setPower(0);
             }
 
+            // Create telemetry packet with field overlay
+            TelemetryPacket packet = new TelemetryPacket();
+            Canvas fieldOverlay = packet.fieldOverlay();
 
-            // Telemetry
+            double heading = currentPose.getHeading(AngleUnit.RADIANS);
+
+            // Convert cm to inches for FTC Dashboard (uses official field frame in inches)
+            double agentXInches = agentX / 2.54;
+            double agentYInches = agentY / 2.54;
+            double targetXInches = targetX / 2.54;
+            double targetYInches = targetY / 2.54;
+
+            // Draw target position (red circle)
+            fieldOverlay.setStroke("red");
+            fieldOverlay.setStrokeWidth(1);
+            fieldOverlay.strokeCircle(targetXInches, targetYInches, 4);
+            fieldOverlay.setFill("red");
+            fieldOverlay.setAlpha(0.3);
+            fieldOverlay.fillCircle(targetXInches, targetYInches, 4);
+
+            // Draw robot position (blue circle with direction indicator)
+            fieldOverlay.setAlpha(1.0);
+            fieldOverlay.setStroke("blue");
+            fieldOverlay.setStrokeWidth(1);
+            fieldOverlay.strokeCircle(agentXInches, agentYInches, 9);
+            fieldOverlay.setFill("blue");
+            fieldOverlay.fillCircle(agentXInches, agentYInches, 9);
+
+            // Draw direction line on robot
+            double lineLength = 9;
+            double lineEndX = agentXInches + lineLength * Math.cos(heading);
+            double lineEndY = agentYInches + lineLength * Math.sin(heading);
+            fieldOverlay.setStroke("white");
+            fieldOverlay.setStrokeWidth(2);
+            fieldOverlay.strokeLine(agentXInches, agentYInches, lineEndX, lineEndY);
+
+            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+
+            // Draw desired movement vector (green line showing forward/strafe direction)
+            double movementMagnitude = Math.sqrt(forward * forward + strafe * strafe);
+            if (movementMagnitude > 0.01) {
+                // Scale the movement vector for visibility (20 inches at full power)
+                double vectorScale = 20.0;
+                double movementAngle = Math.atan2(forward, strafe); // Note: field uses standard trig convention
+                double movementEndX = agentXInches + vectorScale * movementMagnitude * Math.cos(movementAngle);
+                double movementEndY = agentYInches + vectorScale * movementMagnitude * Math.sin(movementAngle);
+
+                fieldOverlay.setStroke("green");
+                fieldOverlay.setStrokeWidth(2);
+                fieldOverlay.strokeLine(agentXInches, agentYInches, movementEndX, movementEndY);
+            }
+
             telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
             telemetry.addData("target", "(%.2f, %.2f)", targetX, targetY);
             telemetry.addData("Forward", forward);
@@ -134,6 +192,7 @@ public class YAIBA extends LinearOpMode {
             telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
             telemetry.addData("DTT", DTT);
             telemetry.update();
+
 
         }
         yaiba.close();
