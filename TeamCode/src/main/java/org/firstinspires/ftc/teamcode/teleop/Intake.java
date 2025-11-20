@@ -94,7 +94,7 @@ public class Intake extends OpMode{
             currentArray[currentIndex] = -1;
             telemetry.addData("COLOR DETECTED:", "PURPLE");
         }
-        
+
         // Spin indexer to free up space
         spinSpindexToNextFree(.5f);
 

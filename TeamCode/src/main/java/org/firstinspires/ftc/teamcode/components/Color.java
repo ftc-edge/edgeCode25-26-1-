@@ -27,4 +27,10 @@ public class Color{
         return "None";
     }
 
+    public int[] getRGB(){
+        int[] rgb = {0,0,0};
+        rgb[0] = color.red(); rgb[1] = color.green(); rgb[2] = color.blue();
+        return rgb;
+    }
+
 }
