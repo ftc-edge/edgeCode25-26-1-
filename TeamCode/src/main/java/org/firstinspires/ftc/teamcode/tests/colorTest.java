@@ -7,6 +7,10 @@ import org.firstinspires.ftc.teamcode.components.Color;
 
 import java.util.Arrays;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
 @TeleOp()
 public class colorTest extends OpMode {
 
@@ -14,7 +18,7 @@ public class colorTest extends OpMode {
 
     @Override
     public void init() {
-
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
     }
 
     @Override

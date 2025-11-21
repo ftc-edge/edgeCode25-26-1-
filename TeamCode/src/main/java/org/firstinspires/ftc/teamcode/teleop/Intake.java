@@ -10,8 +10,14 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.components.Color;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
+
 @TeleOp
 public class Intake extends OpMode{
+
     private DcMotor spindex;
     private DcMotor intakeMotor;
     Color colorSensor;
@@ -64,6 +70,7 @@ public class Intake extends OpMode{
 
     @Override
     public void init() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         spindex = hardwareMap.get(DcMotor.class, "spindex");
         intakeMotor = hardwareMap.get(DcMotor.class, "intakeMotor");
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -75,6 +82,10 @@ public class Intake extends OpMode{
         if(gamepad1.right_bumper) {
             doIntake();
         }
+
+        // Telemetry
+        telemetry.addData("Spindexer Array", currentArray);
+        telemetry.addData("Current Position", currentIndex);
     }
 
     public void doIntake(){
