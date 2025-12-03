@@ -46,7 +46,7 @@ public class teleopDrive extends OpMode {
         double forward = gamepad1.left_stick_y;
         double strafe = gamepad1.left_stick_x;
         double pivot = gamepad1.right_stick_x;
-
+        
         rightFront.setPower(forward + strafe + pivot);
         rightBack.setPower(forward - strafe + pivot);
         leftFront.setPower(forward - strafe - pivot);

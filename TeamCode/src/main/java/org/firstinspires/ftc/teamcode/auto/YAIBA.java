@@ -90,7 +90,7 @@ public class YAIBA extends LinearOpMode {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.resetPosAndIMU();
 
         waitForStart();
@@ -220,17 +220,17 @@ public class YAIBA extends LinearOpMode {
     }
     private void checkTarget(){
         if(gamepad1.a){
-            targetX = 60.96f;
-            targetY = 60.96f;
+            targetX = 90;
+            targetY = 90f;
         }if(gamepad1.b){
-            targetX = -60.96f;
-            targetY = 60.96f;
+            targetX = -90f;
+            targetY = 90f;
         }if(gamepad1.x){
-            targetX = -60.96f;
-            targetY = -60.96f;
+            targetX = -90f;
+            targetY = -90f;
         }if(gamepad1.y){
-            targetX = 60.96f;
-            targetY = -60.96f;
+            targetX = 90f;
+            targetY = -90f;
         }
     }
 }

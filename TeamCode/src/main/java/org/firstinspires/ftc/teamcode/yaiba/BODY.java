@@ -38,7 +38,7 @@ public class BODY implements AutoCloseable {
 
     private static final float CLIP_MIN = -5.0f;
     private static final float CLIP_MAX = 5.0f;
-    public static final float NORMALIZATION = 50/91.44f;
+    public static final float NORMALIZATION = 1;
     // TFLite interpreter
     private Interpreter tflite = null;
 
