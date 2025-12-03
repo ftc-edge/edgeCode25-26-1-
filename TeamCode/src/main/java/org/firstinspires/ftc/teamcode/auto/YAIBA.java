@@ -54,6 +54,7 @@ public class YAIBA extends LinearOpMode {
     public static final float DISTANCE_TOLERANCE = 2.5f;
     private float DTT;
 
+
     @Override
     public void runOpMode() {
 
@@ -90,13 +91,14 @@ public class YAIBA extends LinearOpMode {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.resetPosAndIMU();
         waitForStart();
 
         while (opModeIsActive()) {
             odo.update();
             Pose2D currentPose = odo.getPosition();
+
 
             float agentX = getAgentX();
             float agentY = getAgentY();
@@ -114,17 +116,18 @@ public class YAIBA extends LinearOpMode {
             bl = forward + strafe;
             br = forward - strafe;
 
-
-
             // Normalise in case any value is outside [-1,1]
 //            double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
 //            fl /= max; fr /= max; bl /= max; br /= max;
 
+            float powerMultipler = 1.5f;
+            float negPowerMultipler = -1.5f;
+            
             if (DTT > DISTANCE_TOLERANCE) {
-                    frontLeft.setPower(fl);
-                    frontRight.setPower(fr);
-                    backLeft.setPower(bl);
-                    backRight.setPower(br);
+                    frontLeft.setPower(fl * powerMultipler);
+                    frontRight.setPower(fr * negPowerMultipler);
+                    backLeft.setPower(bl * negPowerMultipler);
+                    backRight.setPower(br * powerMultipler);
             } else {
                 frontLeft.setPower(0);
                 frontRight.setPower(0);
