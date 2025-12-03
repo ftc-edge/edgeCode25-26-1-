@@ -8,35 +8,35 @@ import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
 
 import java.util.*;
 public class Drive {
-    private DcMotor leftFront;
-    private DcMotor leftBack;
-    private DcMotor rightFront;
-    private DcMotor rightBack;
+    private static DcMotor leftFront;
+    private static DcMotor leftBack;
+    private static DcMotor rightFront;
+    private static DcMotor rightBack;
 
     public Drive(HardwareMap hardwareMap) {
-        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+        rightFront  = hardwareMap.get(DcMotor.class, "FLmotor");
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        leftFront = hardwareMap.get(DcMotor.class, "leftFront");
+        leftFront = hardwareMap.get(DcMotor.class, "FLmotor");
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        rightBack = hardwareMap.get(DcMotor.class, "rightRear");
+        rightBack = hardwareMap.get(DcMotor.class, "BRmotor");
         rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
-        leftBack = hardwareMap.get(DcMotor.class, "leftRear");
+        leftBack = hardwareMap.get(DcMotor.class, "BLmotor");
         leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    public void setPower(double forward, double strafe, double pivot){
+    public static void setPower(double forward, double strafe, double pivot){
         rightFront.setPower(forward + strafe + pivot);
         rightBack.setPower(forward - strafe + pivot);
         leftFront.setPower(forward - strafe - pivot);

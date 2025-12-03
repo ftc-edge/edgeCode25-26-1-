@@ -4,14 +4,19 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
 import org.firstinspires.ftc.teamcode.components.Intake;
+import org.firstinspires.ftc.teamcode.components.Drive;
+
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-
+@TeleOp
 public class teleop extends OpMode{
     Intake intake;
+
+    Drive drive;
 
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
@@ -33,5 +38,12 @@ public class teleop extends OpMode{
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
+
+        double forward = gamepad1.left_stick_y;
+        double strafe = gamepad1.left_stick_x;
+        double pivot = gamepad1.right_stick_x;
+
+        Drive.setPower(forward, strafe, pivot);
+
     }
 }

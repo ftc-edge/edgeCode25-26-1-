@@ -79,8 +79,8 @@ public class YAIBA extends LinearOpMode {
         backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
 
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
-        frontRight.setDirection(DcMotor.Direction.FORWARD);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
         backRight.setDirection(DcMotor.Direction.FORWARD);
 
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -109,10 +109,10 @@ public class YAIBA extends LinearOpMode {
             strafe = actions[0];
             forward = actions[1];
 
-            fl = -(forward + strafe);
-            fr = -(forward - strafe);
-            bl = -(forward - strafe);
-            br = -(forward + strafe);
+            fl = forward - strafe;
+            fr = forward + strafe;
+            bl = forward + strafe;
+            br = forward - strafe;
 
 
 
@@ -121,10 +121,10 @@ public class YAIBA extends LinearOpMode {
 //            fl /= max; fr /= max; bl /= max; br /= max;
 
             if (DTT > DISTANCE_TOLERANCE) {
-                    frontLeft.setPower(-fl);
-                    frontRight.setPower(-fr);
-                    backLeft.setPower(-bl);
-                    backRight.setPower(-br);
+                    frontLeft.setPower(fl);
+                    frontRight.setPower(fr);
+                    backLeft.setPower(bl);
+                    backRight.setPower(br);
             } else {
                 frontLeft.setPower(0);
                 frontRight.setPower(0);

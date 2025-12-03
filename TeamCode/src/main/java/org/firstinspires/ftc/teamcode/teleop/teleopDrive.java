@@ -17,28 +17,29 @@ public class teleopDrive extends OpMode {
 
     @Override
     public void init() {
-        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
+        rightFront  = hardwareMap.get(DcMotor.class, "FRmotor");
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotor.Direction.FORWARD);
 
-        leftFront = hardwareMap.get(DcMotor.class, "leftFront");
+        leftFront = hardwareMap.get(DcMotor.class, "FLmotor");
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
 
-        rightBack = hardwareMap.get(DcMotor.class, "rightRear");
+        rightBack = hardwareMap.get(DcMotor.class, "BRmotor");
         rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotor.Direction.FORWARD);
 
-
-        leftBack = hardwareMap.get(DcMotor.class, "leftRear");
+        leftBack = hardwareMap.get(DcMotor.class, "BLmotor");
         leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBack.setDirection(DcMotor.Direction.REVERSE);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class teleopDrive extends OpMode {
         double forward = gamepad1.left_stick_y;
         double strafe = gamepad1.left_stick_x;
         double pivot = gamepad1.right_stick_x;
-        
+
         rightFront.setPower(forward + strafe + pivot);
         rightBack.setPower(forward - strafe + pivot);
         leftFront.setPower(forward - strafe - pivot);
