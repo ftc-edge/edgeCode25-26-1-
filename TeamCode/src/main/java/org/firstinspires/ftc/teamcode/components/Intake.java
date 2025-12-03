@@ -1,22 +1,13 @@
-package org.firstinspires.ftc.teamcode.teleop;
+package org.firstinspires.ftc.teamcode.components;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-
-
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-
-import org.firstinspires.ftc.teamcode.components.Color;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-import com.acmerobotics.dashboard.canvas.Canvas;
 
-@TeleOp
-public class Intake extends OpMode{
+public class Intake{
 
     private DcMotor spindex;
     private DcMotor intakeMotor;
@@ -26,6 +17,16 @@ public class Intake extends OpMode{
 
     float[] currentArray = {0,0,0};
     int currentIndex = 0;
+
+    MultipleTelemetry telemetry;
+
+    public Intake(HardwareMap hardwareMap, MultipleTelemetry telemetry){
+        this.telemetry = telemetry;
+        spindex = hardwareMap.get(DcMotor.class, "spindex");
+        intakeMotor = hardwareMap.get(DcMotor.class, "intakeMotor");
+        spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        spindex.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+    }
 
     private void spinSpindexToPos(int position, float power){
         spindex.setPower(power);
@@ -68,26 +69,6 @@ public class Intake extends OpMode{
         return true;
     }
 
-    @Override
-    public void init() {
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        spindex = hardwareMap.get(DcMotor.class, "spindex");
-        intakeMotor = hardwareMap.get(DcMotor.class, "intakeMotor");
-        spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-    }
-
-    @Override
-    public void loop() {
-        if(gamepad1.right_bumper) {
-            doIntake();
-        }
-
-        // Telemetry
-        telemetry.addData("Spindexer Array", currentArray);
-        telemetry.addData("Current Position", currentIndex);
-    }
-
     public void doIntake(){
         intakeMotor.setPower(1);
 
@@ -109,5 +90,10 @@ public class Intake extends OpMode{
         // Spin indexer to free up space
         spinSpindexToNextFree(.5f);
 
+    }
+
+    public void telemetry(){
+        telemetry.addData("Spindexer Array", currentArray);
+        telemetry.addData("Current Position", currentIndex);
     }
 }

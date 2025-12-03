@@ -18,10 +18,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.teamcode.yaiba.ModelInputMapper;
 
-//import com.acmerobotics.dashboard.FtcDashboard;
-//import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-//import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
-//import com.acmerobotics.dashboard.canvas.Canvas;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
 
 import java.io.IOException;
 
@@ -57,7 +57,7 @@ public class YAIBA extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-//        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         yaiba = BODY.create(hardwareMap.appContext);
         if (yaiba == null) {
@@ -92,7 +92,6 @@ public class YAIBA extends LinearOpMode {
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.resetPosAndIMU();
-
         waitForStart();
 
         while (opModeIsActive()) {
@@ -110,10 +109,10 @@ public class YAIBA extends LinearOpMode {
             strafe = actions[0];
             forward = actions[1];
 
-            fl = forward + strafe;
-            fr = forward - strafe;
-            bl = forward - strafe;
-            br = forward + strafe;
+            fl = -(forward + strafe);
+            fr = -(forward - strafe);
+            bl = -(forward - strafe);
+            br = -(forward + strafe);
 
 
 
@@ -122,10 +121,10 @@ public class YAIBA extends LinearOpMode {
 //            fl /= max; fr /= max; bl /= max; br /= max;
 
             if (DTT > DISTANCE_TOLERANCE) {
-                    frontLeft.setPower(fl);
-                    frontRight.setPower(fr);
-                    backLeft.setPower(bl);
-                    backRight.setPower(br);
+                    frontLeft.setPower(-fl);
+                    frontRight.setPower(-fr);
+                    backLeft.setPower(-bl);
+                    backRight.setPower(-br);
             } else {
                 frontLeft.setPower(0);
                 frontRight.setPower(0);
@@ -134,8 +133,8 @@ public class YAIBA extends LinearOpMode {
             }
 
             // Create telemetry packet with field overlay
-//            TelemetryPacket packet = new TelemetryPacket();
-//            Canvas fieldOverlay = packet.fieldOverlay();
+            TelemetryPacket packet = new TelemetryPacket();
+            Canvas fieldOverlay = packet.fieldOverlay();
 
             double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
@@ -146,30 +145,30 @@ public class YAIBA extends LinearOpMode {
             double targetYInches = targetY / 2.54;
 
             // Draw target position (red circle)
-//            fieldOverlay.setStroke("red");
-//            fieldOverlay.setStrokeWidth(1);
-//            fieldOverlay.strokeCircle(targetXInches, targetYInches, 4);
-//            fieldOverlay.setFill("red");
-//            fieldOverlay.setAlpha(0.3);
-//            fieldOverlay.fillCircle(targetXInches, targetYInches, 4);
-//
-//            // Draw robot position (blue circle with direction indicator)
-//            fieldOverlay.setAlpha(1.0);
-//            fieldOverlay.setStroke("blue");
-//            fieldOverlay.setStrokeWidth(1);
-//            fieldOverlay.strokeCircle(agentXInches, agentYInches, 9);
-//            fieldOverlay.setFill("blue");
-//            fieldOverlay.fillCircle(agentXInches, agentYInches, 9);
+            fieldOverlay.setStroke("red");
+            fieldOverlay.setStrokeWidth(1);
+            fieldOverlay.strokeCircle(targetXInches, targetYInches, 4);
+            fieldOverlay.setFill("red");
+            fieldOverlay.setAlpha(0.3);
+            fieldOverlay.fillCircle(targetXInches, targetYInches, 4);
+
+            // Draw robot position (blue circle with direction indicator)
+            fieldOverlay.setAlpha(1.0);
+            fieldOverlay.setStroke("blue");
+            fieldOverlay.setStrokeWidth(1);
+            fieldOverlay.strokeCircle(agentXInches, agentYInches, 9);
+            fieldOverlay.setFill("blue");
+            fieldOverlay.fillCircle(agentXInches, agentYInches, 9);
 
             // Draw direction line on robot
             double lineLength = 9;
             double lineEndX = agentXInches + lineLength * Math.cos(heading);
             double lineEndY = agentYInches + lineLength * Math.sin(heading);
-//            fieldOverlay.setStroke("white");
-//            fieldOverlay.setStrokeWidth(2);
-//            fieldOverlay.strokeLine(agentXInches, agentYInches, lineEndX, lineEndY);
-//
-//            FtcDashboard.getInstance().sendTelemetryPacket(packet);
+            fieldOverlay.setStroke("white");
+            fieldOverlay.setStrokeWidth(2);
+            fieldOverlay.strokeLine(agentXInches, agentYInches, lineEndX, lineEndY);
+
+            FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
             // Draw desired movement vector (green line showing forward/strafe direction)
             double movementMagnitude = Math.sqrt(forward * forward + strafe * strafe);
@@ -180,9 +179,9 @@ public class YAIBA extends LinearOpMode {
                 double movementEndX = agentXInches + vectorScale * movementMagnitude * Math.cos(movementAngle);
                 double movementEndY = agentYInches + vectorScale * movementMagnitude * Math.sin(movementAngle);
 
-//                fieldOverlay.setStroke("green");
-//                fieldOverlay.setStrokeWidth(2);
-//                fieldOverlay.strokeLine(agentXInches, agentYInches, movementEndX, movementEndY);
+                fieldOverlay.setStroke("green");
+                fieldOverlay.setStrokeWidth(2);
+                fieldOverlay.strokeLine(agentXInches, agentYInches, movementEndX, movementEndY);
             }
 
             telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
