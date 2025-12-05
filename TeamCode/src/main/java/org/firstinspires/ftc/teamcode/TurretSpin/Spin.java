@@ -1,14 +1,8 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
 
-import java.util.*;
 public class Spin {
     private CRServo TurretX1;
     private CRServo TurretX2;
