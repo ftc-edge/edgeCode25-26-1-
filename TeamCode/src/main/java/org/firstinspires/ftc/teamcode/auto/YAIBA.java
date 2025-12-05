@@ -25,6 +25,8 @@ import com.acmerobotics.dashboard.canvas.Canvas;
 
 import java.io.IOException;
 
+import org.firstinspires.ftc.teamcode.components.Constants;
+
 @TeleOp
 public class YAIBA extends LinearOpMode {
     private BODY body;
@@ -51,7 +53,7 @@ public class YAIBA extends LinearOpMode {
     private float strafe;
     private int cooldownCounter = 0;
 
-    public static final float DISTANCE_TOLERANCE = 2.5f;
+    public static final float DISTANCE_TOLERANCE = 5f;
     private float DTT;
 
 
@@ -92,7 +94,9 @@ public class YAIBA extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        odo.resetPosAndIMU();
+        odo.setOffsets(18.8, -13, DistanceUnit.CM);
+        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0);
+        odo.setPosition(startPose);
         waitForStart();
 
         while (opModeIsActive()) {
@@ -111,29 +115,34 @@ public class YAIBA extends LinearOpMode {
             strafe = actions[0];
             forward = actions[1];
 
+
+            if(Math.hypot(strafe, forward) < 0.10 && DTT > DISTANCE_TOLERANCE){
+                strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
+                forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
+            }
+
+
             fl = forward - strafe;
             fr = forward + strafe;
             bl = forward + strafe;
             br = forward - strafe;
 
-            // Normalise in case any value is outside [-1,1]
-//            double max = Math.max(1.0, Math.max(Math.abs(fl), Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
-//            fl /= max; fr /= max; bl /= max; br /= max;
+            float powerMultipler = 3f;
+            float negPowerMultipler = -3f;
 
-            float powerMultipler = 1.5f;
-            float negPowerMultipler = -1.5f;
-            
             if (DTT > DISTANCE_TOLERANCE) {
-                    frontLeft.setPower(fl * powerMultipler);
-                    frontRight.setPower(fr * negPowerMultipler);
-                    backLeft.setPower(bl * negPowerMultipler);
-                    backRight.setPower(br * powerMultipler);
+                frontLeft.setPower(fl * powerMultipler);
+                frontRight.setPower(fr * negPowerMultipler);
+                backLeft.setPower(bl * negPowerMultipler);
+                backRight.setPower(br * powerMultipler);
             } else {
                 frontLeft.setPower(0);
                 frontRight.setPower(0);
                 backLeft.setPower(0);
                 backRight.setPower(0);
             }
+
+
 
             // Create telemetry packet with field overlay
             TelemetryPacket packet = new TelemetryPacket();
