@@ -36,6 +36,7 @@ public class teleop extends OpMode{
             intake.doIntake();
         }
 
+
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
 
