@@ -12,6 +12,8 @@ public class Hood {
 
     Servo hoodServo;
 
+    double targetPosition = 0;
+
     public Hood(HardwareMap hardwareMap){
         hoodServo = hardwareMap.get(Servo.class, "hood");
     }
@@ -21,7 +23,8 @@ public class Hood {
     }
 
     public void incrementPosition(double increment){
-        hoodServo.setPosition(hoodServo.getPosition() + increment);
+        targetPosition += increment;
+        hoodServo.setPosition(targetPosition);
     }
 
     public double getPosition(){
