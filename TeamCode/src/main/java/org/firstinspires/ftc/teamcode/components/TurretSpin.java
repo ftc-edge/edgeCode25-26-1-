@@ -1,0 +1,32 @@
+package org.firstinspires.ftc.teamcode.components;
+
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.acmerobotics.dashboard.config.Config;
+
+@Config
+public class TurretSpin {
+    CRServo spinMotor1;
+    CRServo spinMotor2;
+
+    double targetPosition;
+
+    public void init(HardwareMap hardwareMap){
+        spinMotor1 = hardwareMap.get(CRServo.class, "turretSpin1");
+        spinMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        spinMotor2 = hardwareMap.get(CRServo.class, "turretSpin2");
+        spinMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+    }
+
+    public void setTargetPosition(double targetPosition){
+        this.targetPosition = targetPosition;
+    }
+
+    public void update(){
+        double difference = targetPosition - 0;
+        
+    }
+}
