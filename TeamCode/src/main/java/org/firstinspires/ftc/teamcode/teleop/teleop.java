@@ -16,8 +16,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 @TeleOp
-public class teleop extends OpMode{
-//    Intake intake;
+public class teleop extends OpMode {
+    //    Intake intake;
     Drive drive;
     Spindex spindex;
     Turret turret;
@@ -44,23 +44,23 @@ public class teleop extends OpMode{
     public void loop() {
 //        intake.setPower(1);
 
-        if(gamepad1.a && !prevGamepad1.a) {
+        if (gamepad1.a && !prevGamepad1.a) {
             turret.togglePower(0.7f);
         }
 
         //servo.setPosition(servoPosition);
 
-        if(gamepad1.dpad_right && !prevGamepad1.dpad_right){
+        if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
             spindex.spinUp();
         }
-        if(gamepad1.dpad_left && !prevGamepad1.dpad_left){
+        if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
             spindex.spinTurns(-1);
         }
 
-        if(gamepad1.dpad_up){
+        if (gamepad1.dpad_up) {
             hood.incrementPosition(0.002);
         }
-        if(gamepad1.dpad_down){
+        if (gamepad1.dpad_down) {
             hood.incrementPosition(-0.002);
         }
 
@@ -69,4 +69,5 @@ public class teleop extends OpMode{
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
+    }
 }

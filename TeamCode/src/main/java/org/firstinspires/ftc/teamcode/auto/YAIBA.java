@@ -56,6 +56,20 @@ public class YAIBA extends LinearOpMode {
     public static final float DISTANCE_TOLERANCE = 5f;
     private float DTT;
 
+    private enum currentState{
+        driveToShoot,
+        shoot,
+        firstIntakePrep,
+        firstIntake,
+        secondIntakePrep,
+        secondIntake,
+        thirdIntakePrep,
+        thirdIntake,
+        humanPlayerPrep,
+        humanPlayer
+    }
+
+    private currentState state;
 
     @Override
     public void runOpMode() {
@@ -97,6 +111,8 @@ public class YAIBA extends LinearOpMode {
         odo.setOffsets(18.8, -13, DistanceUnit.CM);
         Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, 0);
         odo.setPosition(startPose);
+
+        state = currentState.driveToShoot;
         waitForStart();
 
         while (opModeIsActive()) {
@@ -106,7 +122,7 @@ public class YAIBA extends LinearOpMode {
 
             float agentX = getAgentX();
             float agentY = getAgentY();
-            checkTarget();
+            stateMachine(state);
 
             DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
@@ -243,6 +259,106 @@ public class YAIBA extends LinearOpMode {
             targetX = 90f;
             targetY = -90f;
         }
+    }
+
+    private void stateMachine(currentState state){
+
+        if(state == currentState.driveToShoot){
+            targetX = shootTargetX;
+            targetY = shootTargetY;
+            if((getAgentX() < shootTargetX + DISTANCE_TOLERANCE && getAgentX() > shootTargetX - DISTANCE_TOLERANCE) && getAgentY() < shootTargetY + DISTANCE_TOLERANCE && getAgentY() > shootTargetY - DISTANCE_TOLERANCE){
+                state = currentState.shoot;
+            }
+
+        }
+        if(state == currentState.shoot){
+            Shoot();
+            if(currentAmmo[0] == 0 && currentAmmo[1] == 0 && currentAmmo[2] == 0){
+                if(shootCount == 0){
+                    state = currentState.firstIntakePrep;
+                    shootCount++;
+                }
+                else if(shootCount == 1){
+                    state = currentState.secondIntakePrep;
+                    shootCount++;
+                }
+                else if(shootCount == 2){
+                    state = currentState.thirdIntakePrep;
+                    shootCount++;
+                }else{
+                    state = currentState.humanPlayerPrep;
+                }
+            }
+
+        }
+
+        if(state == currentState.firstIntakePrep) {
+            targetX = firstIntakePrepX;
+            targetY = firstIntakePrepY;
+            if ((getAgentX() < firstIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > firstIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > firstIntakePrepY - DISTANCE_TOLERANCE) {
+                state = currentState.firstIntake;
+            }
+        }
+
+        if(state == currentState.firstIntake){
+            targetX = firstIntakeX;
+            targetY = firstIntakeY;
+            if((getAgentX() < firstIntakeX + DISTANCE_TOLERANCE && getAgentX() > firstIntakeX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakeY + DISTANCE_TOLERANCE && getAgentY() > firstIntakeY - DISTANCE_TOLERANCE){
+                state = currentState.shoot;
+            }
+        }
+
+        if(state == currentState.secondIntakePrep) {
+            targetX = secondIntakePrepX;
+            targetY = secondIntakePrepY;
+            if ((getAgentX() < secondIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > secondIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < secondIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > secondIntakePrepY - DISTANCE_TOLERANCE) {
+                state = currentState.secondIntake;
+            }
+        }
+
+        if(state == currentState.secondIntake) {
+            targetX = secondIntakeX;
+            targetY = secondIntakeY;
+            if ((getAgentX() < secondIntakeX + DISTANCE_TOLERANCE && getAgentX() > secondIntakeX - DISTANCE_TOLERANCE) && getAgentY() < secondIntakeY + DISTANCE_TOLERANCE && getAgentY() > secondIntakeY - DISTANCE_TOLERANCE) {
+                state = currentState.shoot;
+            }
+        }
+
+        if(state == currentState.firstIntakePrep) {
+            targetX = firstIntakePrepX;
+            targetY = firstIntakePrepY;
+            if ((getAgentX() < firstIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > firstIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > firstIntakePrepY - DISTANCE_TOLERANCE) {
+                state = currentState.firstIntake;
+            }
+        }
+
+        if(state == currentState.thirdIntake) {
+            targetX = thirdIntakeX;
+            targetY = thirdIntakeY;
+            if ((getAgentX() < thirdIntakeX + DISTANCE_TOLERANCE && getAgentX() > thirdIntakeX - DISTANCE_TOLERANCE) && getAgentY() < thirdIntakeY + DISTANCE_TOLERANCE && getAgentY() > thirdIntakeY - DISTANCE_TOLERANCE) {
+                state = currentState.shoot;
+            }
+        }
+
+        if(state == currentState.humanPlayerPrep) {
+            targetX = firstIntakePrepX;
+            targetY = firstIntakePrepY;
+            if ((getAgentX() < firstIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > firstIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > firstIntakePrepY - DISTANCE_TOLERANCE) {
+                state = currentState.firstIntake;
+            }
+        }
+
+        if(state == currentState.humanPlayer) {
+            targetX = humanPlayerX;
+            targetY = humanPlayerY;
+            if ((getAgentX() < humanPlayerX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerY - DISTANCE_TOLERANCE) {
+                state = currentState.shoot;
+            }
+        }
+    }
+
+    private void Shoot(){
+
     }
 }
 
