@@ -12,8 +12,9 @@ public class TurretSpin {
     CRServo spinMotor2;
 
     double targetPosition;
+//    public static float spinPower = 0.2f;
 
-    public void init(HardwareMap hardwareMap){
+    public TurretSpin(HardwareMap hardwareMap) {
         spinMotor1 = hardwareMap.get(CRServo.class, "turretSpin1");
         spinMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
 
@@ -21,12 +22,13 @@ public class TurretSpin {
         spinMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
-    public void setTargetPosition(double targetPosition){
-        this.targetPosition = targetPosition;
+    public void spinRightCR(float spinPower){
+        spinMotor1.setPower(spinPower);
+        spinMotor2.setPower(spinPower);
     }
 
-    public void update(){
-        double difference = targetPosition - 0;
-        
+    public void spinLeftCR(float spinPower){
+        spinMotor1.setPower(-spinPower);
+        spinMotor2.setPower(-spinPower);
     }
 }
