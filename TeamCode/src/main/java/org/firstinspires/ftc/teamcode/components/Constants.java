@@ -14,4 +14,28 @@ public class Constants {
     public static float TURRET3 = 0.6f;
     public static float TURRET4 = 0.66f;
     public static float turretSpinSpeed = 0.5f;
+    public static float initHeading = 180f;
+    public static float distanceTolerance = 2.5f;
+    public static float startX = 150f;
+    public static float startY = 60f;
+    public static float actionsIndex = 1;
+
+    public static float shootTargetY = 0f;
+    public static float shootTargetX = 0f;
+    public static float firstIntakePrepY = -60f;
+    public static float firstIntakePrepX = -30f;
+    public static float firstIntakeY = -120f;
+    public static float firstIntakeX = -30f;
+    public static float secondIntakePrepY = -60f;
+    public static float secondIntakePrepX = 30f;
+    public static float secondIntakeY = -120f;
+    public static float secondIntakeX = 30f;
+    public static float thirdIntakePrepY = -60f;
+    public static float thirdIntakePrepX = 90f;
+    public static float thirdIntakeY = 120f;
+    public static float thirdIntakeX = 90f;
+    public static float humanPlayerPrepY = 90f;
+    public static float humanPlayerPrepX = 150f;
+    public static float humanPlayerY = 150f;
+    public static float humanPlayerX = 150f;
 }
