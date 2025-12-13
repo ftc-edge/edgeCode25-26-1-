@@ -14,12 +14,14 @@ public class Constants {
     public static float TURRET3 = 0.6f;
     public static float TURRET4 = 0.66f;
     public static float turretSpinSpeed = 0.5f;
-    public static float initHeading = 180f;
+    public static float initHeading = -90f;
     public static float distanceTolerance = 2.5f;
     public static float startX = 150f;
     public static float startY = 60f;
-    public static float actionsIndex = 1;
-
+    public static float actionsIndex = 0;
+    public static float reverseMultForward = 1;
+    public static float reverseMultStrafe = -1;
+    public static boolean positionRotation;
     public static float shootTargetY = 0f;
     public static float shootTargetX = 0f;
     public static float firstIntakePrepY = -60f;

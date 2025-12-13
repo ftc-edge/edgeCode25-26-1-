@@ -11,6 +11,9 @@ import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerPre
 import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerX;
 import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerY;
 import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
+import static org.firstinspires.ftc.teamcode.components.Constants.positionRotation;
+import static org.firstinspires.ftc.teamcode.components.Constants.reverseMultForward;
+import static org.firstinspires.ftc.teamcode.components.Constants.reverseMultStrafe;
 import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakePrepX;
 import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakePrepY;
 import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakeX;
@@ -98,6 +101,8 @@ public class YAIBA extends OpMode {
         humanPlayer
     }
 
+    public float agentX;
+    public float agentY;
     private currentState state;
     private Constants constants;
     private float clamp(float v, float lo, float hi) {
@@ -149,15 +154,15 @@ public class YAIBA extends OpMode {
             if(currentAmmo[0] == 0 && currentAmmo[1] == 0 && currentAmmo[2] == 0){
                 if(shootCount == 0){
                     state = currentState.firstIntakePrep;
-                    shootCount++;
+                    shootCount = 1;
                 }
                 else if(shootCount == 1){
                     state = currentState.secondIntakePrep;
-                    shootCount++;
+                    shootCount = 2;
                 }
                 else if(shootCount == 2){
                     state = currentState.thirdIntakePrep;
-                    shootCount++;
+                    shootCount = 3;
                 }else{
                     state = currentState.humanPlayerPrep;
                 }
@@ -231,7 +236,6 @@ public class YAIBA extends OpMode {
     }
 
     private void Shoot(){
-        shootCount++;
     }
 
     @Override
@@ -257,10 +261,10 @@ public class YAIBA extends OpMode {
         backLeft   = hardwareMap.get(DcMotor.class, "BLmotor");
         backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
 
-        frontLeft.setDirection(DcMotor.Direction.REVERSE);
-        backLeft.setDirection(DcMotor.Direction.FORWARD);
-        frontRight.setDirection(DcMotor.Direction.FORWARD);
-        backRight.setDirection(DcMotor.Direction.FORWARD);
+        frontLeft.setDirection(DcMotor.Direction.FORWARD);
+        backLeft.setDirection(DcMotor.Direction.REVERSE);
+        frontRight.setDirection(DcMotor.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
 
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -268,9 +272,9 @@ public class YAIBA extends OpMode {
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
-        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-        odo.setOffsets(-18, 13, DistanceUnit.CM);
+        odo.setOffsets(16.5, -19, DistanceUnit.CM);
         Pose2D startPose = new Pose2D(DistanceUnit.CM, startX, startY, AngleUnit.DEGREES, initHeading);
         odo.setPosition(startPose);
 
@@ -286,9 +290,13 @@ public class YAIBA extends OpMode {
         odo.update();
         Pose2D currentPose = odo.getPosition();
 
-
-        float agentX = getAgentX();
-        float agentY = getAgentY();
+        if(positionRotation) {
+            agentX = getAgentX();
+            agentY = getAgentY();
+        }else{
+            agentX = getAgentY();
+            agentY = getAgentX();
+        }
         stateMachine(state);
 
         DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
@@ -305,10 +313,10 @@ public class YAIBA extends OpMode {
         }
 
 
-        fl = forward + strafe;
-        fr = forward - strafe;
-        bl = forward - strafe;
-        br = forward + strafe;
+        fl = reverseMultForward * forward + reverseMultStrafe * strafe;
+        fr = reverseMultForward * forward - reverseMultStrafe * strafe;
+        bl = reverseMultForward * forward - reverseMultStrafe * strafe;
+        br = reverseMultForward * forward + reverseMultStrafe * strafe;
 
         float powerMultipler = 3f;
         float negPowerMultipler = -3f;
