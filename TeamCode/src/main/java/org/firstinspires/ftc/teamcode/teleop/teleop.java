@@ -10,6 +10,11 @@ import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Intake;
+import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
+
+
+import com.qualcomm.hardware.rev.RevColorSensorV3;
+
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -19,6 +24,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 @TeleOp
 public class teleop extends OpMode{
+
+    RevColorSensorV3 color;
     Intake intake;
     Drive drive;
     Spindex spindex;
@@ -34,6 +41,15 @@ public class teleop extends OpMode{
 
     int powerLevel = 1;
 
+    int[] currentLayout = new int[]{0, 0, 0};
+
+    boolean processingBall;
+    float intakeCount;
+
+    spindexAutoSort.targetMotif target;
+
+    spindexAutoSort autoSort;
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -43,12 +59,24 @@ public class teleop extends OpMode{
         spindex = new Spindex(hardwareMap);
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
+        autoSort = new spindexAutoSort(hardwareMap);
 
+        color = hardwareMap.get(RevColorSensorV3.class, "color");
+        color.enableLed(true);
+
+        target = spindexAutoSort.targetMotif.GPP;
     }
 
     @Override
     public void loop() {
-        intake.setPower(0.7f);
+        color.getNormalizedColors();
+        if(gamepad1.cross){
+            intake.setPower(1);
+            intakeCheck();
+            if(intakeCount == 3){
+                autoSort.sortNShoot(currentLayout, target);
+            }
+        }
 
         if (gamepad1.a && !prevGamepad1.a) {
             turret.togglePower(turretPower);
@@ -111,5 +139,23 @@ public class teleop extends OpMode{
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
+    }
+
+    public void intakeCheck(){
+        if(color.green() > color.blue() && color.green() > 100 && !processingBall){
+            processingBall = true;
+            spindex.spinTurns(1);
+            currentLayout[0] = 1;
+            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+            intakeCount++;
+        }
+        else if(color.blue() > color.green()  && color.blue() > 150 && !processingBall){
+            spindex.spinTurns(1);
+            currentLayout[0] = -1;
+            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+            intakeCount++;
+        }else{
+            processingBall = false;
+        }
     }
 }

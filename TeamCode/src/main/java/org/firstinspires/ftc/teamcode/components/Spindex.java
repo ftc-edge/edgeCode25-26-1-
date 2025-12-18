@@ -14,6 +14,13 @@ public class Spindex {
     public static float spinPower = 0.6f;
     public static float spinUpPower = 1f;
 
+
+    public enum targetMotif{
+        GPP,
+        PPG,
+        PGP;
+    }
+
     DcMotor spinMotor;
     public Spindex(HardwareMap hardwareMap){
         spinMotor = hardwareMap.get(DcMotor.class, "spindex");
@@ -40,4 +47,5 @@ public class Spindex {
     public int getCurrentPosition(){
         return spinMotor.getCurrentPosition();
     }
+
 }

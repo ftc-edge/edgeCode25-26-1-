@@ -27,6 +27,7 @@ import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakePre
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeX;
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeY;
 
+import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -34,6 +35,9 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.sun.tools.javac.util.Context;
+
+import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
+import org.firstinspires.ftc.teamcode.teleop.teleop;
 import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -58,11 +62,11 @@ import org.firstinspires.ftc.teamcode.components.Constants;
 @TeleOp
 public class YAIBA extends OpMode {
     private BODY body;
-
     private DcMotor frontLeft;
     private DcMotor frontRight;
     private DcMotor backLeft;
     private DcMotor backRight;
+    private DcMotor intake;
 
     // TFLite wrapper
     private BODY yaiba;
@@ -88,6 +92,11 @@ public class YAIBA extends OpMode {
 
     private int[] currentAmmo = new int[3];
 
+    private spindexAutoSort autoSort;
+    private teleop teleopFuncs;
+
+    private RevColorSensorV3 color;
+
     private enum currentState{
         driveToShoot,
         shoot,
@@ -103,7 +112,7 @@ public class YAIBA extends OpMode {
 
     public float agentX;
     public float agentY;
-    private currentState state;
+    private currentState currentState;
     private Constants constants;
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
@@ -147,7 +156,6 @@ public class YAIBA extends OpMode {
             if((getAgentX() < shootTargetX + DISTANCE_TOLERANCE && getAgentX() > shootTargetX - DISTANCE_TOLERANCE) && getAgentY() < shootTargetY + DISTANCE_TOLERANCE && getAgentY() > shootTargetY - DISTANCE_TOLERANCE){
                 state = currentState.shoot;
             }
-
         }
         if(state == currentState.shoot){
             Shoot();
@@ -167,7 +175,6 @@ public class YAIBA extends OpMode {
                     state = currentState.humanPlayerPrep;
                 }
             }
-
         }
 
         if(state == currentState.firstIntakePrep) {
@@ -233,6 +240,7 @@ public class YAIBA extends OpMode {
                 state = currentState.shoot;
             }
         }
+        currentState = state;
     }
 
     private void Shoot(){
@@ -278,7 +286,7 @@ public class YAIBA extends OpMode {
         Pose2D startPose = new Pose2D(DistanceUnit.CM, startX, startY, AngleUnit.DEGREES, initHeading);
         odo.setPosition(startPose);
 
-        state = currentState.driveToShoot;
+        currentState = currentState.driveToShoot;
 
         currentAmmo = new int[]{0, 0, 0};
 
@@ -290,14 +298,10 @@ public class YAIBA extends OpMode {
         odo.update();
         Pose2D currentPose = odo.getPosition();
 
-        if(positionRotation) {
-            agentX = getAgentX();
-            agentY = getAgentY();
-        }else{
-            agentX = getAgentY();
-            agentY = getAgentX();
-        }
-        stateMachine(state);
+        agentX = getAgentY();
+        agentY = getAgentX();
+
+        stateMachine(currentState);
 
         DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
@@ -321,16 +325,21 @@ public class YAIBA extends OpMode {
         float powerMultipler = 3f;
         float negPowerMultipler = -3f;
 
-        if (DTT > DISTANCE_TOLERANCE) {
+        if (DTT > DISTANCE_TOLERANCE || currentState == currentState.firstIntakePrep || currentState  == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep || currentState == currentState.humanPlayerPrep) {
             frontLeft.setPower(fl * powerMultipler);
             frontRight.setPower(fr * negPowerMultipler);
             backLeft.setPower(bl * negPowerMultipler);
             backRight.setPower(br * powerMultipler);
-        } else {
+        }else{
             frontLeft.setPower(0);
             frontRight.setPower(0);
             backLeft.setPower(0);
             backRight.setPower(0);
+        }
+
+        if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
+            intake.setPower(1);
+            teleopFuncs.intakeCheck();
         }
 
 
