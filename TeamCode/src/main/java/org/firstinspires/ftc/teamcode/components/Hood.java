@@ -20,6 +20,7 @@ public class Hood {
 
     public void setPosition(double position){
         hoodServo.setPosition(position);
+        targetPosition = position;
     }
 
     public void incrementPosition(double increment){

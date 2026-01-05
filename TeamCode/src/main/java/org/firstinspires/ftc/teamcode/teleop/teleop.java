@@ -32,14 +32,13 @@ public class teleop extends OpMode{
     Turret turret;
 
     TurretSpin turretSpin;
-
     Hood hood;
-    float turretPower = 0.7f;
+    float turretPower = Constants.TURRET1;
 
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
 
-    int powerLevel = 1;
+    int powerLevel = 4;
 
     int[] currentLayout = new int[]{0, 0, 0};
 
@@ -59,6 +58,7 @@ public class teleop extends OpMode{
         spindex = new Spindex(hardwareMap);
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
+        drive = new Drive(hardwareMap);
         autoSort = new spindexAutoSort(hardwareMap);
 
         color = hardwareMap.get(RevColorSensorV3.class, "color");
@@ -77,23 +77,24 @@ public class teleop extends OpMode{
                 autoSort.sortNShoot(currentLayout, target);
             }
         }
+        if(gamepad1.x && !prevGamepad1.x){
+            intake.togglePower(1f);
+        }
 
         if (gamepad1.a && !prevGamepad1.a) {
             turret.togglePower(turretPower);
         }
 
+
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
             spindex.spinUp();
         }
         if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
-            spindex.spinTurns(-1);
+            spindex.spinTurns(1);
         }
 
         if (gamepad1.dpad_up) {
-            hood.incrementPosition(0.005);
-        }
-        if (gamepad1.dpad_down) {
-            hood.incrementPosition(-0.005);
+            spindex.stop();
         }
 
         switch (powerLevel) {
@@ -104,11 +105,13 @@ public class teleop extends OpMode{
                 turretPower = Constants.TURRET1;
                 break;
             case 2:
+                telemetry.addData("power", "2");
                 gamepad1.setLedColor(235, 225, 70, Gamepad.LED_DURATION_CONTINUOUS);
                 hood.setPosition(Constants.HOOD2);
                 turretPower = Constants.TURRET2;
                 break;
             case 3:
+                telemetry.addData("power", "3");
                 gamepad1.setLedColor(235, 164, 70, Gamepad.LED_DURATION_CONTINUOUS);
                 hood.setPosition(Constants.HOOD3);
                 turretPower = Constants.TURRET3;
@@ -134,11 +137,21 @@ public class teleop extends OpMode{
         turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
         telemetry.addData("Spindex position", spindex.getCurrentPosition());
+        telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Power Level", powerLevel);
+        telemetry.addData("Turret Power", turretPower);
+        telemetry.update();
+
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
+
+        double forward = -gamepad1.left_stick_y;
+        double strafe = gamepad1.left_stick_x;
+        double pivot = gamepad1.right_stick_x;
+
+        Drive.setPower(forward, strafe, pivot);
     }
 
     public void intakeCheck(){
