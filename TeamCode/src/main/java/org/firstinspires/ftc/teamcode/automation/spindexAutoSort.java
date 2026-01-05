@@ -22,13 +22,14 @@ public class spindexAutoSort{
     }
 
     public void sortNShoot(int[] layout, targetMotif target) {
-        float greenLocation = -1;
+        int greenLocation = -1;
         for (int i = 0; i < layout.length; i++) {
             if (layout[i] == 1) {
                 greenLocation = i;
                 i = layout.length;
             }
         }
+
         if (target == targetMotif.GPP){
             if(greenLocation == 1){
                 spindex.spinTurns(2);

@@ -33,7 +33,7 @@ public class teleop extends OpMode{
 
     TurretSpin turretSpin;
     Hood hood;
-    float turretPower = Constants.TURRET1;
+    float turretPower;
 
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
@@ -70,22 +70,28 @@ public class teleop extends OpMode{
     @Override
     public void loop() {
         color.getNormalizedColors();
-        if(gamepad1.cross){
-            intake.setPower(1);
+
+        // Switch Power Levels
+        handlePowerLevel();
+
+        // Intake
+        if(gamepad1.cross && !prevGamepad1.cross){
+            intake.togglePower(1);
             intakeCheck();
             if(intakeCount == 3){
                 autoSort.sortNShoot(currentLayout, target);
             }
         }
-        if(gamepad1.x && !prevGamepad1.x){
-            intake.togglePower(1f);
-        }
 
+        // Turret
         if (gamepad1.a && !prevGamepad1.a) {
             turret.togglePower(turretPower);
         }
 
+        turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
+
+        // Spindex
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
             spindex.spinUp();
         }
@@ -96,6 +102,54 @@ public class teleop extends OpMode{
         if (gamepad1.dpad_up) {
             spindex.stop();
         }
+
+        // Telemetry
+        telemetry.addData("Spindex position", spindex.getCurrentPosition());
+        telemetry.addData("Spindex Target", spindex.getTargetPosition());
+        telemetry.addData("Hood Position", hood.getPosition());
+        telemetry.addData("Power Level", powerLevel);
+        telemetry.addData("Turret Power", turretPower);
+        telemetry.update();
+
+        // Drive
+        double forward = -gamepad1.left_stick_y;
+        double strafe = gamepad1.left_stick_x;
+        double pivot = gamepad1.right_stick_x;
+
+        Drive.setPower(forward, strafe, pivot);
+
+        prevGamepad1.copy(gamepad1);
+        prevGamepad2.copy(gamepad2);
+    }
+
+    public void intakeCheck(){
+        if(color.green() > color.blue() && color.green() > 100 && !processingBall){
+            processingBall = true;
+            spindex.spinTurns(1);
+            currentLayout[0] = 1;
+            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+            intakeCount++;
+        }
+        else if(color.blue() > color.green()  && color.blue() > 150 && !processingBall){
+            spindex.spinTurns(1);
+            currentLayout[0] = -1;
+            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+            intakeCount++;
+        }else{
+            processingBall = false;
+        }
+    }
+
+    public void handlePowerLevel(){
+        if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
+            powerLevel++;
+        }
+
+        if (gamepad1.left_bumper && !prevGamepad1.left_bumper) {
+            powerLevel--;
+        }
+
+        powerLevel = Math.min(4, Math.max(powerLevel, 1));
 
         switch (powerLevel) {
             case 1:
@@ -124,51 +178,7 @@ public class teleop extends OpMode{
             default:
                 telemetry.addData("Error", "Invalid Power Level");
         }
-
-        if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
-            powerLevel++;
-        }
-
-        if (gamepad1.left_bumper && !prevGamepad1.left_bumper) {
-            powerLevel--;
-        }
-        powerLevel = Math.min(4, Math.max(powerLevel, 1));
-
-        turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
-
-        telemetry.addData("Spindex position", spindex.getCurrentPosition());
-        telemetry.addData("Spindex Target", spindex.getTargetPosition());
-        telemetry.addData("Hood Position", hood.getPosition());
-        telemetry.addData("Power Level", powerLevel);
-        telemetry.addData("Turret Power", turretPower);
-        telemetry.update();
-
-
-        prevGamepad1.copy(gamepad1);
-        prevGamepad2.copy(gamepad2);
-
-        double forward = -gamepad1.left_stick_y;
-        double strafe = gamepad1.left_stick_x;
-        double pivot = gamepad1.right_stick_x;
-
-        Drive.setPower(forward, strafe, pivot);
     }
 
-    public void intakeCheck(){
-        if(color.green() > color.blue() && color.green() > 100 && !processingBall){
-            processingBall = true;
-            spindex.spinTurns(1);
-            currentLayout[0] = 1;
-            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-            intakeCount++;
-        }
-        else if(color.blue() > color.green()  && color.blue() > 150 && !processingBall){
-            spindex.spinTurns(1);
-            currentLayout[0] = -1;
-            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-            intakeCount++;
-        }else{
-            processingBall = false;
-        }
-    }
+
 }
