@@ -19,7 +19,7 @@ public class Turret {
             TurretX1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             TurretX1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             TurretX1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            TurretX1.setDirection(DcMotor.Direction.REVERSE);
+            TurretX1.setDirection(DcMotor.Direction.FORWARD);
         }
 
         if(disableShoot2 == 0){

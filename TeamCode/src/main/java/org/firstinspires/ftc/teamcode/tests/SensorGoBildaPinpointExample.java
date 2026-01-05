@@ -22,6 +22,8 @@
 
 package org.firstinspires.ftc.teamcode.tests;
 
+import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
+
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -86,7 +88,7 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
 //        the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
 //        backwards is a negative number.
          */
-        odo.setOffsets(18.8, -13, DistanceUnit.CM); //these are tuned for 3110-0002-0001 Product Insight #1
+        odo.setOffsets(16.5, -19, DistanceUnit.CM); //these are tuned for 3110-0002-0001 Product Insight #1
 
         /*
         Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
@@ -94,7 +96,7 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
         If you're using another kind of odometry pod, uncomment setEncoderResolution and input the
         number of ticks per unit of your odometry pod.
          */
-        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_SWINGARM_POD);
+        odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         //odo.setEncoderResolution(13.26291192, DistanceUnit.MM);
 
 
@@ -115,7 +117,8 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
         an incorrect starting value for x, y, and heading.
          */
         //odo.recalibrateIMU();
-        odo.resetPosAndIMU();
+        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, initHeading);
+        odo.setPosition(startPose);
 
         telemetry.addData("Status", "Initialized");
         telemetry.addData("X offset", odo.getXOffset(DistanceUnit.CM));

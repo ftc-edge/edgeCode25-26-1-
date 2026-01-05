@@ -9,6 +9,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode; //the usual
 import com.qualcomm.robotcore.hardware.CRServo; //continuous roation
 import com.qualcomm.robotcore.util.Range; //the clip thing
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.limelightvision.LLResult;
+
 @TeleOp(name = "Turret Auto Aim", group = "TeleOp")
 public class TurretAutoAim extends LinearOpMode {
     private CRServo leftServo;
@@ -91,7 +94,7 @@ public class TurretAutoAim extends LinearOpMode {
         power = Range.clip(power, -0.35, 0.35);
 
 //apply power mirrored to servos bc they spin in opposite directions
-        leftServo.setPower(-power);
+        leftServo.setPower(power);
         rightServo.setPower(-power);
 
 //telemetrry

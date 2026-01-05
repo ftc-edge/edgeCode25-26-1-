@@ -1,12 +1,13 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
 
-import java.util.*;
+@Config
 public class Drive {
     private static DcMotor leftFront;
     private static DcMotor leftBack;
@@ -14,7 +15,7 @@ public class Drive {
     private static DcMotor rightBack;
 
     public Drive(HardwareMap hardwareMap) {
-        rightFront  = hardwareMap.get(DcMotor.class, "FRmotor");
+        rightFront = hardwareMap.get(DcMotor.class, "FRmotor");
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
