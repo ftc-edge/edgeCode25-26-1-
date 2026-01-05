@@ -94,7 +94,7 @@ public class TurretAutoAim extends LinearOpMode {
 
 //apply power mirrored to servos bc they spin in opposite directions
         leftServo.setPower(power);
-        rightServo.setPower(-power);
+        rightServo.setPower(power);
 
 //telemetrry
         telemetry.addData("tx", tx);

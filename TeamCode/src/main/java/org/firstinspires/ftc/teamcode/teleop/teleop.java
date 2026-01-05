@@ -20,12 +20,14 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 
 @TeleOp
 public class teleop extends OpMode{
 
-    RevColorSensorV3 color;
+    NormalizedColorSensor color;
     Intake intake;
     Drive drive;
     Spindex spindex;
@@ -62,14 +64,15 @@ public class teleop extends OpMode{
         autoSort = new spindexAutoSort(hardwareMap);
 
         color = hardwareMap.get(RevColorSensorV3.class, "color");
-        color.enableLed(true);
+        //color.enableLed(true);
 
         target = spindexAutoSort.targetMotif.GPP;
     }
 
     @Override
     public void loop() {
-        color.getNormalizedColors();
+        NormalizedRGBA colors = color.getNormalizedColors();
+        //color.getNormalizedColors();
 
         // Switch Power Levels
         handlePowerLevel();
@@ -123,7 +126,7 @@ public class teleop extends OpMode{
     }
 
     public void intakeCheck(){
-        if(color.green() > color.blue() && color.green() > 100 && !processingBall){
+        if(hue < 200 && !processingBall){
             processingBall = true;
             spindex.spinTurns(1);
             currentLayout[0] = 1;

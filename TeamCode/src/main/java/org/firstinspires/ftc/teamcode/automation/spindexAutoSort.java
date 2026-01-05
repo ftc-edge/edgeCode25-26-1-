@@ -33,7 +33,7 @@ public class spindexAutoSort{
         if (target == targetMotif.GPP){
             if(greenLocation == 1){
                 spindex.spinTurns(2);
-            }else{
+            }else if(greenLocation == 2){
                 spindex.spinTurns(1);
             }
         }else if(target == targetMotif.PGP){
