@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.TurretAutoAim;
+import org.firstinspires.ftc.teamcode.components.ColorSamplerUtil;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
@@ -42,6 +43,8 @@ public class teleop extends OpMode{
     Hood hood;
     float turretPower;
 
+    ColorSamplerUtil colorSampler;
+
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
 
@@ -70,6 +73,7 @@ public class teleop extends OpMode{
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
         autoSort = new spindexAutoSort(hardwareMap);
+        colorSampler = new ColorSamplerUtil(hardwareMap, "Webcam 1", 6);
 
         color = hardwareMap.get(RevColorSensorV3.class, "color");
         //color.enableLed(true);
@@ -79,6 +83,9 @@ public class teleop extends OpMode{
 
     @Override
     public void loop() {
+        // get camera colors
+        ColorSamplerUtil.Sample s = colorSampler.getSample();
+
         colors = color.getNormalizedColors();
         //color.getNormalizedColors();
 
@@ -139,6 +146,12 @@ public class teleop extends OpMode{
         telemetry.addData("Turret Power", turretPower);
         telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Processing Ball:", processingBall);
+
+        telemetry.addLine("HSL (degrees, %, %)");
+        telemetry.addData("Target",  "(%.1f°, %.1f%%, %.1f%%)", s.h, s.s, s.l);
+        telemetry.addData("Target6", "(%.1f°, %.1f%%, %.1f%%)", s.hRoll, s.sRoll, s.lRoll);
+        telemetry.addData("Mean",    "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanH, s.frameMeanS, s.frameMeanL);
+        telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanHRoll, s.frameMeanSRoll, s.frameMeanLRoll);
         telemetry.update();
 
         // Drive
