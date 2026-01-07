@@ -38,12 +38,8 @@ public class TurretAutoAim extends LinearOpMode {
 // GOAL: rotate until tx becomes 0, read limelight
 
         while (opModeIsActive()) {
-            if (gamepad1.left_bumper) {
                 autoAim();
-            } else {
-                leftServo.setPower(0);
-                rightServo.setPower(0);
-            }
+
         }
     }
 
@@ -60,7 +56,7 @@ public class TurretAutoAim extends LinearOpMode {
 //using if no target then stop
 
         //computing how much error:
-        double error = -tx; //u want tx=0
+        double error = tx; //u want tx=0
 
 //i feel like we should have a deadzone bc its continuous
         double deadband = 1.0; //degrees
@@ -85,10 +81,10 @@ public class TurretAutoAim extends LinearOpMode {
         double power = kP * error + kD * derivative;
 
 //no overshoot
-        if (Math.signum(error) != Math.signum(prevErrorSign)) { //basically if the sign changed and its same number, you overshot and need to power down rn, i got it from ftc youtube fpr team)
+        if (Math.signum(error) != Math.signum(lastError)) { //basically if the sign changed and its same number, you overshot and need to power down rn, i got it from ftc youtube fpr team)
             power = 0;
         }
-        prevErrorSign = error;
+
 
 //range/not all power can be used:
         power = Range.clip(power, -0.35, 0.35);
