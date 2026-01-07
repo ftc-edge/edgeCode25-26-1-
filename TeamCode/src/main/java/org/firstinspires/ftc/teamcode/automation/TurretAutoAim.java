@@ -9,6 +9,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode; //the usual
 import com.qualcomm.robotcore.hardware.CRServo; //continuous roation
 import com.qualcomm.robotcore.util.Range; //the clip thing
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.limelightvision.LLResult;
 
 @TeleOp(name = "Turret Auto Aim", group = "TeleOp")
 public class TurretAutoAim extends LinearOpMode {
@@ -61,7 +63,6 @@ public class TurretAutoAim extends LinearOpMode {
         double error = -tx; //u want tx=0
 
 //i feel like we should have a deadzone bc its continuous
-        //bang on exactly right - cameron
         double deadband = 1.0; //degrees
         if (Math.abs(error) < deadband) {
             leftServo.setPower(0);
@@ -92,7 +93,7 @@ public class TurretAutoAim extends LinearOpMode {
 
 //apply power mirrored to servos bc they spin in opposite directions
         leftServo.setPower(power);
-        rightServo.setPower(power);
+        rightServo.setPower(-power);
 
 //telemetrry
         telemetry.addData("tx", tx);
