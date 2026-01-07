@@ -15,10 +15,10 @@ public class TurretSpin {
 //    public static float spinPower = 0.2f;
 
     public TurretSpin(HardwareMap hardwareMap) {
-        spinMotor1 = hardwareMap.get(CRServo.class, "turretSpin1");
+        spinMotor1 = hardwareMap.get(CRServo.class, "rightServo");
         spinMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        spinMotor2 = hardwareMap.get(CRServo.class, "turretSpin2");
+        spinMotor2 = hardwareMap.get(CRServo.class, "leftServo");
         spinMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 

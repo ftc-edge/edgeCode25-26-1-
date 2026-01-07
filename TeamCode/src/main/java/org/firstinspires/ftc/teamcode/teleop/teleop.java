@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.teleop;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
@@ -28,6 +29,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 public class teleop extends OpMode{
 
     NormalizedColorSensor color;
+    NormalizedRGBA colors;
     Intake intake;
     Drive drive;
     Spindex spindex;
@@ -44,7 +46,7 @@ public class teleop extends OpMode{
 
     int[] currentLayout = new int[]{0, 0, 0};
 
-    boolean processingBall;
+    boolean processingBall = false;
     float intakeCount;
 
     spindexAutoSort.targetMotif target;
@@ -71,7 +73,7 @@ public class teleop extends OpMode{
 
     @Override
     public void loop() {
-        NormalizedRGBA colors = color.getNormalizedColors();
+        colors = color.getNormalizedColors();
         //color.getNormalizedColors();
 
         // Switch Power Levels
@@ -80,15 +82,14 @@ public class teleop extends OpMode{
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
             intake.togglePower(1);
-            intakeCheck();
+
+        }
+
+        if(intake.getPower() == 1){
+            intakeCheck(JavaUtil.colorToHue(colors.toColor()));
             if(intakeCount == 3){
                 autoSort.sortNShoot(currentLayout, target);
             }
-        }
-
-        // Turret
-        if (gamepad1.a && !prevGamepad1.a) {
-            turret.togglePower(turretPower);
         }
 
         turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
@@ -112,6 +113,8 @@ public class teleop extends OpMode{
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Power Level", powerLevel);
         telemetry.addData("Turret Power", turretPower);
+        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
+        telemetry.addData("Processing Ball:", processingBall);
         telemetry.update();
 
         // Drive
@@ -125,23 +128,24 @@ public class teleop extends OpMode{
         prevGamepad2.copy(gamepad2);
     }
 
-    public void intakeCheck(){
-        if(hue < 200 && !processingBall){
-            processingBall = true;
-            spindex.spinTurns(1);
-            currentLayout[0] = 1;
-            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-            intakeCount++;
-        }
-        else if(color.blue() > color.green()  && color.blue() > 150 && !processingBall){
-            spindex.spinTurns(1);
-            currentLayout[0] = -1;
-            currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-            intakeCount++;
+    public void intakeCheck(float hue) {
+        if (hue > 100) {
+            if (hue < 200 && !processingBall) {
+                processingBall = true;
+                spindex.spinTurns(1);
+                currentLayout[0] = 1;
+                currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+                intakeCount++;
+            }else if (hue > 200 && !processingBall) {
+                spindex.spinTurns(1);
+                currentLayout[0] = -1;
+                currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
+                intakeCount++;
+            }
         }else{
-            processingBall = false;
+            processingBall = true;
         }
-    }
+   }
 
     public void handlePowerLevel(){
         if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {

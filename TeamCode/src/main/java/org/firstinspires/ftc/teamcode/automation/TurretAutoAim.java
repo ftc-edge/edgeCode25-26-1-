@@ -84,9 +84,7 @@ public class TurretAutoAim extends LinearOpMode {
         double power = kP * error + kD * derivative;
 
 //no overshoot
-        if (Math.signum(error) != Math.signum(prevErrorSign)) { //basically if the sign changed and its same number, you overshot and need to power down rn, i got it from ftc youtube fpr team)
-            power = 0;
-        }
+
         prevErrorSign = error;
 
 //range/not all power can be used:
