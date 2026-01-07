@@ -102,7 +102,7 @@ public class teleop extends OpMode{
         }
 
         if(intake.getPower() == 1){
-            intakeCheck(JavaUtil.colorToHue(colors.toColor()));
+            intakeCheck(s.hRoll);
             if(intakeCount == 3){
                 autoSort.sortNShoot(currentLayout, target);
             }
@@ -166,7 +166,7 @@ public class teleop extends OpMode{
     }
 
     public void intakeCheck(float hue) {
-        if (hue > 100) {
+        if (hue > 125) {
             if (hue < 200 && !processingBall) {
                 processingBall = true;
                 spindex.spinTurns(1);
