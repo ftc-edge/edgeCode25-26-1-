@@ -56,7 +56,8 @@ public class teleop extends OpMode{
 
     spindexAutoSort autoSort;
 
-    TurretAutoAim aim;
+    private float shootSpeed;
+
 
     @Override
     public void init() {
@@ -82,14 +83,15 @@ public class teleop extends OpMode{
         //color.getNormalizedColors();
 
         // Switch Power Levels
-        handlePowerLevel();
+        //handlePowerLevel();
+
+        turret.setPower(shootSpeed);
 
         autoAim();
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
             intake.togglePower(1);
-
         }
 
         if(intake.getPower() == 1){
@@ -101,13 +103,20 @@ public class teleop extends OpMode{
 
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
-        turret.setPower(gamepad1.right_trigger);
+        if(gamepad1.right_bumper){
+            shootSpeed += 0.01;
+        }
+        if(gamepad1.left_bumper){
+            shootSpeed -= 0.01f;
+        }
         if(gamepad1.square){
             hood.setPosition(hood.getPosition() + 0.1f);
         }
         if(gamepad1.circle){
             hood.setPosition(hood.getPosition() - 0.1f);
         }
+
+
 
         // Spindex
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
@@ -125,7 +134,8 @@ public class teleop extends OpMode{
         telemetry.addData("Spindex position", spindex.getCurrentPosition());
         telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Hood Position", hood.getPosition());
-        telemetry.addData("Power Level", powerLevel);
+        telemetry.addData("Shoot Speed", shootSpeed);
+        //telemetry.addData("Power Level", powerLevel);
         telemetry.addData("Turret Power", turretPower);
         telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Processing Ball:", processingBall);
