@@ -34,8 +34,11 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.sun.tools.javac.util.Context;
 
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
 import org.firstinspires.ftc.teamcode.teleop.teleop;
 import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
@@ -95,7 +98,7 @@ public class YAIBA extends OpMode {
     private spindexAutoSort autoSort;
     private teleop teleopFuncs;
 
-    private RevColorSensorV3 color;
+    private NormalizedColorSensor color;
 
     private enum currentState{
         driveToShoot,
@@ -269,6 +272,8 @@ public class YAIBA extends OpMode {
         backLeft   = hardwareMap.get(DcMotor.class, "BLmotor");
         backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
 
+        color = hardwareMap.get(NormalizedColorSensor.class, "color");
+
         frontLeft.setDirection(DcMotor.Direction.FORWARD);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
         frontRight.setDirection(DcMotor.Direction.REVERSE);
@@ -291,6 +296,8 @@ public class YAIBA extends OpMode {
         currentAmmo = new int[]{0, 0, 0};
 
         constants = new Constants();
+
+
     }
 
     @Override
@@ -302,6 +309,8 @@ public class YAIBA extends OpMode {
         agentY = getAgentX();
 
         stateMachine(currentState);
+
+        NormalizedRGBA colors = color.getNormalizedColors();
 
         DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
@@ -339,7 +348,7 @@ public class YAIBA extends OpMode {
 
         if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
             intake.setPower(1);
-            teleopFuncs.intakeCheck();
+            teleopFuncs.intakeCheck(JavaUtil.colorToHue(colors.toColor()));
         }
 
 

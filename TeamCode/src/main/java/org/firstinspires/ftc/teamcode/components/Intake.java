@@ -28,6 +28,10 @@ public class Intake{
             this.setPower(0);
         }
     }
+
+    public double getPower(){
+        return intakeMotor.getPower();
+    }
     public void setPower(float power){
         intakeMotor.setPower(power);
 

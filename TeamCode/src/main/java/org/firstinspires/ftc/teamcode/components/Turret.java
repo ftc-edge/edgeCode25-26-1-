@@ -15,7 +15,7 @@ public class Turret {
 
     public Turret(HardwareMap hardwareMap){
         if(disableShoot1 == 0){
-            TurretX1 = hardwareMap.get(DcMotor.class, "shoot1");
+            TurretX1 = hardwareMap.get(DcMotor.class, "motor1");
             TurretX1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             TurretX1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             TurretX1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -23,7 +23,7 @@ public class Turret {
         }
 
         if(disableShoot2 == 0){
-            TurretX2 = hardwareMap.get(DcMotor.class, "shoot2");
+            TurretX2 = hardwareMap.get(DcMotor.class, "motor2");
             TurretX2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             TurretX2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             TurretX2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
