@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.TurretAutoAim;
+import org.firstinspires.ftc.teamcode.components.ColorSamplerUtil;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
@@ -42,6 +43,8 @@ public class teleop extends OpMode{
     Hood hood;
     float turretPower;
 
+    ColorSamplerUtil colorSampler;
+
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
 
@@ -56,7 +59,8 @@ public class teleop extends OpMode{
 
     spindexAutoSort autoSort;
 
-    TurretAutoAim aim;
+    private float shootSpeed;
+
 
     @Override
     public void init() {
@@ -69,6 +73,7 @@ public class teleop extends OpMode{
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
         autoSort = new spindexAutoSort(hardwareMap);
+        colorSampler = new ColorSamplerUtil(hardwareMap, "Webcam 1", 6);
 
         color = hardwareMap.get(RevColorSensorV3.class, "color");
         //color.enableLed(true);
@@ -78,22 +83,26 @@ public class teleop extends OpMode{
 
     @Override
     public void loop() {
+        // get camera colors
+        ColorSamplerUtil.Sample s = colorSampler.getSample();
+
         colors = color.getNormalizedColors();
         //color.getNormalizedColors();
 
         // Switch Power Levels
-        handlePowerLevel();
+        //handlePowerLevel();
+
+        turret.setPower(shootSpeed);
 
         autoAim();
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
             intake.togglePower(1);
-
         }
 
         if(intake.getPower() == 1){
-            intakeCheck(JavaUtil.colorToHue(colors.toColor()));
+            intakeCheck(s.hRoll);
             if(intakeCount == 3){
                 autoSort.sortNShoot(currentLayout, target);
             }
@@ -101,13 +110,20 @@ public class teleop extends OpMode{
 
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
-        turret.setPower(gamepad1.right_trigger);
+        if(gamepad1.right_bumper){
+            shootSpeed += 0.01;
+        }
+        if(gamepad1.left_bumper){
+            shootSpeed -= 0.01f;
+        }
         if(gamepad1.square){
             hood.setPosition(hood.getPosition() + 0.1f);
         }
         if(gamepad1.circle){
             hood.setPosition(hood.getPosition() - 0.1f);
         }
+
+
 
         // Spindex
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
@@ -125,10 +141,17 @@ public class teleop extends OpMode{
         telemetry.addData("Spindex position", spindex.getCurrentPosition());
         telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Hood Position", hood.getPosition());
-        telemetry.addData("Power Level", powerLevel);
+        telemetry.addData("Shoot Speed", shootSpeed);
+        //telemetry.addData("Power Level", powerLevel);
         telemetry.addData("Turret Power", turretPower);
         telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Processing Ball:", processingBall);
+
+        telemetry.addLine("HSL (degrees, %, %)");
+        telemetry.addData("Target",  "(%.1f°, %.1f%%, %.1f%%)", s.h, s.s, s.l);
+        telemetry.addData("Target6", "(%.1f°, %.1f%%, %.1f%%)", s.hRoll, s.sRoll, s.lRoll);
+        telemetry.addData("Mean",    "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanH, s.frameMeanS, s.frameMeanL);
+        telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanHRoll, s.frameMeanSRoll, s.frameMeanLRoll);
         telemetry.update();
 
         // Drive
@@ -143,7 +166,7 @@ public class teleop extends OpMode{
     }
 
     public void intakeCheck(float hue) {
-        if (hue > 100) {
+        if (hue > 125) {
             if (hue < 200 && !processingBall) {
                 processingBall = true;
                 spindex.spinTurns(1);
