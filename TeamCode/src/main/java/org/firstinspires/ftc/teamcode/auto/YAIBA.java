@@ -348,7 +348,7 @@ public class YAIBA extends OpMode {
 
         if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
             intake.setPower(1);
-            teleopFuncs.intakeCheck(JavaUtil.colorToHue(colors.toColor()));
+            teleopFuncs.intakeCheck();
         }
 
 

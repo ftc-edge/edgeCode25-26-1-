@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.TurretAutoAim;
+import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.ColorSamplerUtil;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
@@ -32,18 +36,19 @@ import com.qualcomm.robotcore.util.Range;
 @TeleOp
 public class teleop extends OpMode{
 
-    NormalizedColorSensor color;
-    NormalizedRGBA colors;
+//    NormalizedColorSensor colorSensor;
+//    NormalizedRGBA colors;
     Intake intake;
     Drive drive;
     Spindex spindex;
     Turret turret;
 
+    Color color;
+
     TurretSpin turretSpin;
     Hood hood;
+    float hoodPosition = 0.5f;
     float turretPower;
-
-    ColorSamplerUtil colorSampler;
 
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
@@ -51,6 +56,7 @@ public class teleop extends OpMode{
     int powerLevel = 4;
 
     int[] currentLayout = new int[]{0, 0, 0};
+    int currentPosition = 0;
 
     boolean processingBall = false;
     float intakeCount;
@@ -73,28 +79,28 @@ public class teleop extends OpMode{
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
         autoSort = new spindexAutoSort(hardwareMap);
-        colorSampler = new ColorSamplerUtil(hardwareMap, "Webcam 1", 6);
 
-        color = hardwareMap.get(RevColorSensorV3.class, "color");
-        //color.enableLed(true);
+        color = new Color(hardwareMap);
+
+//        colorSensor = hardwareMap.get(RevColorSensorV3.class, "color");
+//        colorSensor.enableLed(true);
 
         target = spindexAutoSort.targetMotif.GPP;
     }
 
     @Override
     public void loop() {
-        // get camera colors
-        ColorSamplerUtil.Sample s = colorSampler.getSample();
 
-        colors = color.getNormalizedColors();
-        //color.getNormalizedColors();
+//        colors = colorSensor.getNormalizedColors();
 
         // Switch Power Levels
         //handlePowerLevel();
 
         turret.setPower(shootSpeed);
+        hood.setPosition(hoodPosition);
 
         autoAim();
+        updateColor();
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
@@ -102,7 +108,7 @@ public class teleop extends OpMode{
         }
 
         if(intake.getPower() == 1){
-            intakeCheck(s.hRoll);
+            intakeCheck();
             if(intakeCount == 3){
                 autoSort.sortNShoot(currentLayout, target);
             }
@@ -111,27 +117,31 @@ public class teleop extends OpMode{
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
         if(gamepad1.right_bumper){
-            shootSpeed += 0.01;
+            shootSpeed += 0.004f;
         }
         if(gamepad1.left_bumper){
-            shootSpeed -= 0.01f;
+            shootSpeed -= 0.004f;
         }
+        shootSpeed = max(0, min(1, shootSpeed));
         if(gamepad1.square){
-            hood.setPosition(hood.getPosition() + 0.1f);
+            hoodPosition += 0.005f;
         }
         if(gamepad1.circle){
-            hood.setPosition(hood.getPosition() - 0.1f);
+            hoodPosition -= 0.005f;
         }
-
-
 
         // Spindex
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
-            spindex.spinUp();
+            spindex.startShootConsecutive();
+            currentPosition = (currentPosition + 2 ) % 3;
+            currentLayout[currentPosition] = 0;
         }
+        spindex.shootConsecutive();
         if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
             spindex.spinTurns(1);
+            currentPosition = (currentPosition + 1 ) % 3;
         }
+        updateColor();
 
         if (gamepad1.dpad_up) {
             spindex.stop();
@@ -144,14 +154,14 @@ public class teleop extends OpMode{
         telemetry.addData("Shoot Speed", shootSpeed);
         //telemetry.addData("Power Level", powerLevel);
         telemetry.addData("Turret Power", turretPower);
-        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
+//        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Processing Ball:", processingBall);
+        telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
+        telemetry.addData("Current Position", currentPosition);
 
         telemetry.addLine("HSL (degrees, %, %)");
-        telemetry.addData("Target",  "(%.1f°, %.1f%%, %.1f%%)", s.h, s.s, s.l);
-        telemetry.addData("Target6", "(%.1f°, %.1f%%, %.1f%%)", s.hRoll, s.sRoll, s.lRoll);
-        telemetry.addData("Mean",    "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanH, s.frameMeanS, s.frameMeanL);
-        telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", s.frameMeanHRoll, s.frameMeanSRoll, s.frameMeanLRoll);
+        telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
+        telemetry.addData("Detected Color", color.getColor());
         telemetry.update();
 
         // Drive
@@ -165,22 +175,57 @@ public class teleop extends OpMode{
         prevGamepad2.copy(gamepad2);
     }
 
-    public void intakeCheck(float hue) {
-        if (hue > 125) {
-            if (hue < 200 && !processingBall) {
-                processingBall = true;
-                spindex.spinTurns(1);
-                currentLayout[0] = 1;
-                currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-                intakeCount++;
-            }else if (hue > 200 && !processingBall) {
-                spindex.spinTurns(1);
-                currentLayout[0] = -1;
-                currentLayout = new int[]{currentLayout[2], currentLayout[0], currentLayout[1]};
-                intakeCount++;
+    public String numberToColor(int x){
+        if (x == -1) {
+            return "Purple";
+        } else if (x == 0) {
+            return "None";
+        } else if (x == 1) {
+            return "Green";
+        }
+        return "Null";
+    }
+    public void updateColor(){
+        if(!spindex.withinTarget()){
+            return;
+        }
+        if(color.getColor() == "GREEN") {
+            currentLayout[currentPosition] = 1;
+        }
+        if(color.getColor() == "PURPLE") {
+            currentLayout[currentPosition] = -1;
+        }
+        if(color.getColor() == "NONE"){
+            currentLayout[currentPosition] = 0;
+        }
+    }
+    public void intakeCheck() {
+        int grnCount = 0;
+        int purCount = 0;
+        for(int i = 0; i <= 2; i ++){
+            if(currentLayout[i] == 1){
+                grnCount++;
             }
-        }else{
+            if(currentLayout[i] == -1){
+                purCount++;
+            }
+        }
+        if((grnCount + purCount) >= 3){
+            return;
+        }
+
+
+        if (!spindex.withinTarget()){
+            return;
+        }
+        if (color.getColor() == "NONE") {
+            processingBall = false;
+        }
+        else if ((color.getColor() == "GREEN" || color.getColor() == "PURPLE") && !processingBall) {
             processingBall = true;
+            spindex.spinTurns(1);
+            currentPosition = (currentPosition + 1 ) % 3;
+            intakeCount++;
         }
    }
 
@@ -193,7 +238,7 @@ public class teleop extends OpMode{
             powerLevel--;
         }
 
-        powerLevel = Math.min(4, Math.max(powerLevel, 1));
+        powerLevel = min(4, max(powerLevel, 1));
 
         switch (powerLevel) {
             case 1:

@@ -367,4 +367,5 @@ public class ColorSamplerUtil {
             return new float[]{h, s * 100f, l * 100f};
         }
     }
+
 }
