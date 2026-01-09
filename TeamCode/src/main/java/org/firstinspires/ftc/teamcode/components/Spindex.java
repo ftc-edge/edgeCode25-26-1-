@@ -19,7 +19,7 @@ public class Spindex {
     public static float spinUpPower = 0.8f;
     public static float adjustPower = 0.35f;
 
-    public static int beforeShootAdjust = 95;
+    public static int beforeShootAdjust = 88;
 
 
     public static int shootDelayMs = 800;
@@ -50,13 +50,13 @@ public class Spindex {
 
     public void spinTurns(int numTurns){
         // if a pressed
-        spinMotor.setTargetPosition(spinMotor.getTargetPosition() + (numTurns * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getCurrentPosition() + (numTurns * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinPower);
     }
 
     public void spinUp(){
-        spinMotor.setTargetPosition(spinMotor.getTargetPosition() - (spinUpNumRotations * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getCurrentPosition() - (spinUpNumRotations * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinUpPower);
     }
@@ -83,13 +83,13 @@ public class Spindex {
         // first stage, turn forward a little
         // 2-4 stage, shoot each ball
         if (shot == 0) {
-            spinMotor.setTargetPosition(spinMotor.getTargetPosition() + beforeShootAdjust);
+            spinMotor.setTargetPosition(spinMotor.getCurrentPosition() + beforeShootAdjust);
             spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             spinMotor.setPower(adjustPower);
             shootTimer.reset(); shot++; return;
         }
         if (shot == 1 && shootTimer.milliseconds() >= adjustDelayMs) {
-            spinMotor.setTargetPosition(spinMotor.getTargetPosition() - beforeShootAdjust);
+            spinMotor.setTargetPosition(spinMotor.getCurrentPosition() - beforeShootAdjust);
             spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             spinMotor.setPower(spinPower);
             shootTimer.reset(); shot++; return;

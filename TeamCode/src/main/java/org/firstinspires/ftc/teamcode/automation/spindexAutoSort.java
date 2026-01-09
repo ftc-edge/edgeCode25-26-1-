@@ -52,12 +52,16 @@ public class spindexAutoSort{
                 spindex.spinTurns(1);
             }
         }else if(target == targetMotif.PGP){
-            if(greenLocation == 0 || greenLocation == 1){
+            if(greenLocation == 0){
                 spindex.spinTurns(1);
+            }else if(greenLocation == 2){
+                spindex.spinTurns(2);
             }
         }else{
-            if(greenLocation == 0 || greenLocation == 2){
+            if(greenLocation == 0){
                 spindex.spinTurns(2);
+            }else if(greenLocation == 1){
+                spindex.spinTurns(1);
             }
         }
     }

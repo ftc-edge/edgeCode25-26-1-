@@ -144,7 +144,7 @@ public class teleop extends OpMode{
         updateColor();
 
         if (gamepad1.dpad_up) {
-            spindex.stop();
+            spindex.spinTurns(2);
         }
 
         // Telemetry
@@ -152,7 +152,7 @@ public class teleop extends OpMode{
         telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Shoot Speed", shootSpeed);
-        //telemetry.addData("Power Level", powerLevel);
+        telemetry.addData("Intake Count", intakeCount);
         telemetry.addData("Turret Power", turretPower);
 //        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Processing Ball:", processingBall);
