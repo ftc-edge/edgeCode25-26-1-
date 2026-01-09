@@ -40,4 +40,6 @@ public class Constants {
     public static float humanPlayerPrepX = 150f;
     public static float humanPlayerY = 150f;
     public static float humanPlayerX = 150f;
+
+    public static int targetId = 20;
 }

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.components.Constants.targetId;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -271,9 +272,17 @@ public class teleop extends OpMode{
 
     public void autoAim() {
         LLResult result = turretSpin.limelight.getLatestResult();
-        if (result == null || !result.isValid()) {
+
+        if (result == null || !result.isValid() || result.getFiducialResults().get(0).getFiducialId()!= targetId){
             turretSpin.spinRightCR(0);
             telemetry.addData("null", 0);
+            if(result.getFiducialResults().get(0).getFiducialId() == 21){
+                target = spindexAutoSort.targetMotif.GPP;
+            }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
+                target = spindexAutoSort.targetMotif.PGP;
+            }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
+                target = spindexAutoSort.targetMotif.PPG;
+            }
             return;
         }
         double tx = result.getTx();
