@@ -102,6 +102,7 @@ public class teleop extends OpMode{
 
         autoAim();
         updateColor();
+        spindex.updateTimer();
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
@@ -159,10 +160,11 @@ public class teleop extends OpMode{
         telemetry.addData("Processing Ball:", processingBall);
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
+        telemetry.addData("Spindex isBusy", spindex.withinTarget());
 
-        telemetry.addLine("HSL (degrees, %, %)");
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
         telemetry.addData("Detected Color", color.getColor());
+
         telemetry.update();
 
         // Drive
@@ -222,7 +224,7 @@ public class teleop extends OpMode{
         if (color.getColor() == "NONE") {
             processingBall = false;
         }
-        else if ((color.getColor() == "GREEN" || color.getColor() == "PURPLE") && !processingBall) {
+        else if ((color.getColor() == "GREEN" || color.getColor() == "PURPLE") && spindex.withinTarget() && !processingBall) {
             processingBall = true;
             spindex.spinTurns(1);
             currentPosition = (currentPosition + 1 ) % 3;

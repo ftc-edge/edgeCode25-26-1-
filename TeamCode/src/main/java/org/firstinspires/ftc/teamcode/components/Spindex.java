@@ -15,7 +15,7 @@ public class Spindex {
 
     public static int spindexRotation = 538; // originally 538
     public static int spinUpNumRotations = 1;
-    public static float spinPower = 0.6f;
+    public static float spinPower = 0.35f;
     public static float spinUpPower = 0.8f;
     public static float adjustPower = 0.35f;
 
@@ -25,10 +25,14 @@ public class Spindex {
     public static int shootDelayMs = 800;
     public static int adjustDelayMs = 700;
     public static int adjustDelay2Ms = 200;
+    public static int busyTimerMs = 150;
+    public boolean ifBusyTimer = false;
+    public boolean isBusy = false;
 
     public static int withinTargetDelayMs = 400;
 
     private static ElapsedTime shootTimer = new ElapsedTime();
+    private static ElapsedTime busyTimer = new ElapsedTime();
     public int shot = 0;
     public boolean shooting = false;
 
@@ -50,13 +54,13 @@ public class Spindex {
 
     public void spinTurns(int numTurns){
         // if a pressed
-        spinMotor.setTargetPosition(spinMotor.getCurrentPosition() + (numTurns * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getTargetPosition() + (numTurns * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinPower);
     }
 
     public void spinUp(){
-        spinMotor.setTargetPosition(spinMotor.getCurrentPosition() - (spinUpNumRotations * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getTargetPosition() - (spinUpNumRotations * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinUpPower);
     }
@@ -66,8 +70,25 @@ public class Spindex {
         spinMotor.setPower(power);
     }
 
+    public void updateTimer(){
+        if (abs(getCurrentPosition() - getTargetPosition()) > 18) {
+            isBusy = true;
+            return;
+        }
+
+        if(ifBusyTimer){
+            if(busyTimer.milliseconds() > busyTimerMs){
+                ifBusyTimer = false;
+                isBusy = false;
+            }
+            return;
+        }
+
+        ifBusyTimer = true;
+        busyTimer.reset();
+    }
     public boolean withinTarget() {
-        return (abs(getCurrentPosition() - getTargetPosition()) < 18);
+        return isBusy;
     }
 
     public void startShootConsecutive(){
@@ -83,13 +104,13 @@ public class Spindex {
         // first stage, turn forward a little
         // 2-4 stage, shoot each ball
         if (shot == 0) {
-            spinMotor.setTargetPosition(spinMotor.getCurrentPosition() + beforeShootAdjust);
+            spinMotor.setTargetPosition(spinMotor.getTargetPosition() + beforeShootAdjust);
             spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             spinMotor.setPower(adjustPower);
             shootTimer.reset(); shot++; return;
         }
         if (shot == 1 && shootTimer.milliseconds() >= adjustDelayMs) {
-            spinMotor.setTargetPosition(spinMotor.getCurrentPosition() - beforeShootAdjust);
+            spinMotor.setTargetPosition(spinMotor.getTargetPosition() - beforeShootAdjust);
             spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             spinMotor.setPower(spinPower);
             shootTimer.reset(); shot++; return;
