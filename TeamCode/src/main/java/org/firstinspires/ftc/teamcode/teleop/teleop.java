@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.automation.TurretAutoAim;
 import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.ColorSamplerUtil;
@@ -48,7 +49,7 @@ public class teleop extends OpMode{
 
     TurretSpin turretSpin;
     Hood hood;
-    float hoodPosition = 0.5f;
+    float hoodPosition = Constants.HOOD1;
     float turretPower;
 
     Gamepad prevGamepad1 = new Gamepad();
@@ -62,11 +63,17 @@ public class teleop extends OpMode{
     boolean processingBall = false;
     float intakeCount;
 
+    String detectedColor;
+
     spindexAutoSort.targetMotif target;
 
     spindexAutoSort autoSort;
 
-    private float shootSpeed;
+    String detectedMotif = "None Detected";
+
+    private float shootSpeed = Constants.TURRET1;
+
+    boolean sorted = false;
 
 
     @Override
@@ -79,7 +86,7 @@ public class teleop extends OpMode{
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
-        autoSort = new spindexAutoSort(hardwareMap);
+        autoSort = new spindexAutoSort(hardwareMap, telemetry);
 
         color = new Color(hardwareMap);
 
@@ -109,10 +116,24 @@ public class teleop extends OpMode{
             intake.togglePower(1);
         }
 
-        if(intake.getPower() == 1){
+        if(intake.getPower() != 0){
             intakeCheck();
-            if(intakeCount == 3){
-                autoSort.sortNShoot(currentLayout, target);
+
+            int grnCount = 0;
+            int purCount = 0;
+            for(int i = 0; i <= 2; i ++){
+                if(currentLayout[i] == 1){
+                    grnCount++;
+                }
+                if(currentLayout[i] == -1){
+                    purCount++;
+                }
+            }
+            if(grnCount + purCount >= 3 && !sorted){
+                if(!spindex.withinTarget()){
+                    autoSort.sortNShoot(currentLayout, target);
+                    sorted = true;
+                }
             }
         }
 
@@ -134,6 +155,7 @@ public class teleop extends OpMode{
 
         // Spindex
         if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
+            sorted = false;
             spindex.startShootConsecutive();
             currentPosition = (currentPosition + 2 ) % 3;
             currentLayout[currentPosition] = 0;
@@ -143,10 +165,8 @@ public class teleop extends OpMode{
             spindex.spinTurns(1);
             currentPosition = (currentPosition + 1 ) % 3;
         }
-        updateColor();
-
-        if (gamepad1.dpad_up) {
-            spindex.spinTurns(2);
+        if (gamepad1.dpad_up  && !prevGamepad1.dpad_up) {
+            spindex.stop();
         }
 
         // Telemetry
@@ -160,10 +180,11 @@ public class teleop extends OpMode{
         telemetry.addData("Processing Ball:", processingBall);
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
-        telemetry.addData("Spindex isBusy", spindex.withinTarget());
+        telemetry.addData("Spindex is within target", spindex.withinTarget());
+        telemetry.addData("Detected Motif", detectedMotif);
 
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
-        telemetry.addData("Detected Color", color.getColor());
+        telemetry.addData("Detected Color", detectedColor);
 
         telemetry.update();
 
@@ -201,6 +222,8 @@ public class teleop extends OpMode{
         if(color.getColor() == "NONE"){
             currentLayout[currentPosition] = 0;
         }
+
+        detectedColor = color.getColor();
     }
     public void intakeCheck() {
         int grnCount = 0;
@@ -221,10 +244,10 @@ public class teleop extends OpMode{
         if (!spindex.withinTarget()){
             return;
         }
-        if (color.getColor() == "NONE") {
+        if (detectedColor == "NONE") {
             processingBall = false;
         }
-        else if ((color.getColor() == "GREEN" || color.getColor() == "PURPLE") && spindex.withinTarget() && !processingBall) {
+        else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall) {
             processingBall = true;
             spindex.spinTurns(1);
             currentPosition = (currentPosition + 1 ) % 3;
@@ -275,18 +298,25 @@ public class teleop extends OpMode{
     public void autoAim() {
         LLResult result = turretSpin.limelight.getLatestResult();
 
-        if (result == null || !result.isValid() || result.getFiducialResults().get(0).getFiducialId()!= targetId){
+        if (result == null || !result.isValid()){
             turretSpin.spinRightCR(0);
-            telemetry.addData("null", 0);
+            return;
+        }
+
+        if (result.getFiducialResults().get(0).getFiducialId() != targetId){
             if(result.getFiducialResults().get(0).getFiducialId() == 21){
                 target = spindexAutoSort.targetMotif.GPP;
+                detectedMotif = "GPP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
                 target = spindexAutoSort.targetMotif.PGP;
+                detectedMotif = "PGP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
                 target = spindexAutoSort.targetMotif.PPG;
+                detectedMotif = "PPG";
             }
             return;
         }
+
         double tx = result.getTx();
         // if tx is positive (target to the right) the turret needs to rotate right to center therefore -tx
 // most motors rotate + pwr = turn right. so we shouldnt need to make it negative??

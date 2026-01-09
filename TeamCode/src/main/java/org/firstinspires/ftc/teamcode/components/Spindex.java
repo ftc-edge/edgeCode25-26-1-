@@ -29,8 +29,6 @@ public class Spindex {
     public boolean ifBusyTimer = false;
     public boolean isBusy = false;
 
-    public static int withinTargetDelayMs = 400;
-
     private static ElapsedTime shootTimer = new ElapsedTime();
     private static ElapsedTime busyTimer = new ElapsedTime();
     public int shot = 0;
@@ -73,6 +71,7 @@ public class Spindex {
     public void updateTimer(){
         if (abs(getCurrentPosition() - getTargetPosition()) > 18) {
             isBusy = true;
+            ifBusyTimer = false;
             return;
         }
 
@@ -88,7 +87,7 @@ public class Spindex {
         busyTimer.reset();
     }
     public boolean withinTarget() {
-        return isBusy;
+        return !isBusy;
     }
 
     public void startShootConsecutive(){
