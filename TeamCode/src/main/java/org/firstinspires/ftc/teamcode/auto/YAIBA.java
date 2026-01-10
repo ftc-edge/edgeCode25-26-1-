@@ -59,7 +59,7 @@ import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
 
 import java.io.IOException;
-
+import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.Constants;
 
 @TeleOp
@@ -74,6 +74,7 @@ public class YAIBA extends OpMode {
     // TFLite wrapper
     private BODY yaiba;
     private GoBildaPinpointDriver odo;
+    private Spindex spindex;
 
     private float[] actions;
 
@@ -136,21 +137,6 @@ public class YAIBA extends OpMode {
         y = (float)pose.getY(DistanceUnit.CM);
         return y;
     }
-    private void checkTarget(){
-        if(gamepad1.a){
-            targetX = 90;
-            targetY = 90f;
-        }if(gamepad1.b){
-            targetX = -90f;
-            targetY = 90f;
-        }if(gamepad1.x){
-            targetX = -90f;
-            targetY = -90f;
-        }if(gamepad1.y){
-            targetX = 90f;
-            targetY = -90f;
-        }
-    }
 
     private void stateMachine(currentState state){
         if(state == currentState.driveToShoot){
@@ -175,7 +161,7 @@ public class YAIBA extends OpMode {
                     state = currentState.thirdIntakePrep;
                     shootCount = 3;
                 }else{
-                    state = currentState.humanPlayerPrep;
+                    //state = currentState.humanPlayerPrep;
                 }
             }
         }
@@ -192,7 +178,7 @@ public class YAIBA extends OpMode {
             targetX = firstIntakeX;
             targetY = firstIntakeY;
             if((getAgentX() < firstIntakeX + DISTANCE_TOLERANCE && getAgentX() > firstIntakeX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakeY + DISTANCE_TOLERANCE && getAgentY() > firstIntakeY - DISTANCE_TOLERANCE){
-                state = currentState.shoot;
+                state = currentState.driveToShoot;
             }
         }
 
@@ -208,7 +194,7 @@ public class YAIBA extends OpMode {
             targetX = secondIntakeX;
             targetY = secondIntakeY;
             if ((getAgentX() < secondIntakeX + DISTANCE_TOLERANCE && getAgentX() > secondIntakeX - DISTANCE_TOLERANCE) && getAgentY() < secondIntakeY + DISTANCE_TOLERANCE && getAgentY() > secondIntakeY - DISTANCE_TOLERANCE) {
-                state = currentState.shoot;
+                state = currentState.driveToShoot;
             }
         }
 
@@ -224,29 +210,30 @@ public class YAIBA extends OpMode {
             targetX = thirdIntakeX;
             targetY = thirdIntakeY;
             if ((getAgentX() < thirdIntakeX + DISTANCE_TOLERANCE && getAgentX() > thirdIntakeX - DISTANCE_TOLERANCE) && getAgentY() < thirdIntakeY + DISTANCE_TOLERANCE && getAgentY() > thirdIntakeY - DISTANCE_TOLERANCE) {
-                state = currentState.shoot;
+                state = currentState.driveToShoot;
             }
         }
 
-        if(state == currentState.humanPlayerPrep) {
-            targetX = humanPlayerPrepX;
-            targetY = humanPlayerPrepY;
-            if ((getAgentX() < humanPlayerPrepX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerPrepX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerPrepY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerPrepY - DISTANCE_TOLERANCE) {
-                state = currentState.humanPlayer;
-            }
-        }
-
-        if(state == currentState.humanPlayer) {
-            targetX = humanPlayerX;
-            targetY = humanPlayerY;
-            if ((getAgentX() < humanPlayerX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerY - DISTANCE_TOLERANCE) {
-                state = currentState.shoot;
-            }
-        }
+//        if(state == currentState.humanPlayerPrep) {
+//            targetX = humanPlayerPrepX;
+//            targetY = humanPlayerPrepY;
+//            if ((getAgentX() < humanPlayerPrepX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerPrepX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerPrepY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerPrepY - DISTANCE_TOLERANCE) {
+//                state = currentState.humanPlayer;
+//            }
+//        }
+//
+//        if(state == currentState.humanPlayer) {
+//            targetX = humanPlayerX;
+//            targetY = humanPlayerY;
+//            if ((getAgentX() < humanPlayerX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerY - DISTANCE_TOLERANCE) {
+//                state = currentState.shoot;
+//            }
+//        }
         currentState = state;
     }
 
     private void Shoot(){
+        spindex.shootConsecutive();
     }
 
     @Override
@@ -310,7 +297,7 @@ public class YAIBA extends OpMode {
 
         stateMachine(currentState);
 
-        NormalizedRGBA colors = color.getNormalizedColors();
+        //NormalizedRGBA colors = color.getNormalizedColors();
 
         DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
