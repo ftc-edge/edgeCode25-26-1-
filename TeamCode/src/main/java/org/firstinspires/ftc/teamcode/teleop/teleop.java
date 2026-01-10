@@ -30,6 +30,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.util.Range;
@@ -57,7 +58,7 @@ public class teleop extends OpMode{
 
     int powerLevel = 4;
 
-    int[] currentLayout = new int[]{0, 0, 0};
+    public int[] currentLayout = new int[]{0, 0, 0};
     int currentPosition = 0;
 
     boolean processingBall = false;
@@ -73,8 +74,7 @@ public class teleop extends OpMode{
 
     private float shootSpeed = Constants.TURRET1;
 
-    boolean sorted = false;
-
+    public boolean sorted = false;
 
     @Override
     public void init() {
@@ -103,6 +103,8 @@ public class teleop extends OpMode{
 
         // Switch Power Levels
         //handlePowerLevel();
+
+        shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
         turret.setPower(shootSpeed);
         hood.setPosition(hoodPosition);

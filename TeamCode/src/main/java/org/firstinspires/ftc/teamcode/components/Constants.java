@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
+    public static float turretAdjustSpeed = .004f;
+    public static float desiredHeading = 180f;
     public static double autoFinalStageMultiplier = 8f;
     public static float HOOD1 = 0.5f;
     public static float HOOD2 = 0.46f;
@@ -22,8 +24,8 @@ public class Constants {
     public static float reverseMultForward = 1;
     public static float reverseMultStrafe = -1;
     public static boolean positionRotation;
-    public static float shootTargetY = 0f;
-    public static float shootTargetX = 0f;
+    public static float shootTargetY = -60f;
+    public static float shootTargetX = -60f;
     public static float firstIntakePrepY = -60f;
     public static float firstIntakePrepX = -30f;
     public static float firstIntakeY = -120f;
@@ -41,5 +43,5 @@ public class Constants {
     public static float humanPlayerY = 150f;
     public static float humanPlayerX = 150f;
     public static int targetId = 20;
-    public static float imuKp = 0.5f;
+    public static float imuKp = 0.6f;
 }

@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
 import static org.firstinspires.ftc.teamcode.components.Constants.startX;
 import static org.firstinspires.ftc.teamcode.components.Constants.startY;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -16,9 +17,10 @@ import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 
 @TeleOp
+@Config
 public class imuTest extends OpMode {
     public YAIBA auto;
-    private Constants constants;
+
     private GoBildaPinpointDriver odo;
     Drive drive;
 
@@ -26,11 +28,12 @@ public class imuTest extends OpMode {
 
     private float offset;
 
-    private float desiredHeading = 90f;
+    private float desiredHeading = Constants.desiredHeading;
 
     private float currentHeading;
     @Override
     public void init() {
+        drive = new Drive(hardwareMap);
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
@@ -45,27 +48,29 @@ public class imuTest extends OpMode {
         currentPose = odo.getPosition();
 
         // Convert to positive 0-360 degrees
-        double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.RADIANS));
+        double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
         double positiveHeading = (rawDeg % 360 + 360) % 360;
 
-        Drive.setPower(0, 0, imuCorrection());
+        Drive.setPower(0, 0, imuCorrection(positiveHeading));
 
+        telemetry.addData("rad", currentPose.getHeading(AngleUnit.RADIANS));
         telemetry.addData("Positive Heading", positiveHeading);
+        telemetry.addData("Desired Heading", desiredHeading);
+        telemetry.addData("Correction", imuCorrection(positiveHeading));
         telemetry.update();
     }
 
-    private float imuCorrection() {
-        float rawHeading = (float) Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
-        currentHeading = (rawHeading % 360 + 360) % 360;
+    private float imuCorrection(double currentHeading) {
         // Ensure your desiredHeading is also in the 0-360 range (e.g., 90.0f)
-        offset = (float) (desiredHeading - currentHeading);
+        offset = -1 * ((float) AngleUnit.normalizeDegrees(desiredHeading - currentHeading));
 
-        // IMPORTANT: Even with 0-360 values, you must still normalize the OFFSET
-        // so the robot doesn't turn 350 degrees to reach a 10-degree target.
-        while (offset > 180) offset -= 360;
-        while (offset <= -180) offset += 360;
+//        // IMPORTANT: Even with 0-360 values, you must still normalize the OFFSET
+//        // so the robot doesn't turn 350 degrees to reach a 10-degree target.
+//        while (offset > 180) offset -= 360;
+//        while (offset <= -180) offset += 360;
 
-        if (Math.abs(offset) < 0.5f) return 0;
-        return (offset * constants.imuKp);
+        telemetry.addData("offset", offset);
+        if (Math.abs(offset) < 1f) return 0;
+        return Math.copySign(Math.abs(offset) < 20f ? Constants.imuKp / 2 : Constants.imuKp, offset);
     }
 }

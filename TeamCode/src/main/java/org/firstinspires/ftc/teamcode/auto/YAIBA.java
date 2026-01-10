@@ -22,11 +22,13 @@ import static org.firstinspires.ftc.teamcode.components.Constants.shootTargetX;
 import static org.firstinspires.ftc.teamcode.components.Constants.shootTargetY;
 import static org.firstinspires.ftc.teamcode.components.Constants.startX;
 import static org.firstinspires.ftc.teamcode.components.Constants.startY;
+import static org.firstinspires.ftc.teamcode.components.Constants.targetId;
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakePrepX;
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakePrepY;
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeX;
 import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeY;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -34,12 +36,17 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.sun.tools.javac.util.Context;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
+import org.firstinspires.ftc.teamcode.components.Color;
+import org.firstinspires.ftc.teamcode.components.Intake;
+import org.firstinspires.ftc.teamcode.components.Turret;
+import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.teleop.teleop;
 import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
 
@@ -62,14 +69,13 @@ import java.io.IOException;
 import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.Constants;
 
-@TeleOp
+@Autonomous
 public class YAIBA extends OpMode {
-    private BODY body;
+
     private DcMotor frontLeft;
     private DcMotor frontRight;
     private DcMotor backLeft;
     private DcMotor backRight;
-    private DcMotor intake;
 
     // TFLite wrapper
     private BODY yaiba;
@@ -97,9 +103,14 @@ public class YAIBA extends OpMode {
     private int[] currentAmmo = new int[3];
 
     private spindexAutoSort autoSort;
-    private teleop teleopFuncs;
 
-    private NormalizedColorSensor color;
+    String detectedMotif = "None Detected";
+
+    boolean hasShot = false;
+
+    String detectedColor;
+
+    Intake intake;
 
     private enum currentState{
         driveToShoot,
@@ -119,10 +130,23 @@ public class YAIBA extends OpMode {
     private currentState currentState;
     private Constants constants;
 
+    int currentPosition = 0;
+
+    TurretSpin turretSpin;
+    Turret turret;
+    Color color;
+    spindexAutoSort.targetMotif target;
     public float desiredHeading = 90;
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
     }
+
+    public int[] currentLayout = new int[]{0, 0, 0};
+
+    boolean sorted = false;
+
+    boolean processingBall = false;
+    int intakeCount = 0;
 
     // Replace these with your odometry or pose estimate code (encoders, IMU, external)
     private float getAgentX() {
@@ -149,23 +173,26 @@ public class YAIBA extends OpMode {
                 state = currentState.shoot;
             }
         }
-        if(state == currentState.shoot){
+        if(state == currentState.shoot && !hasShot){
+            hasShot = true;
             Shoot();
-            if(currentAmmo[0] == 0 && currentAmmo[1] == 0 && currentAmmo[2] == 0){
-                if(shootCount == 0){
-                    state = currentState.firstIntakePrep;
-                    shootCount = 1;
-                }
-                else if(shootCount == 1){
-                    state = currentState.secondIntakePrep;
-                    shootCount = 2;
-                }
-                else if(shootCount == 2){
-                    state = currentState.thirdIntakePrep;
-                    shootCount = 3;
-                }else{
-                    //state = currentState.humanPlayerPrep;
-                }
+        }
+
+        if(currentLayout[0] == 0 && currentLayout[1] == 0 && currentLayout[2] == 0){
+            hasShot = false;
+            if(shootCount == 0){
+                state = currentState.firstIntakePrep;
+                shootCount = 1;
+            }
+            else if(shootCount == 1){
+                state = currentState.secondIntakePrep;
+                shootCount = 2;
+            }
+            else if(shootCount == 2){
+                state = currentState.thirdIntakePrep;
+                shootCount = 3;
+            }else{
+                //state = currentState.humanPlayerPrep;
             }
         }
 
@@ -212,6 +239,7 @@ public class YAIBA extends OpMode {
         if(state == currentState.thirdIntake) {
             targetX = thirdIntakeX;
             targetY = thirdIntakeY;
+
             if ((getAgentX() < thirdIntakeX + DISTANCE_TOLERANCE && getAgentX() > thirdIntakeX - DISTANCE_TOLERANCE) && getAgentY() < thirdIntakeY + DISTANCE_TOLERANCE && getAgentY() > thirdIntakeY - DISTANCE_TOLERANCE) {
                 state = currentState.driveToShoot;
             }
@@ -237,18 +265,31 @@ public class YAIBA extends OpMode {
     }
 
     private void Shoot(){
-        spindex.shootConsecutive();
+        sorted = false;
+        spindex.startShootConsecutive();
+        currentPosition = (currentPosition + 2 ) % 3;
+        currentLayout[currentPosition] = 0;
     }
 
-    public float imuCorrection(){
-        float currentHeading = (float) odo.getHeading(AngleUnit.DEGREES);
-        float offset = desiredHeading - currentHeading;
-        return (offset * constants.imuKp);
+    private float imuCorrection(double currentHeading) {
+        // Ensure your desiredHeading is also in the 0-360 range (e.g., 90.0f)
+        float offset = -1 * ((float) AngleUnit.normalizeDegrees(desiredHeading - currentHeading));
+
+
+        telemetry.addData("offset", offset);
+        if (Math.abs(offset) < 1f) return 0;
+        return Math.copySign(Math.abs(offset) < 20f ? Constants.imuKp / 2 : Constants.imuKp, offset);
     }
+
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        turretSpin = new TurretSpin(hardwareMap);
+        turret = new Turret(hardwareMap);
+        spindex = new Spindex(hardwareMap);
+        color = new Color(hardwareMap);
+        intake = new Intake(hardwareMap);
 
         yaiba = BODY.create(hardwareMap.appContext);
         if (yaiba == null) {
@@ -268,8 +309,6 @@ public class YAIBA extends OpMode {
         frontRight = hardwareMap.get(DcMotor.class, "FRmotor");
         backLeft   = hardwareMap.get(DcMotor.class, "BLmotor");
         backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
-
-        color = hardwareMap.get(NormalizedColorSensor.class, "color");
 
         frontLeft.setDirection(DcMotor.Direction.FORWARD);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
@@ -302,6 +341,8 @@ public class YAIBA extends OpMode {
         odo.update();
         Pose2D currentPose = odo.getPosition();
 
+        turret.setPower(Constants.TURRET1);
+
         agentX = getAgentY();
         agentY = getAgentX();
 
@@ -323,10 +364,13 @@ public class YAIBA extends OpMode {
         }
 
 
-        fl = reverseMultForward * forward + reverseMultStrafe * strafe - imuCorrection();
-        fr = reverseMultForward * forward - reverseMultStrafe * strafe + imuCorrection();
-        bl = reverseMultForward * forward - reverseMultStrafe * strafe - imuCorrection();
-        br = reverseMultForward * forward + reverseMultStrafe * strafe + imuCorrection();
+        double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
+        double positiveHeading = (rawDeg % 360 + 360) % 360;
+
+        fl = reverseMultForward * forward + reverseMultStrafe * strafe - imuCorrection(positiveHeading);
+        fr = reverseMultForward * forward - reverseMultStrafe * strafe + imuCorrection(positiveHeading);
+        bl = reverseMultForward * forward - reverseMultStrafe * strafe - imuCorrection(positiveHeading);
+        br = reverseMultForward * forward + reverseMultStrafe * strafe + imuCorrection(positiveHeading);
 
         float powerMultipler = 3f;
         float negPowerMultipler = -3f;
@@ -345,10 +389,34 @@ public class YAIBA extends OpMode {
 
         if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
             intake.setPower(1);
-            teleopFuncs.intakeCheck();
+            //teleopFuncs.intakeCheck();
         }
 
+        spindex.shootConsecutive();
 
+
+        if(intake.getPower() != 0){
+            intakeCheck();
+
+            int grnCount = 0;
+            int purCount = 0;
+            for(int i = 0; i <= 2; i ++){
+                if(currentLayout[i] == 1){
+                    grnCount++;
+                }
+                if(currentLayout[i] == -1){
+                    purCount++;
+                }
+            }
+            if(grnCount + purCount >= 3 && !sorted){
+                if(!spindex.withinTarget()){
+                    autoSort.sortNShoot(currentLayout, target);
+                    sorted = true;
+                }
+            }
+        }
+
+        autoAim();
 
         // Create telemetry packet with field overlay
         TelemetryPacket packet = new TelemetryPacket();
@@ -412,9 +480,91 @@ public class YAIBA extends OpMode {
         telemetry.addData("agentX", agentX);
         telemetry.addData("agentY", agentY);
         telemetry.addData("current Heading", odo.getHeading(AngleUnit.DEGREES));
-        telemetry.addData("IMU Correction", imuCorrection());
+        telemetry.addData("IMU Correction", imuCorrection(positiveHeading));
         telemetry.update();
     }
+
+    public void updateColor(){
+        if(!spindex.withinTarget()){
+            return;
+        }
+        if(color.getColor() == "GREEN") {
+            currentLayout[currentPosition] = 1;
+        }
+        if(color.getColor() == "PURPLE") {
+            currentLayout[currentPosition] = -1;
+        }
+        if(color.getColor() == "NONE"){
+            currentLayout[currentPosition] = 0;
+        }
+
+        detectedColor = color.getColor();
+    }
+
+    public void autoAim() {
+        LLResult result = turretSpin.limelight.getLatestResult();
+
+        if (result == null || !result.isValid()) {
+            turretSpin.spinRightCR(0);
+            return;
+        }
+
+        if (result.getFiducialResults().get(0).getFiducialId() != targetId) {
+            if (result.getFiducialResults().get(0).getFiducialId() == 21) {
+                target = spindexAutoSort.targetMotif.GPP;
+                detectedMotif = "GPP";
+            } else if (result.getFiducialResults().get(0).getFiducialId() == 22) {
+                target = spindexAutoSort.targetMotif.PGP;
+                detectedMotif = "PGP";
+            } else if (result.getFiducialResults().get(0).getFiducialId() == 23) {
+                target = spindexAutoSort.targetMotif.PPG;
+                detectedMotif = "PPG";
+            }
+            return;
+        }
+
+        double tx = result.getTx();
+        // if tx is positive (target to the right) the turret needs to rotate right to center therefore -tx
+// most motors rotate + pwr = turn right. so we shouldnt need to make it negative??
+//using if no target then stop
+
+        //computing how much error:
+        double error = tx; //u want tx=0
+
+//i feel like we should have a deadzone bc its continuous
+        double deadband = 1.0; //degrees
+        if (Math.abs(error) < deadband) {
+            turretSpin.spinRightCR(0);
+            return;
+        }
+    }
+
+    public void intakeCheck() {
+        int grnCount = 0;
+        int purCount = 0;
+        for (int i = 0; i <= 2; i++) {
+            if (currentLayout[i] == 1) {
+                grnCount++;
+            }
+            if (currentLayout[i] == -1) {
+                purCount++;
+            }
+        }
+        if ((grnCount + purCount) >= 3) {
+            return;
+        }
+
+
+        if (!spindex.withinTarget()) {
+            return;
+        }
+        if (detectedColor == "NONE") {
+            processingBall = false;
+        } else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall) {
+            processingBall = true;
+            spindex.spinTurns(1);
+            currentPosition = (currentPosition + 1) % 3;
+            intakeCount++;
+        }
+    }
 }
-
-
