@@ -118,6 +118,8 @@ public class YAIBA extends OpMode {
     public float agentY;
     private currentState currentState;
     private Constants constants;
+
+    public float desiredHeading = 90;
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
     }
@@ -142,6 +144,7 @@ public class YAIBA extends OpMode {
         if(state == currentState.driveToShoot){
             targetX = shootTargetX;
             targetY = shootTargetY;
+            desiredHeading = 90;
             if((getAgentX() < shootTargetX + DISTANCE_TOLERANCE && getAgentX() > shootTargetX - DISTANCE_TOLERANCE) && getAgentY() < shootTargetY + DISTANCE_TOLERANCE && getAgentY() > shootTargetY - DISTANCE_TOLERANCE){
                 state = currentState.shoot;
             }
@@ -217,6 +220,7 @@ public class YAIBA extends OpMode {
 //        if(state == currentState.humanPlayerPrep) {
 //            targetX = humanPlayerPrepX;
 //            targetY = humanPlayerPrepY;
+        //    desiredHeading = 180;
 //            if ((getAgentX() < humanPlayerPrepX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerPrepX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerPrepY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerPrepY - DISTANCE_TOLERANCE) {
 //                state = currentState.humanPlayer;
 //            }
@@ -226,7 +230,7 @@ public class YAIBA extends OpMode {
 //            targetX = humanPlayerX;
 //            targetY = humanPlayerY;
 //            if ((getAgentX() < humanPlayerX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerY - DISTANCE_TOLERANCE) {
-//                state = currentState.shoot;
+//                state = currentState.driveToShoot;
 //            }
 //        }
         currentState = state;
@@ -234,6 +238,12 @@ public class YAIBA extends OpMode {
 
     private void Shoot(){
         spindex.shootConsecutive();
+    }
+
+    public float imuCorrection(){
+        float currentHeading = (float) odo.getHeading(AngleUnit.DEGREES);
+        float offset = desiredHeading - currentHeading;
+        return (offset * constants.imuKp);
     }
 
     @Override
@@ -313,10 +323,10 @@ public class YAIBA extends OpMode {
         }
 
 
-        fl = reverseMultForward * forward + reverseMultStrafe * strafe;
-        fr = reverseMultForward * forward - reverseMultStrafe * strafe;
-        bl = reverseMultForward * forward - reverseMultStrafe * strafe;
-        br = reverseMultForward * forward + reverseMultStrafe * strafe;
+        fl = reverseMultForward * forward + reverseMultStrafe * strafe - imuCorrection();
+        fr = reverseMultForward * forward - reverseMultStrafe * strafe + imuCorrection();
+        bl = reverseMultForward * forward - reverseMultStrafe * strafe - imuCorrection();
+        br = reverseMultForward * forward + reverseMultStrafe * strafe + imuCorrection();
 
         float powerMultipler = 3f;
         float negPowerMultipler = -3f;
@@ -401,6 +411,8 @@ public class YAIBA extends OpMode {
         telemetry.addData("shootCount", shootCount);
         telemetry.addData("agentX", agentX);
         telemetry.addData("agentY", agentY);
+        telemetry.addData("current Heading", odo.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("IMU Correction", imuCorrection());
         telemetry.update();
     }
 }

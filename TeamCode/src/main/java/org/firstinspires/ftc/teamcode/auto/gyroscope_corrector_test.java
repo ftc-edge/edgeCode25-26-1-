@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
 import org.firstinspires.ftc.ftccommon.internal.manualcontrol.responses.ImuAngularVelocityResponse;
 import org.firstinspires.ftc.robotcontroller.external.samples.SensorGoBildaPinpoint;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 
 public class gyroscope_corrector_test extends OpMode {
@@ -20,12 +21,15 @@ public class gyroscope_corrector_test extends OpMode {
     private DcMotor backRight;
     private Gyroscope gyroscope;
     private GoBildaPinpointDriver gyroscope_corrector;
+    private Constants constants;
+    public float kp;
 
 
     @Override
     public void init() {
         correctorPosition = (float) gyroscope_corrector.getHeading(AngleUnit.DEGREES);
         gyroscopePosition = 90;
+        kp = constants.imuKp;
     }
 
     @Override
