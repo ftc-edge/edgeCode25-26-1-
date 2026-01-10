@@ -34,9 +34,18 @@ public class teleopDrive extends OpMode {
     private boolean squarePress = false;
     private boolean trianglePress = false;
 
+    private boolean left_triggerPress = false;
+
+    private boolean right_triggerPress = false;
+
+    double[] hoodLevel = {0.62, 0.81, 1};
+    int hoodLevelIncrement = 0;
+
     private float shootPower;
     private float turretServo1Position = 0;
     private float turretServo2Position = 1;
+
+    private double hoodServoPosition = hoodLevel[0];
 
     public final static float spindexRotation = 751.8f;
 
@@ -125,9 +134,11 @@ public class teleopDrive extends OpMode {
             turretServo1Position = 1;
         }else if(turretServo1Position < 0){
             turretServo1Position = 0;
-        }
+        }  //turretServo2Position remains unused, you could set it to 1 - turretServo1Position
         turretServo1.setPosition(turretServo1Position);
         turretServo2.setPosition(1 - turretServo1Position);
+
+        hood.setPosition(hoodServoPosition);
 
         gamepadManagement();
 
@@ -193,5 +204,31 @@ public class teleopDrive extends OpMode {
         if(gamepad1.left_bumper){
             turretServo1Position += 0.01F;
         }
+
+        //triggers to increment hood position
+        if(gamepad1.left_trigger >= 0.5 && !left_triggerPress) {
+            left_triggerPress = true;
+        } if(gamepad1.left_trigger < 0.5) {
+            left_triggerPress = false;
+        }
+
+        if(gamepad1.right_trigger >= 0.5 && !right_triggerPress) {
+            right_triggerPress = true;
+        } if(gamepad1.right_trigger < 0.5) {
+            right_triggerPress = false;
+        }
+
+       //position goes down or up a level when a trigger is pressed
+        if(left_triggerPress) {
+            hoodLevelIncrement--;
+             if(hoodLevelIncrement<0) hoodLevelIncrement = 2;
+            hoodServoPosition = hoodLevel[hoodLevelIncrement];
+        }
+        if(right_triggerPress) {
+            hoodLevelIncrement++;
+            if(hoodLevelIncrement>2) hoodLevelIncrement = 0;
+            hoodServoPosition = hoodLevel[hoodLevelIncrement];
+        }
+
+        }
     }
-}
