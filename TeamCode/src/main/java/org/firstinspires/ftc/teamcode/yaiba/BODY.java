@@ -69,11 +69,6 @@ public class BODY implements AutoCloseable {
         }
     }
 
-    /**
-     * Factory method that wraps the constructor and returns null on failure.
-     * This is convenient for OpMode initialization where you want to avoid
-     * checked exceptions but still be able to handle startup failure gracefully.
-     */
     public static BODY create(Context context) {
         try {
             return new BODY(context);
@@ -82,14 +77,6 @@ public class BODY implements AutoCloseable {
             return null;
         }
     }
-
-    /**
-     * Run deterministic policy: returns action [forward/backward, horizontal].
-     * Inputs are raw scalar values (agentX, agentY, targetX, targetY) — adapt if you pass different obs.
-     *
-     * NOTE: This method normalizes/clips using OBS*_MEAN/OBS*_STD and CLIP_MIN/MAX arrays above.
-     * Make sure these values match the ones used at training time.
-     */
     public float[] runDeterministic(float agentX, float agentY, float targetX, float targetY) {
         if (tflite == null) {
             Log.e(TAG, "Interpreter not initialized (runDeterministic). Returning zeros.");
