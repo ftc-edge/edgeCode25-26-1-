@@ -28,6 +28,7 @@ public class imuTest extends OpMode {
 
     private float desiredHeading = 90f;
 
+    private float currentHeading;
     @Override
     public void init() {
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
@@ -47,13 +48,15 @@ public class imuTest extends OpMode {
         double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.RADIANS));
         double positiveHeading = (rawDeg % 360 + 360) % 360;
 
-        Drive.setPower(0, 0, imuCorrection(positiveHeading));
+        Drive.setPower(0, 0, imuCorrection());
 
         telemetry.addData("Positive Heading", positiveHeading);
         telemetry.update();
     }
 
-    private float imuCorrection(double currentHeading) {
+    private float imuCorrection() {
+        float rawHeading = (float) Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
+        currentHeading = (rawHeading % 360 + 360) % 360;
         // Ensure your desiredHeading is also in the 0-360 range (e.g., 90.0f)
         offset = (float) (desiredHeading - currentHeading);
 
