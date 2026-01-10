@@ -21,6 +21,17 @@ public class Intake{
         intakeMotor.setDirection(DcMotor.Direction.FORWARD);
     }
 
+    public void togglePower(float power){
+        if (intakeMotor.getPower() == 0) {
+            this.setPower(power);
+        } else {
+            this.setPower(0);
+        }
+    }
+
+    public double getPower(){
+        return intakeMotor.getPower();
+    }
     public void setPower(float power){
         intakeMotor.setPower(power);
 

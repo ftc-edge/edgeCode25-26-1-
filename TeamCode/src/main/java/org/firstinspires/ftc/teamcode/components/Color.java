@@ -1,36 +1,50 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.qualcomm.hardware.rev.RevColorSensorV3;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
-public class Color{
 
-    private RevColorSensorV3 color;
+@Config
+public class Color {
+    public static int saturationLimit = 9;
+    public static int brightnessLimit = 25;
+    public static int greenHueLowerLimit = 120;
+    public static int greenHueUpperLimit = 225;
+    public static int purpleHueLowerLimit = 225;
+    public static int purpleHueUpperLimit = 360;
 
-    public Color(HardwareMap hardwareMap){
-        color = hardwareMap.get(RevColorSensorV3.class, "color");
-        color.enableLed(true);
+    ColorSamplerUtil colorSampler;
+
+    public Color(HardwareMap hardwareMap) {
+        colorSampler = new ColorSamplerUtil(hardwareMap, "Webcam 1", 6);
     }
 
-    public String getColor(){
-        color.getNormalizedColors();
-        // Green
-        if(color.green() > color.blue() && color.green() > color.red()){
-            return "Green";
+    public String getColor() {
+        ColorSamplerUtil.Sample s = colorSampler.getSample();
+        float hue = s.frameMeanH;
+        float sat = s.frameMeanS;
+        float val = s.frameMeanL;
+
+        if (sat <= saturationLimit) {
+            return "NONE";
         }
-        if(color.blue() > color.green() && color.red() > color.green()){
-            return "Purple";
+
+        if (val <= brightnessLimit) {
+            return "NONE";
         }
-        return "None";
+
+        if (hue >= greenHueLowerLimit && hue <= greenHueUpperLimit) {
+            return "GREEN";
+        }
+        if (hue >= purpleHueLowerLimit && hue <= purpleHueUpperLimit) {
+            return "PURPLE";
+        }
+
+        return "NULL";
     }
 
-    public int[] getRGB(){
-        int[] rgb = {0,0,0};
-        rgb[0] = color.red(); rgb[1] = color.green(); rgb[2] = color.blue();
-        return rgb;
+    public float[] getHSL() {
+        ColorSamplerUtil.Sample s = colorSampler.getSample();
+        return new float[]{s.frameMeanH, s.frameMeanS, s.frameMeanL};
     }
 
 }

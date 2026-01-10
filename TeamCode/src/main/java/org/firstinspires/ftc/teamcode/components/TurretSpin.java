@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -8,25 +9,33 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class TurretSpin {
-    CRServo spinMotor1;
-    CRServo spinMotor2;
+    CRServo leftServo;
+    CRServo rightServo;
+
+    public Limelight3A limelight;
+
+    public double lastError;
+    public double prevErrorSign;
 
     double targetPosition;
+//    public static float spinPower = 0.2f;
 
-    public void init(HardwareMap hardwareMap){
-        spinMotor1 = hardwareMap.get(CRServo.class, "turretSpin1");
-        spinMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
+    public TurretSpin(HardwareMap hardwareMap) {
+        leftServo = hardwareMap.get(CRServo.class, "leftServo");
+        rightServo = hardwareMap.get(CRServo.class, "rightServo");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
-        spinMotor2 = hardwareMap.get(CRServo.class, "turretSpin2");
-        spinMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+        limelight.pipelineSwitch(0);
+        limelight.start();
     }
 
-    public void setTargetPosition(double targetPosition){
-        this.targetPosition = targetPosition;
+    public void spinRightCR(float spinPower){
+        leftServo.setPower(spinPower);
+        rightServo.setPower(spinPower);
     }
 
-    public void update(){
-        double difference = targetPosition - 0;
-        
+    public void spinLeftCR(float spinPower){
+        leftServo.setPower(-spinPower);
+        rightServo.setPower(-spinPower);
     }
 }

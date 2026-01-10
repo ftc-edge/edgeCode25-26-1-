@@ -10,31 +10,54 @@ public class Turret {
     private DcMotor TurretX1;
     private DcMotor TurretX2;
 
-    public Turret(HardwareMap hardwareMap){
-        TurretX1 = hardwareMap.get(DcMotor.class, "shoot1");
-        TurretX1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        TurretX1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        TurretX1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        TurretX1.setDirection(DcMotor.Direction.REVERSE);
+    public static int disableShoot1 = 0;
+    public static int disableShoot2 = 0;
 
-        TurretX2 = hardwareMap.get(DcMotor.class, "shoot2");
-        TurretX2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        TurretX2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        TurretX2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        TurretX2.setDirection(DcMotor.Direction.FORWARD);
+    public Turret(HardwareMap hardwareMap){
+        if(disableShoot1 == 0){
+            TurretX1 = hardwareMap.get(DcMotor.class, "motor1");
+            TurretX1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            TurretX1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            TurretX1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            TurretX1.setDirection(DcMotor.Direction.REVERSE);
+        }
+
+        if(disableShoot2 == 0){
+            TurretX2 = hardwareMap.get(DcMotor.class, "motor2");
+            TurretX2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            TurretX2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            TurretX2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            TurretX2.setDirection(DcMotor.Direction.FORWARD);
+        }
+
     }
 
     public void setPower(float power){
-        TurretX1.setPower(power);
-        TurretX2.setPower(power);
+        if(disableShoot1 == 0){
+            TurretX1.setPower(power);
+        }
+        if(disableShoot2 == 0){
+            TurretX2.setPower(power);
+        }
     }
 
     public void togglePower(float power) {
-        if (TurretX1.getPower() == 0) {
-            this.setPower(power);
+        if(disableShoot1 == 0){
+            if (TurretX2.getPower() == 0) {
+                this.setPower(power);
+            } else {
+                this.setPower(0);
+            }
+        } else if(disableShoot2 == 0){
+            if (TurretX1.getPower() == 0) {
+                this.setPower(power);
+            } else {
+                this.setPower(0);
+            }
         } else {
             this.setPower(0);
         }
+
     }
 }
 
