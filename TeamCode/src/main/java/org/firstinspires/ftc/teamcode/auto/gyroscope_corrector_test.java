@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 
 public class gyroscope_corrector_test extends OpMode {
     public float gyroscopePosition;
-    public float correctorPosition=;
+    public float correctorPosition;
     private DcMotor frontLeft;
     private DcMotor frontRight;
     private DcMotor backLeft;
