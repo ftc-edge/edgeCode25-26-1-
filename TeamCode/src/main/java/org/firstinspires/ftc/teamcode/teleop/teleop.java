@@ -109,13 +109,16 @@ public class teleop extends OpMode{
         turret.setPower(shootSpeed);
         hood.setPosition(hoodPosition);
 
-        autoAim();
+        autoAim();  
         updateColor();
         spindex.updateTimer();
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
             intake.togglePower(1);
+        }
+        if(gamepad1.triangle && !prevGamepad1.triangle){
+            intake.togglePower(-1);
         }
 
         if(intake.getPower() != 0){
