@@ -22,10 +22,10 @@ public class Intake{
     }
 
     public void togglePower(float power){
-        if (intakeMotor.getPower() == 0) {
-            this.setPower(power);
-        } else {
+        if (intakeMotor.getPower() != 0) {
             this.setPower(0);
+        } else {
+            this.setPower(power);
         }
     }
 

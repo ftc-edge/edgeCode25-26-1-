@@ -44,6 +44,7 @@ import com.sun.tools.javac.util.Context;
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
 import org.firstinspires.ftc.teamcode.components.Color;
+import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
@@ -112,6 +113,8 @@ public class YAIBA extends OpMode {
 
     Intake intake;
 
+    Drive drive;
+
     private enum currentState{
         driveToShoot,
         shoot,
@@ -141,7 +144,7 @@ public class YAIBA extends OpMode {
         return Math.max(lo, Math.min(hi, v));
     }
 
-    public int[] currentLayout = new int[]{0, 0, 0};
+    public int[] currentLayout = new int[]{-1, 1, 1};
 
     boolean sorted = false;
 
@@ -305,20 +308,7 @@ public class YAIBA extends OpMode {
         telemetry.addLine("YAIBA Ready");
         telemetry.update();
 
-        frontLeft  = hardwareMap.get(DcMotor.class, "FLmotor");
-        frontRight = hardwareMap.get(DcMotor.class, "FRmotor");
-        backLeft   = hardwareMap.get(DcMotor.class, "BLmotor");
-        backRight  = hardwareMap.get(DcMotor.class, "BRmotor");
-
-        frontLeft.setDirection(DcMotor.Direction.FORWARD);
-        backLeft.setDirection(DcMotor.Direction.REVERSE);
-        frontRight.setDirection(DcMotor.Direction.REVERSE);
-        backRight.setDirection(DcMotor.Direction.REVERSE);
-
-        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        drive = new Drive(hardwareMap);
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
@@ -367,24 +357,12 @@ public class YAIBA extends OpMode {
         double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
         double positiveHeading = (rawDeg % 360 + 360) % 360;
 
-        fl = reverseMultForward * forward + reverseMultStrafe * strafe - imuCorrection(positiveHeading);
-        fr = reverseMultForward * forward - reverseMultStrafe * strafe + imuCorrection(positiveHeading);
-        bl = reverseMultForward * forward - reverseMultStrafe * strafe - imuCorrection(positiveHeading);
-        br = reverseMultForward * forward + reverseMultStrafe * strafe + imuCorrection(positiveHeading);
-
         float powerMultipler = 3f;
-        float negPowerMultipler = -3f;
 
         if (DTT > DISTANCE_TOLERANCE || currentState == currentState.firstIntakePrep || currentState  == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep || currentState == currentState.humanPlayerPrep) {
-            frontLeft.setPower(fl * powerMultipler);
-            frontRight.setPower(fr * negPowerMultipler);
-            backLeft.setPower(bl * negPowerMultipler);
-            backRight.setPower(br * powerMultipler);
+            drive.setPower(reverseMultForward * forward, reverseMultStrafe * strafe, imuCorrection(positiveHeading));
         }else{
-            frontLeft.setPower(0);
-            frontRight.setPower(0);
-            backLeft.setPower(0);
-            backRight.setPower(0);
+            drive.setPower(0,0,0);
         }
 
         if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
