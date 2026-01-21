@@ -370,7 +370,7 @@ public class YAIBA extends OpMode {
             //teleopFuncs.intakeCheck();
         }
 
-        spindex.shootConsecutive();
+        spindex.shootConsecutive(color);
 
 
         if(intake.getPower() != 0){

@@ -32,9 +32,11 @@ public class spindexAutoSort{
     public void sortNShoot(int[] layout, targetMotif target) {
         int grnCount = 0;
         int purCount = 0;
+        int greenLocation = -1;
         for (int i = 0; i <= 2; i++) {
             if (layout[i] == 1) {
                 grnCount++;
+                greenLocation = i;
             }
             if (layout[i] == -1) {
                 purCount++;
@@ -44,14 +46,6 @@ public class spindexAutoSort{
             return;
         }
 
-
-        int greenLocation = -1;
-        for (int i = 0; i < layout.length; i++) {
-            if (layout[i] == 1) {
-                greenLocation = i;
-                i = layout.length;
-            }
-        }
 
         telemetry.addLine("Auto Sort Telemetry:");
         telemetry.addData("green Location", greenLocation);

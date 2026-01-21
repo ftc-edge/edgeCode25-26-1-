@@ -165,7 +165,7 @@ public class teleop extends OpMode{
             currentPosition = (currentPosition + 2 ) % 3;
             currentLayout[currentPosition] = 0;
         }
-        spindex.shootConsecutive();
+        spindex.shootConsecutive(color);
         if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
             spindex.spinTurns(1);
             currentPosition = (currentPosition + 1 ) % 3;
@@ -347,7 +347,7 @@ public class teleop extends OpMode{
 
         double derivative = error - turretSpin.lastError;
         turretSpin.lastError = error;
-        double kP = 0.02;      // start here tune up or down prob
+        double kP = 0.05;      // start here tune up or down prob
         double kD = 0.01;
         float power = (float) (kP * error + kD * derivative);
 
@@ -356,7 +356,7 @@ public class teleop extends OpMode{
        turretSpin.lastError = error;
 
 //range/not all power can be used:
-        power = (float) Range.clip(power, -0.35, 0.35);
+        power = (float) Range.clip(power, -0.75, 0.75);
 
 //apply power mirrored to servos bc they spin in opposite directions
         turretSpin.spinRightCR(power);

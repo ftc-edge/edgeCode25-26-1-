@@ -16,7 +16,8 @@ public class Spindex {
     public static int spindexRotation = 538; // originally 538
     public static int spinUpNumRotations = 1;
     public static float spinPower = 0.35f;
-    public static float spinUpPower = 0.8f;
+
+    public static float spinUpPower = 1f;
     public static float adjustPower = 0.35f;
 
     public static int beforeShootAdjust = 88;
@@ -34,6 +35,7 @@ public class Spindex {
     public int shot = 0;
     public boolean shooting = false;
 
+    Color spindexColor;
     public enum targetMotif{
         GPP,
         PPG,
@@ -48,6 +50,8 @@ public class Spindex {
         spinMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         spinMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         spinMotor.setDirection(DcMotorEx.Direction.REVERSE);
+
+        //spindexColor = new Color(hardwareMap);
     }
 
     public void spinTurns(int numTurns){
@@ -94,7 +98,7 @@ public class Spindex {
         shooting = true;
         shootTimer.reset();
     }
-    public void shootConsecutive(){
+    public void shootConsecutive(Color spindexColor){
         if (!shooting){
             return;
         }
@@ -111,21 +115,32 @@ public class Spindex {
         if (shot == 1 && shootTimer.milliseconds() >= adjustDelayMs) {
             spinMotor.setTargetPosition(spinMotor.getTargetPosition() - beforeShootAdjust);
             spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            spinMotor.setPower(spinPower);
+            spinMotor.setPower(adjustPower);
             shootTimer.reset(); shot++; return;
         }
-        if (shot == 2 && shootTimer.milliseconds() >= adjustDelay2Ms) {
-            spinUp();
-            shootTimer.reset(); shot++; return;
+        if(shot >= 2 && !spinMotor.isBusy() && shootTimer.milliseconds() >= adjustDelay2Ms){
+            if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
+                spinUp();
+                shootTimer.reset();
+                shot++;
+            }else{
+                shooting = false;
+                shot = 0;
+                shootTimer.reset();
+            }
         }
-        if((shot == 3 || shot == 4) && shootTimer.milliseconds() >= shootDelayMs){
-            spinUp();
-            shootTimer.reset(); shot++; return;
-        }
-        if (shot >= 5){
-            shooting = false; shot = 0;
-            shootTimer.reset();
-        }
+//        if (shot == 2 && shootTimer.milliseconds() >= adjustDelay2Ms) {
+//            spinUp();
+//            shootTimer.reset(); shot++; return;
+//        }
+//        if((shot == 3 || shot == 4) && shootTimer.milliseconds() >= shootDelayMs){
+//            spinUp();
+//            shootTimer.reset(); shot++; return;
+//        }
+//        if (shot >= 5){
+//            shooting = false; shot = 0;
+//            shootTimer.reset();
+//        }
     }
 
     public void stop(){
