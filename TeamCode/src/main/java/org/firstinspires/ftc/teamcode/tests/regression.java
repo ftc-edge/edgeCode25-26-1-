@@ -26,7 +26,7 @@ public class regression extends OpMode {
     @Override
     public void loop() {
         hood.setPosition(hoodPos);
-        turret.setPower(spinSpeed);
+        turret.setTargetRPM(spinSpeed);
 
         telemetry.addData("flywheel", spinSpeed);
         telemetry.addData("hood", hoodPos);
