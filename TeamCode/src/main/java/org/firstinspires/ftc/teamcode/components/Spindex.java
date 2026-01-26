@@ -20,7 +20,7 @@ public class Spindex {
     public static float spinUpPower = 1f;
     public static float adjustPower = 0.35f;
 
-    public static int beforeShootAdjust = 88;
+    public static int beforeShootAdjust = 70;
 
 
     public static int shootDelayMs = 800;
