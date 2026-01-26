@@ -267,6 +267,7 @@ public class teleop extends OpMode{
                 spindex.spinTurns(1);
                 currentPosition = (currentPosition + 1) % 3;
                 intakeCount++;
+                cameraBuffer = 0;
             }
         }
     }
