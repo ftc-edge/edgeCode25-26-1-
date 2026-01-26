@@ -9,10 +9,11 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Turret {
+
     private DcMotorEx TurretX1;
     private DcMotorEx TurretX2;
 
-    public static double kP = 0.02;
+    public static double kP = -0.02;
     public static double kI = 0.0;
     public static double kD = 0.0;
     public static double kF = 0.0;
@@ -20,6 +21,8 @@ public class Turret {
 
     // Adjust this based on your motors (e.g., 537.7 for goBILDA 5202/5203)
     public static double TICKS_PER_REV = 537.7;
+
+    public static float targetRPM1 = 40f;
 
     private PIDFController pidf;
 

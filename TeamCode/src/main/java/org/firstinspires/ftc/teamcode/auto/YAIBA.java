@@ -1,32 +1,6 @@
 package org.firstinspires.ftc.teamcode.auto;
 
-import static org.firstinspires.ftc.teamcode.components.Constants.actionsIndex;
-import static org.firstinspires.ftc.teamcode.components.Constants.distanceTolerance;
-import static org.firstinspires.ftc.teamcode.components.Constants.firstIntakePrepX;
-import static org.firstinspires.ftc.teamcode.components.Constants.firstIntakePrepY;
-import static org.firstinspires.ftc.teamcode.components.Constants.firstIntakeX;
-import static org.firstinspires.ftc.teamcode.components.Constants.firstIntakeY;
-import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerPrepX;
-import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerPrepY;
-import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerX;
-import static org.firstinspires.ftc.teamcode.components.Constants.humanPlayerY;
-import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
-import static org.firstinspires.ftc.teamcode.components.Constants.positionRotation;
-import static org.firstinspires.ftc.teamcode.components.Constants.reverseMultForward;
-import static org.firstinspires.ftc.teamcode.components.Constants.reverseMultStrafe;
-import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakePrepX;
-import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakePrepY;
-import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakeX;
-import static org.firstinspires.ftc.teamcode.components.Constants.secondIntakeY;
-import static org.firstinspires.ftc.teamcode.components.Constants.shootTargetX;
-import static org.firstinspires.ftc.teamcode.components.Constants.shootTargetY;
-import static org.firstinspires.ftc.teamcode.components.Constants.startX;
-import static org.firstinspires.ftc.teamcode.components.Constants.startY;
-import static org.firstinspires.ftc.teamcode.components.Constants.targetId;
-import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakePrepX;
-import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakePrepY;
-import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeX;
-import static org.firstinspires.ftc.teamcode.components.Constants.thirdIntakeY;
+import static org.firstinspires.ftc.teamcode.components.AutoConstants.*;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
@@ -44,6 +18,7 @@ import com.sun.tools.javac.util.Context;
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
 import org.firstinspires.ftc.teamcode.components.Color;
+import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Turret;
@@ -68,7 +43,7 @@ import com.acmerobotics.dashboard.canvas.Canvas;
 
 import java.io.IOException;
 import org.firstinspires.ftc.teamcode.components.Spindex;
-import org.firstinspires.ftc.teamcode.components.Constants;
+import org.firstinspires.ftc.teamcode.components.AutoConstants;
 
 @Autonomous
 public class YAIBA extends OpMode {
@@ -128,7 +103,7 @@ public class YAIBA extends OpMode {
     public float targetStageX;
     public float targetStageY;
     private currentState currentState;
-    private Constants constants;
+    private AutoConstants AutoConstants;
 
     int currentPosition = 0;
 
@@ -225,7 +200,7 @@ public class YAIBA extends OpMode {
 
         currentAmmo = new int[]{0, 0, 0};
 
-        constants = new Constants();
+        AutoConstants = new AutoConstants();
 
 
     }
@@ -235,7 +210,7 @@ public class YAIBA extends OpMode {
         odo.update();
         Pose2D currentPose = odo.getPosition();
 
-        turret.setTargetRPM(Constants.TURRET1);
+        turret.setTargetRPM(Turret.targetRPM1);
 
         agentX = getAgentY();
         agentY = getAgentX();
@@ -259,8 +234,8 @@ public class YAIBA extends OpMode {
 
 //
 //        if(Math.hypot(strafe, forward) < 0.10 && DTT > DISTANCE_TOLERANCE){
-//            strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
-//            forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
+//            strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * AutoConstants.autoFinalStageMultiplier));
+//            forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * AutoConstants.autoFinalStageMultiplier));
 //        }
 
 
@@ -385,7 +360,7 @@ public class YAIBA extends OpMode {
             return;
         }
 
-        if (result.getFiducialResults().get(0).getFiducialId() != targetId) {
+        if (result.getFiducialResults().get(0).getFiducialId() != Constants.targetId) {
             if (result.getFiducialResults().get(0).getFiducialId() == 21) {
                 target = spindexAutoSort.targetMotif.GPP;
                 detectedMotif = "GPP";

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -7,8 +8,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 
+@Config
 public class Intake{
 
+    public static float intakePower = 1f;
     private DcMotor intakeMotor;
     Color colorSensor;
 

@@ -62,7 +62,6 @@ public class teleop extends OpMode{
     public int[] currentLayout = new int[]{0, 0, 0};
     int currentPosition = 0;
 
-    boolean processingBall = false;
     float intakeCount;
 
     String detectedColor;
@@ -73,11 +72,12 @@ public class teleop extends OpMode{
 
     String detectedMotif = "None Detected";
 
-    private float shootSpeed = Constants.TURRET1;
+    private float shootSpeed = Turret.targetRPM1;
 
     public boolean sorted = false;
 
-    public ElapsedTime timer = new ElapsedTime();
+    public ElapsedTime autoSortTimer = new ElapsedTime();
+    boolean autoSortTimerStarted = false;
 
     float deltaTime;
 
@@ -111,9 +111,6 @@ public class teleop extends OpMode{
         // Switch Power Levels
         //handlePowerLevel();
 
-        deltaTime = (float) timer.seconds();
-        timer.reset();
-
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
         turret.loop();
@@ -126,10 +123,10 @@ public class teleop extends OpMode{
 
         // Intake
         if(gamepad1.cross && !prevGamepad1.cross){
-            intake.togglePower(1);
+            intake.togglePower(Intake.intakePower);
         }
         if(gamepad1.triangle && !prevGamepad1.triangle){
-            intake.togglePower(-1);
+            intake.togglePower(-Intake.intakePower);
         }
 
         if(intake.getPower() != 0){
@@ -189,8 +186,9 @@ public class teleop extends OpMode{
         telemetry.addData("Shoot Speed", shootSpeed);
         telemetry.addData("Intake Count", intakeCount);
         telemetry.addData("Turret Power", turretPower);
+        telemetry.addData("Auto Sort Timer Started", autoSortTimerStarted);
+        telemetry.addData("Auto Sort Timer", autoSortTimer.milliseconds());
 //        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
-        telemetry.addData("Processing Ball:", processingBall);
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
         telemetry.addData("Spindex is within target", spindex.withinTarget());
@@ -257,58 +255,17 @@ public class teleop extends OpMode{
         if (!spindex.withinTarget()){
             return;
         }
-        if (detectedColor == "NONE") {
-            processingBall = false;
-        }
-        else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall){
-            cameraBuffer += deltaTime;
-            if(cameraBuffer > 0.25f) {
-                processingBall = true;
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
                 spindex.spinTurns(1);
                 currentPosition = (currentPosition + 1) % 3;
                 intakeCount++;
-                cameraBuffer = 0;
+                autoSortTimerStarted = false;
             }
-        }
-    }
-
-    public void handlePowerLevel(){
-        if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
-            powerLevel++;
-        }
-
-        if (gamepad1.left_bumper && !prevGamepad1.left_bumper) {
-            powerLevel--;
-        }
-
-        powerLevel = min(4, max(powerLevel, 1));
-
-        switch (powerLevel) {
-            case 1:
-                telemetry.addData("power", "1");
-                gamepad1.setLedColor(140, 235, 70, Gamepad.LED_DURATION_CONTINUOUS);
-                //hood.setPosition(Constants.HOOD1);
-                turretPower = Constants.TURRET1;
-                break;
-            case 2:
-                telemetry.addData("power", "2");
-                gamepad1.setLedColor(235, 225, 70, Gamepad.LED_DURATION_CONTINUOUS);
-                // hood.setPosition(Constants.HOOD2);
-                turretPower = Constants.TURRET2;
-                break;
-            case 3:
-                telemetry.addData("power", "3");
-                gamepad1.setLedColor(235, 164, 70, Gamepad.LED_DURATION_CONTINUOUS);
-                //hood.setPosition(Constants.HOOD3);
-                turretPower = Constants.TURRET3;
-                break;
-            case 4:
-                gamepad1.setLedColor(235, 70, 70, Gamepad.LED_DURATION_CONTINUOUS);
-                //hood.setPosition(Constants.HOOD4);
-                turretPower = Constants.TURRET4;
-                break;
-            default:
-                telemetry.addData("Error", "Invalid Power Level");
+            if(!autoSortTimerStarted){
+                autoSortTimerStarted = true;
+                autoSortTimer.reset();
+            }
         }
     }
 
