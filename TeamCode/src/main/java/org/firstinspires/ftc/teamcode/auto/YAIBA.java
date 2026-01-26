@@ -94,6 +94,7 @@ public class YAIBA extends OpMode {
     private double br;
     private float forward;
     private float strafe;
+    private float rot;
     private int cooldownCounter = 0;
 
     public static final float DISTANCE_TOLERANCE = distanceTolerance;
@@ -116,20 +117,16 @@ public class YAIBA extends OpMode {
     Drive drive;
 
     private enum currentState{
-        driveToShoot,
         shoot,
-        firstIntakePrep,
         firstIntake,
-        secondIntakePrep,
         secondIntake,
-        thirdIntakePrep,
         thirdIntake,
-        humanPlayerPrep,
-        humanPlayer
     }
 
     public float agentX;
     public float agentY;
+    public float targetStageX;
+    public float targetStageY;
     private currentState currentState;
     private Constants constants;
 
@@ -139,14 +136,16 @@ public class YAIBA extends OpMode {
     Turret turret;
     Color color;
     spindexAutoSort.targetMotif target;
-    public float desiredHeading = 90;
+    public float desiredHeading = -1.5708f;
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
     }
 
-    public int[] currentLayout = new int[]{-1, 1, 1};
+    public int[] currentLayout = new int[]{0, 0, 0};
 
     boolean sorted = false;
+
+    float stageActive;
 
     boolean processingBall = false;
     int intakeCount = 0;
@@ -168,102 +167,16 @@ public class YAIBA extends OpMode {
     }
 
     private void stateMachine(currentState state){
-        if(state == currentState.driveToShoot){
-            targetX = shootTargetX;
-            targetY = shootTargetY;
-            desiredHeading = 90;
-            if((getAgentX() < shootTargetX + DISTANCE_TOLERANCE && getAgentX() > shootTargetX - DISTANCE_TOLERANCE) && getAgentY() < shootTargetY + DISTANCE_TOLERANCE && getAgentY() > shootTargetY - DISTANCE_TOLERANCE){
-                state = currentState.shoot;
+        if(state == currentState.shoot){
+            targetX = 0;
+            targetY = 0;
+            stageActive = 0;
+            if(DTT < 5f && !hasShot){
+                hasShot = true;
+                spindex.shootConsecutive(color);
             }
+//            if()
         }
-        if(state == currentState.shoot && !hasShot){
-            hasShot = true;
-            Shoot();
-        }
-
-        if(currentLayout[0] == 0 && currentLayout[1] == 0 && currentLayout[2] == 0){
-            hasShot = false;
-            if(shootCount == 0){
-                state = currentState.firstIntakePrep;
-                shootCount = 1;
-            }
-            else if(shootCount == 1){
-                state = currentState.secondIntakePrep;
-                shootCount = 2;
-            }
-            else if(shootCount == 2){
-                state = currentState.thirdIntakePrep;
-                shootCount = 3;
-            }else{
-                //state = currentState.humanPlayerPrep;
-            }
-        }
-
-        if(state == currentState.firstIntakePrep) {
-            targetX = firstIntakePrepX;
-            targetY = firstIntakePrepY;
-            if ((getAgentX() < firstIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > firstIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > firstIntakePrepY - DISTANCE_TOLERANCE) {
-                state = currentState.firstIntake;
-            }
-        }
-
-        if(state == currentState.firstIntake){
-            targetX = firstIntakeX;
-            targetY = firstIntakeY;
-            if((getAgentX() < firstIntakeX + DISTANCE_TOLERANCE && getAgentX() > firstIntakeX - DISTANCE_TOLERANCE) && getAgentY() < firstIntakeY + DISTANCE_TOLERANCE && getAgentY() > firstIntakeY - DISTANCE_TOLERANCE){
-                state = currentState.driveToShoot;
-            }
-        }
-
-        if(state == currentState.secondIntakePrep) {
-            targetX = secondIntakePrepX;
-            targetY = secondIntakePrepY;
-            if ((getAgentX() < secondIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > secondIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < secondIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > secondIntakePrepY - DISTANCE_TOLERANCE) {
-                state = currentState.secondIntake;
-            }
-        }
-
-        if(state == currentState.secondIntake) {
-            targetX = secondIntakeX;
-            targetY = secondIntakeY;
-            if ((getAgentX() < secondIntakeX + DISTANCE_TOLERANCE && getAgentX() > secondIntakeX - DISTANCE_TOLERANCE) && getAgentY() < secondIntakeY + DISTANCE_TOLERANCE && getAgentY() > secondIntakeY - DISTANCE_TOLERANCE) {
-                state = currentState.driveToShoot;
-            }
-        }
-
-        if(state == currentState.thirdIntakePrep) {
-            targetX = thirdIntakePrepX;
-            targetY = thirdIntakePrepY;
-            if ((getAgentX() < thirdIntakePrepX + DISTANCE_TOLERANCE && getAgentX() > thirdIntakePrepX - DISTANCE_TOLERANCE) && getAgentY() < thirdIntakePrepY + DISTANCE_TOLERANCE && getAgentY() > thirdIntakePrepY - DISTANCE_TOLERANCE) {
-                state = currentState.firstIntake;
-            }
-        }
-
-        if(state == currentState.thirdIntake) {
-            targetX = thirdIntakeX;
-            targetY = thirdIntakeY;
-
-            if ((getAgentX() < thirdIntakeX + DISTANCE_TOLERANCE && getAgentX() > thirdIntakeX - DISTANCE_TOLERANCE) && getAgentY() < thirdIntakeY + DISTANCE_TOLERANCE && getAgentY() > thirdIntakeY - DISTANCE_TOLERANCE) {
-                state = currentState.driveToShoot;
-            }
-        }
-
-//        if(state == currentState.humanPlayerPrep) {
-//            targetX = humanPlayerPrepX;
-//            targetY = humanPlayerPrepY;
-        //    desiredHeading = 180;
-//            if ((getAgentX() < humanPlayerPrepX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerPrepX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerPrepY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerPrepY - DISTANCE_TOLERANCE) {
-//                state = currentState.humanPlayer;
-//            }
-//        }
-//
-//        if(state == currentState.humanPlayer) {
-//            targetX = humanPlayerX;
-//            targetY = humanPlayerY;
-//            if ((getAgentX() < humanPlayerX + DISTANCE_TOLERANCE && getAgentX() > humanPlayerX - DISTANCE_TOLERANCE) && getAgentY() < humanPlayerY + DISTANCE_TOLERANCE && getAgentY() > humanPlayerY - DISTANCE_TOLERANCE) {
-//                state = currentState.driveToShoot;
-//            }
-//        }
         currentState = state;
     }
 
@@ -274,15 +187,6 @@ public class YAIBA extends OpMode {
         currentLayout[currentPosition] = 0;
     }
 
-    private float imuCorrection(double currentHeading) {
-        // Ensure your desiredHeading is also in the 0-360 range (e.g., 90.0f)
-        float offset = -1 * ((float) AngleUnit.normalizeDegrees(desiredHeading - currentHeading));
-
-
-        telemetry.addData("offset", offset);
-        if (Math.abs(offset) < 1f) return 0;
-        return Math.copySign(Math.abs(offset) < 20f ? Constants.imuKp / 2 : Constants.imuKp, offset);
-    }
 
 
     @Override
@@ -317,7 +221,7 @@ public class YAIBA extends OpMode {
         Pose2D startPose = new Pose2D(DistanceUnit.CM, startX, startY, AngleUnit.DEGREES, initHeading);
         odo.setPosition(startPose);
 
-        currentState = currentState.driveToShoot;
+        currentState = currentState.shoot;
 
         currentAmmo = new int[]{0, 0, 0};
 
@@ -336,39 +240,34 @@ public class YAIBA extends OpMode {
         agentX = getAgentY();
         agentY = getAgentX();
 
+        float relX = targetX - agentX;
+        float relY = targetY - agentY;
+
         stateMachine(currentState);
+
+        updateColor();
 
         //NormalizedRGBA colors = color.getNormalizedColors();
 
         DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
 
-        actions = yaiba.runDeterministic(agentX, agentY, targetX, targetY);
+        actions = yaiba.runDeterministic(relX, relY, (float) Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), (float) Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), (float) Math.sin(desiredHeading), (float) Math.cos(desiredHeading), stageActive, targetStageX, targetStageY);
 
         strafe = actions[(int) actionsIndex];
         forward = actions[(int) (1 - actionsIndex)];
+        rot = actions[3];
 
-
-        if(Math.hypot(strafe, forward) < 0.10 && DTT > DISTANCE_TOLERANCE){
-            strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
-            forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
-        }
+//
+//        if(Math.hypot(strafe, forward) < 0.10 && DTT > DISTANCE_TOLERANCE){
+//            strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
+//            forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * Constants.autoFinalStageMultiplier));
+//        }
 
 
         double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
         double positiveHeading = (rawDeg % 360 + 360) % 360;
 
-        float powerMultipler = 3f;
-
-        if (DTT > DISTANCE_TOLERANCE || currentState == currentState.firstIntakePrep || currentState  == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep || currentState == currentState.humanPlayerPrep) {
-            drive.setPower(reverseMultForward * forward, reverseMultStrafe * strafe, imuCorrection(positiveHeading));
-        }else{
-            drive.setPower(0,0,0);
-        }
-
-        if(currentState == currentState.firstIntakePrep || currentState == currentState.secondIntakePrep || currentState == currentState.thirdIntakePrep){
-            intake.setPower(1);
-            //teleopFuncs.intakeCheck();
-        }
+        drive.setPower(forward, strafe, rot);
 
         spindex.shootConsecutive(color);
 
@@ -450,15 +349,14 @@ public class YAIBA extends OpMode {
 
         telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
         telemetry.addData("target", "(%.2f, %.2f)", targetX, targetY);
+        telemetry.addData("current Heading", odo.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("activeStage", stageActive);
         telemetry.addData("Forward", forward);
         telemetry.addData("Strafe", strafe);
+        telemetry.addData("Rot", rot);
         telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
         telemetry.addData("DTT", DTT);
         telemetry.addData("shootCount", shootCount);
-        telemetry.addData("agentX", agentX);
-        telemetry.addData("agentY", agentY);
-        telemetry.addData("current Heading", odo.getHeading(AngleUnit.DEGREES));
-        telemetry.addData("IMU Correction", imuCorrection(positiveHeading));
         telemetry.update();
     }
 

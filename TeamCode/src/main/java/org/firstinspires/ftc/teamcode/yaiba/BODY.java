@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.yaiba; // change to match your package
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -77,7 +79,7 @@ public class BODY implements AutoCloseable {
             return null;
         }
     }
-    public float[] runDeterministic(float agentX, float agentY, float targetX, float targetY) {
+    public float[] runDeterministic(float relX, float relY, float currentSin, float currentCos, float desiredSin, float desiredCos, float stageActive, float targetStageX, float targetStageY) {
         if (tflite == null) {
             Log.e(TAG, "Interpreter not initialized (runDeterministic). Returning zeros.");
             return new float[]{0f, 0f};
@@ -86,14 +88,19 @@ public class BODY implements AutoCloseable {
         // Construct observations arrays expected by the model.
         // The shapes below assume model expects obs0 shape [1,10] and obs1 shape [1,8].
         // Replace or adapt to your model's expected shapes & values.
-        float[][] obs0 = new float[1][4];
+        float[][] obs0 = new float[1][9];
 
 
         //OBSERVATIONS
-        obs0[0][0] = agentX * NORMALIZATION;
-        obs0[0][1] = agentY * NORMALIZATION;
-        obs0[0][2] = targetX * NORMALIZATION;
-        obs0[0][3] = targetY * NORMALIZATION;
+        obs0[0][0] = relX;
+        obs0[0][1] = relY;
+        obs0[0][2] = currentSin;
+        obs0[0][3] = currentCos;
+        obs0[0][4] = desiredSin;
+        obs0[0][5] = desiredCos;
+        obs0[0][6] = stageActive;
+        obs0[0][7] = targetStageX;
+        obs0[0][8] = targetStageY;
 
 
         // Normalize and clip obs0
@@ -111,12 +118,12 @@ public class BODY implements AutoCloseable {
 //        }
 
         // create output array
-        float[][] identity2 = new float[1][2]; // expected deterministic action head [1,2]
+        float[][] identity2 = new float[1][3];
 
         // Run inference using runForMultipleInputsOutputs
         Object[] inputsArr = new Object[]{obs0};
         Map<Integer, Object> outputsMap = new HashMap<>();
-        outputsMap.put(3, identity2); // ensure this index matches the model's output order
+        outputsMap.put(0, identity2); // ensure this index matches the model's output order
 
         try {
             tflite.runForMultipleInputsOutputs(inputsArr, outputsMap);
@@ -124,15 +131,15 @@ public class BODY implements AutoCloseable {
             Log.e(TAG, "runForMultipleInputsOutputs threw IllegalArgumentException: " + iae.toString(), iae);
             // Log model IO info for debugging
             dumpModelIoInfo();
-            return new float[]{0f, 0f};
+            return new float[]{0f, 0f, 1f};
         } catch (Exception e) {
             Log.e(TAG, "Inference failed: " + e.toString(), e);
             dumpModelIoInfo();
-            return new float[]{0f, 0f};
+            return new float[]{0f, 0f, -1f};
         }
 
         // Postprocess: identity2[0] contains the deterministic action
-        float[] out = new float[]{identity2[0][0], identity2[0][1]};
+        float[] out = new float[]{identity2[0][0], identity2[0][1], identity2[0][2]};
         return out;
     }
 

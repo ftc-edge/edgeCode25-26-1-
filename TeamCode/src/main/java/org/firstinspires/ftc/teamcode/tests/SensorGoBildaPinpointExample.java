@@ -88,7 +88,7 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
 //        the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
 //        backwards is a negative number.
          */
-        odo.setOffsets(16.5, -19, DistanceUnit.CM); //these are tuned for 3110-0002-0001 Product Insight #1
+        odo.setOffsets(12, -17.5, DistanceUnit.CM); //these are tuned for 3110-0002-0001 Product Insight #1
 
         /*
         Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
@@ -105,7 +105,7 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
         increase when you move the robot forward. And the Y (strafe) pod should increase when
         you move the robot to the left.
          */
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
 
         /*
@@ -117,7 +117,7 @@ public class SensorGoBildaPinpointExample extends LinearOpMode {
         an incorrect starting value for x, y, and heading.
          */
         //odo.recalibrateIMU();
-        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, initHeading);
+        Pose2D startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -90);
         odo.setPosition(startPose);
 
         telemetry.addData("Status", "Initialized");

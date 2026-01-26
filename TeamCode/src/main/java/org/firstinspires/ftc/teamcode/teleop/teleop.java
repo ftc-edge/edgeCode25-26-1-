@@ -33,6 +33,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 
@@ -76,6 +77,12 @@ public class teleop extends OpMode{
 
     public boolean sorted = false;
 
+    public ElapsedTime timer = new ElapsedTime();
+
+    float deltaTime;
+
+    float cameraBuffer = 0;
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -103,6 +110,9 @@ public class teleop extends OpMode{
 
         // Switch Power Levels
         //handlePowerLevel();
+
+        deltaTime = (float) timer.seconds();
+        timer.reset();
 
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
@@ -252,11 +262,14 @@ public class teleop extends OpMode{
         if (detectedColor == "NONE") {
             processingBall = false;
         }
-        else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall) {
-            processingBall = true;
-            spindex.spinTurns(1);
-            currentPosition = (currentPosition + 1 ) % 3;
-            intakeCount++;
+        else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall){
+            cameraBuffer += deltaTime;
+            if(cameraBuffer > 0.25f) {
+                processingBall = true;
+                spindex.spinTurns(1);
+                currentPosition = (currentPosition + 1) % 3;
+                intakeCount++;
+            }
         }
    }
 
