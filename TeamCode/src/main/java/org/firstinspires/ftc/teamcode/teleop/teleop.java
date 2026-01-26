@@ -40,7 +40,7 @@ import com.qualcomm.robotcore.util.Range;
 @TeleOp
 public class teleop extends OpMode{
 
-//    NormalizedColorSensor colorSensor;
+    //    NormalizedColorSensor colorSensor;
 //    NormalizedRGBA colors;
     Intake intake;
     Drive drive;
@@ -116,10 +116,11 @@ public class teleop extends OpMode{
 
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
-        turret.setPower(shootSpeed);
+        turret.loop();
+        turret.setTargetRPM(shootSpeed);
         hood.setPosition(hoodPosition);
 
-        autoAim();  
+        autoAim();
         updateColor();
         spindex.updateTimer();
 
@@ -154,13 +155,6 @@ public class teleop extends OpMode{
 
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
-        if(gamepad1.right_bumper){
-            shootSpeed += 0.004f;
-        }
-        if(gamepad1.left_bumper){
-            shootSpeed -= 0.004f;
-        }
-        shootSpeed = max(0, min(1, shootSpeed));
         if(gamepad1.square){
             hoodPosition += 0.005f;
         }
@@ -185,9 +179,13 @@ public class teleop extends OpMode{
         }
 
         // Telemetry
-        telemetry.addData("Spindex position", spindex.getCurrentPosition());
-        telemetry.addData("Spindex Target", spindex.getTargetPosition());
-        telemetry.addData("Hood Position", hood.getPosition());
+//        telemetry.addData("Spindex position", spindex.getCurrentPosition());
+//        telemetry.addData("Spindex Target", spindex.getTargetPosition());
+//        telemetry.addData("Hood Position", hood.getPosition());
+        telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
+        telemetry.addData("Turret Target RPM", turret.getTargetRPM());
+        telemetry.addData("Turret Power", turret.getPower());
+        telemetry.addData("Turret At Point", turret.getAtPoint());
         telemetry.addData("Shoot Speed", shootSpeed);
         telemetry.addData("Intake Count", intakeCount);
         telemetry.addData("Turret Power", turretPower);
@@ -271,7 +269,7 @@ public class teleop extends OpMode{
                 intakeCount++;
             }
         }
-   }
+    }
 
     public void handlePowerLevel(){
         if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
@@ -294,7 +292,7 @@ public class teleop extends OpMode{
             case 2:
                 telemetry.addData("power", "2");
                 gamepad1.setLedColor(235, 225, 70, Gamepad.LED_DURATION_CONTINUOUS);
-               // hood.setPosition(Constants.HOOD2);
+                // hood.setPosition(Constants.HOOD2);
                 turretPower = Constants.TURRET2;
                 break;
             case 3:
@@ -366,7 +364,7 @@ public class teleop extends OpMode{
 
 //no overshoot
 
-       turretSpin.lastError = error;
+        turretSpin.lastError = error;
 
 //range/not all power can be used:
         power = (float) Range.clip(power, -0.75, 0.75);

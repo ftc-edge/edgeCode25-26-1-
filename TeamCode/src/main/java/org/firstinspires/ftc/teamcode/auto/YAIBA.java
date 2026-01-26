@@ -235,7 +235,7 @@ public class YAIBA extends OpMode {
         odo.update();
         Pose2D currentPose = odo.getPosition();
 
-        turret.setPower(Constants.TURRET1);
+        turret.setTargetRPM(Constants.TURRET1);
 
         agentX = getAgentY();
         agentY = getAgentX();

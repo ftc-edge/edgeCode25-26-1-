@@ -4,14 +4,14 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
-    public static float turretAdjustSpeed = .004f;
+    public static float turretAdjustSpeed = .1f;
     public static float desiredHeading = 180f;
     public static double autoFinalStageMultiplier = 8f;
     public static float HOOD1 = 0.5f;
     public static float HOOD2 = 0.46f;
     public static float HOOD3 = 0.64f;
     public static float HOOD4 = 0.81f;
-    public static float TURRET1 = 0.55f;
+    public static float TURRET1 = 40f;
     public static float TURRET2 = 0.5f;
     public static float TURRET3 = 0.75f;
     public static float TURRET4 = 1f;
