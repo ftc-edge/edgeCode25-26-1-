@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class Spindex {
     int currentPosition = 0;
 
-    public static int spindexRotation = 538; // originally 538
+    public static float spindexRotation = 384.5f; // originally 538
     public static int spinUpNumRotations = 1;
     public static float spinPower = 0.35f;
 
@@ -56,13 +56,13 @@ public class Spindex {
 
     public void spinTurns(int numTurns){
         // if a pressed
-        spinMotor.setTargetPosition(spinMotor.getTargetPosition() + (numTurns * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getTargetPosition() + (int) (numTurns * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinPower);
     }
 
     public void spinUp(){
-        spinMotor.setTargetPosition(spinMotor.getTargetPosition() - (spinUpNumRotations * spindexRotation / 3));
+        spinMotor.setTargetPosition(spinMotor.getTargetPosition() - (int) (spinUpNumRotations * spindexRotation / 3));
         spinMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spinMotor.setPower(spinUpPower);
     }
