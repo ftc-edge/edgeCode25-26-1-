@@ -287,7 +287,7 @@ public class YAIBA extends OpMode {
             }
             if(grnCount + purCount >= 3 && !sorted){
                 if(!spindex.withinTarget()){
-                    autoSort.sortNShoot(currentLayout, target);
+                    autoSort.sortNShoot(currentLayout, target, currentPosition);
                     sorted = true;
                 }
             }
