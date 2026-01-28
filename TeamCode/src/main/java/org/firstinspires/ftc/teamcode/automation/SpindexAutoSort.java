@@ -55,9 +55,8 @@ public class SpindexAutoSort {
             return currentPosition;
 
         }
-        //which index @ front?
-
         int wantedFrontIndex = 0;
+        //which index @ front?
 
 
         switch (target) {
@@ -82,7 +81,9 @@ public class SpindexAutoSort {
 
         }
 
-        int turns = (wantedFrontIndex - currentPosition + 3) % 3;
+
+        int greenRelative = (greenLocation-currentPosition+3) % 3;
+        int turns = (wantedFrontIndex-greenRelative+3) % 3;
 
         telemetry.addLine("Auto Sort Telemetry");
         telemetry.addData("Green Location", greenLocation);
