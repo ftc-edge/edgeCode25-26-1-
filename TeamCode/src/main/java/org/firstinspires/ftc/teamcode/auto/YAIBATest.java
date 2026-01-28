@@ -46,8 +46,8 @@ public class YAIBATest extends OpMode {
         updateOdometry();
         // Get current heading in radians
         float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
-        robotX = currentPose.getX(DistanceUnit.CM);
-        robotY = currentPose.getY(DistanceUnit.CM);
+        robotX = currentPose.getX(DistanceUnit.CM) / 10f;
+        robotY = currentPose.getY(DistanceUnit.CM) / 10f;
         // 1-2: Relative position to target
         obs[0] = (float)(targetX - robotX);
         obs[1] = (float)(targetY - robotY);
@@ -81,9 +81,6 @@ public class YAIBATest extends OpMode {
     private void updateOdometry() {
         odo.update();
         currentPose = odo.getPosition();
-        robotX = currentPose.getX(DistanceUnit.CM);
-        robotY = currentPose.getY(DistanceUnit.CM);
-
     }
 
     @Override
@@ -111,7 +108,6 @@ public class YAIBATest extends OpMode {
     @Override
     public void loop() {
         // Update odometry (implement based on your sensors)
-        updateOdometry();
 
         // Build observations (MUST match Unity order exactly)
         float[] observations = buildObservations();

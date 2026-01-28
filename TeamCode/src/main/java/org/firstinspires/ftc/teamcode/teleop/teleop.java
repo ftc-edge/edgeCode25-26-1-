@@ -72,7 +72,8 @@ public class teleop extends OpMode{
 
     String detectedMotif = "None Detected";
 
-    private float shootSpeed = Turret.targetRPM1;
+    private float shootSpeed = 0;
+        //Turret.targetRPM1;
 
     public boolean sorted = false;
 
@@ -221,16 +222,16 @@ public class teleop extends OpMode{
         return "Null";
     }
     public void updateColor(){
-        if(!spindex.withinTarget()){
+        if(spindex.isBusy){
             return;
         }
-        if(color.getColor() == "GREEN") {
+        else if(color.getColor() == "GREEN") {
             currentLayout[currentPosition] = 1;
         }
-        if(color.getColor() == "PURPLE") {
+        else if(color.getColor() == "PURPLE") {
             currentLayout[currentPosition] = -1;
         }
-        if(color.getColor() == "NONE"){
+        else if(color.getColor() == "NONE"){
             currentLayout[currentPosition] = 0;
         }
 
@@ -255,14 +256,14 @@ public class teleop extends OpMode{
         if (!spindex.withinTarget()){
             return;
         }
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && !spindex.isBusy){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
+                autoSortTimer.reset();
+                autoSortTimerStarted = false;
+                intakeCount++;
                 spindex.spinTurns(1);
                 currentPosition = (currentPosition + 1) % 3;
-                intakeCount++;
-                autoSortTimerStarted = false;
-            }
-            if(!autoSortTimerStarted){
+            } else if(!autoSortTimerStarted){
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
             }

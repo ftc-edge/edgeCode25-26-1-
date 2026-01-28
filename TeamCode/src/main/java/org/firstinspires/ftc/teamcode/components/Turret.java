@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.components;
 import com.arcrobotics.ftclib.controller.PIDFController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.acmerobotics.dashboard.config.Config;
 
@@ -13,10 +14,10 @@ public class Turret {
     private DcMotorEx TurretX1;
     private DcMotorEx TurretX2;
 
-    public static double kP = -0.02;
+    public static double kP = -0.05;
     public static double kI = 0.0;
     public static double kD = 0.0;
-    public static double kF = 0.0;
+    public static double kF = 0.0035;
     public static double tolerance = 3.0; // RPM tolerance
 
     // Adjust this based on your motors (e.g., 537.7 for goBILDA 5202/5203)
@@ -41,7 +42,7 @@ public class Turret {
             TurretX1.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             TurretX1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             TurretX1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            TurretX1.setDirection(DcMotorEx.Direction.FORWARD);
+            TurretX1.setDirection(DcMotorEx.Direction.REVERSE);
         }
 
         if (disableShoot2 == 0) {
@@ -49,7 +50,7 @@ public class Turret {
             TurretX2.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             TurretX2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             TurretX2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-            TurretX2.setDirection(DcMotorEx.Direction.REVERSE);
+            TurretX2.setDirection(DcMotorEx.Direction.FORWARD);
         }
 
         lastTime = System.nanoTime();

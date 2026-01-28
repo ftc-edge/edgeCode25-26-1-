@@ -4,8 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
-    public static int autoSortDelayMs = 900;
-    public static float turretAdjustSpeed = .1f;
+    public static int autoSortDelayMs = 350;
+    public static float turretAdjustSpeed = 0.5f;
     public static float desiredHeading = 180f;
     public static float HOOD1 = 0.5f;
     public static float initHeading = -90f;
