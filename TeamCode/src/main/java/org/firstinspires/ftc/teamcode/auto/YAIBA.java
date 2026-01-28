@@ -3,45 +3,30 @@ package org.firstinspires.ftc.teamcode.auto;
 import static org.firstinspires.ftc.teamcode.components.AutoConstants.*;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.rev.RevColorSensorV3;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-import com.sun.tools.javac.util.Context;
 
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
-import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
+import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
 import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
-import org.firstinspires.ftc.teamcode.teleop.teleop;
-import org.firstinspires.ftc.teamcode.tests.SensorGoBildaPinpointExample;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.yaiba.BODY;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
-import org.firstinspires.ftc.teamcode.yaiba.ModelInputMapper;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
 
-import java.io.IOException;
 import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.AutoConstants;
 
@@ -79,7 +64,7 @@ public class YAIBA extends OpMode {
 
     private int[] currentAmmo = new int[3];
 
-    private spindexAutoSort autoSort;
+    private SpindexAutoSort autoSort;
 
     String detectedMotif = "None Detected";
 
@@ -110,7 +95,7 @@ public class YAIBA extends OpMode {
     TurretSpin turretSpin;
     Turret turret;
     Color color;
-    spindexAutoSort.targetMotif target;
+    SpindexAutoSort.targetMotif target;
     public float desiredHeading = -1.5708f;
     private float clamp(float v, float lo, float hi) {
         return Math.max(lo, Math.min(hi, v));
@@ -362,13 +347,13 @@ public class YAIBA extends OpMode {
 
         if (result.getFiducialResults().get(0).getFiducialId() != Constants.targetId) {
             if (result.getFiducialResults().get(0).getFiducialId() == 21) {
-                target = spindexAutoSort.targetMotif.GPP;
+                target = SpindexAutoSort.targetMotif.GPP;
                 detectedMotif = "GPP";
             } else if (result.getFiducialResults().get(0).getFiducialId() == 22) {
-                target = spindexAutoSort.targetMotif.PGP;
+                target = SpindexAutoSort.targetMotif.PGP;
                 detectedMotif = "PGP";
             } else if (result.getFiducialResults().get(0).getFiducialId() == 23) {
-                target = spindexAutoSort.targetMotif.PPG;
+                target = SpindexAutoSort.targetMotif.PPG;
                 detectedMotif = "PPG";
             }
             return;

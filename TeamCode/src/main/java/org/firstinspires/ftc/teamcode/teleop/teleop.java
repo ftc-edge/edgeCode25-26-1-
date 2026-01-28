@@ -8,11 +8,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.automation.TurretAutoAim;
 import org.firstinspires.ftc.teamcode.components.Color;
-import org.firstinspires.ftc.teamcode.components.ColorSamplerUtil;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
@@ -20,19 +16,13 @@ import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Intake;
-import org.firstinspires.ftc.teamcode.automation.spindexAutoSort;
-
-
-import com.qualcomm.hardware.rev.RevColorSensorV3;
+import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
 
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -66,9 +56,9 @@ public class teleop extends OpMode{
 
     String detectedColor;
 
-    spindexAutoSort.targetMotif target;
+    SpindexAutoSort.targetMotif target;
 
-    spindexAutoSort autoSort;
+    SpindexAutoSort autoSort;
 
     String detectedMotif = "None Detected";
 
@@ -94,14 +84,14 @@ public class teleop extends OpMode{
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
-        autoSort = new spindexAutoSort(hardwareMap, telemetry);
+        autoSort = new SpindexAutoSort(hardwareMap, telemetry);
 
         color = new Color(hardwareMap);
 
 //        colorSensor = hardwareMap.get(RevColorSensorV3.class, "color");
 //        colorSensor.enableLed(true);
 
-        target = spindexAutoSort.targetMotif.GPP;
+        target = SpindexAutoSort.targetMotif.GPP;
     }
 
     @Override
@@ -280,13 +270,13 @@ public class teleop extends OpMode{
 
         if (result.getFiducialResults().get(0).getFiducialId() != targetId){
             if(result.getFiducialResults().get(0).getFiducialId() == 21){
-                target = spindexAutoSort.targetMotif.GPP;
+                target = SpindexAutoSort.targetMotif.GPP;
                 detectedMotif = "GPP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
-                target = spindexAutoSort.targetMotif.PGP;
+                target = SpindexAutoSort.targetMotif.PGP;
                 detectedMotif = "PGP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
-                target = spindexAutoSort.targetMotif.PPG;
+                target = SpindexAutoSort.targetMotif.PPG;
                 detectedMotif = "PPG";
             }
             return;
