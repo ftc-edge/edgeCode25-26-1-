@@ -15,7 +15,7 @@ public class Spindex {
 
     public static float spindexRotation = 384.5f; // originally 538
     public static int spinUpNumRotations = 1;
-    public static float spinPower = 0.35f;
+    public static float spinPower = 1f;
 
     public static float spinUpPower = 1f;
     public static float adjustPower = 0.35f;

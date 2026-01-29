@@ -37,13 +37,13 @@ public class Drive {
         leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
+        leftBack.setDirection(DcMotor.Direction.FORWARD);
     }
 
     public static void setPower(double forward, double strafe, double pivot){
         rightFront.setPower(forward + strafe + pivot);
         rightBack.setPower(forward - strafe + pivot);
-        leftFront.setPower(forward - strafe - pivot);
-        leftBack.setPower(forward + strafe - pivot);
+        leftFront.setPower(forward + strafe - pivot);
+        leftBack.setPower(forward - strafe - pivot);
     }
 }

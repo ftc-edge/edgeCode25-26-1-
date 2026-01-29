@@ -54,27 +54,24 @@ public class BODYONNX{
         }
 
         // Create input tensor
-        // Shape: [1, 9] - batch size of 1, 9 observations
         long[] shape = {1, NUM_OBSERVATIONS};
         OnnxTensor inputTensor = OnnxTensor.createTensor(env,
                 new float[][]{observations});
 
-        // Run inference
-        // ML-Agents exports use specific input/output names
         Map<String, OnnxTensor> inputs = new HashMap<>();
-        inputs.put("obs_0", inputTensor);  // Default ML-Agents input name
+        inputs.put("obs_0", inputTensor);
 
         try (OrtSession.Result results = session.run(inputs)) {
-            // Get continuous actions output
-            // ML-Agents typically names this "continuous_actions"
             float[][] output = (float[][]) results.get("continuous_actions")
                     .get()
                     .getValue();
 
-            inputTensor.close();
+            // CRITICAL FIX: Copy to new array before results.close()
+            // Don't return output[0] directly - it's internal ONNX memory!
+            float[] actions = new float[NUM_ACTIONS];
+            System.arraycopy(output[0], 0, actions, 0, NUM_ACTIONS);
 
-            // Return the action array [strafe, forward, rotation]
-            return output[0];
+            return actions;
 
         } catch (Exception e) {
             inputTensor.close();

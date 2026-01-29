@@ -7,13 +7,17 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Config
 public class Intake{
 
     public static float intakePower = 1f;
+    public static float reversePower = -0.5f;
     private DcMotor intakeMotor;
     Color colorSensor;
+
+    public boolean paused;
 
 
     public Intake(HardwareMap hardwareMap){
@@ -32,6 +36,14 @@ public class Intake{
         }
     }
 
+    public void pause(float time, ElapsedTime timer , float power){
+            if (timer.milliseconds() < time) {
+                this.setPower(reversePower);
+            } else {
+                this.setPower(power);
+                paused = false;
+            }
+    }
     public double getPower(){
         return intakeMotor.getPower();
     }

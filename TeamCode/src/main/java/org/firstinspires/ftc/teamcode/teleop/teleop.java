@@ -60,7 +60,7 @@ public class teleop extends OpMode{
 
     SpindexAutoSort autoSort;
 
-    String detectedMotif = "None Detected";
+    String detectedMotif = Constants.defaultMotif;
 
     private float shootSpeed = 0;
         //Turret.targetRPM1;
@@ -68,11 +68,14 @@ public class teleop extends OpMode{
     public boolean sorted = false;
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
+    public ElapsedTime intakePauseTimer = new ElapsedTime();
     boolean autoSortTimerStarted = false;
 
     float deltaTime;
 
     float cameraBuffer = 0;
+    int fortelemetry;
+    int fortelemetry2;
 
     @Override
     public void init() {
@@ -107,18 +110,10 @@ public class teleop extends OpMode{
         turret.loop();
         turret.setTargetRPM(shootSpeed);
         hood.setPosition(hoodPosition);
+        spindex.updateTimer();
 
         autoAim();
         updateColor();
-        spindex.updateTimer();
-
-        // Intake
-        if(gamepad1.cross && !prevGamepad1.cross){
-            intake.togglePower(Intake.intakePower);
-        }
-        if(gamepad1.triangle && !prevGamepad1.triangle){
-            intake.togglePower(-Intake.intakePower);
-        }
 
         if(intake.getPower() != 0){
             intakeCheck();
@@ -133,13 +128,17 @@ public class teleop extends OpMode{
                     purCount++;
                 }
             }
-            if(grnCount + purCount >= 3 && !sorted){
-                if(!spindex.withinTarget()){
-                    autoSort.sortNShoot(currentLayout, target);
+            if(grnCount + purCount == 3 && !sorted){
+                if(spindex.withinTarget()){
+                    fortelemetry = currentPosition;
+                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
+                    fortelemetry2 = currentPosition;
                     sorted = true;
                 }
             }
         }
+
+        if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
 
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
@@ -166,10 +165,19 @@ public class teleop extends OpMode{
             spindex.stop();
         }
 
+        // Intake
+        if(gamepad1.cross && !prevGamepad1.cross){
+            intake.togglePower(Intake.intakePower);
+        }
+        if(gamepad1.triangle && !prevGamepad1.triangle){
+            intake.togglePower(-Intake.intakePower);
+        }
+
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
 //        telemetry.addData("Hood Position", hood.getPosition());
+        telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
         telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
         telemetry.addData("Turret Target RPM", turret.getTargetRPM());
         telemetry.addData("Turret Power", turret.getPower());
@@ -248,11 +256,14 @@ public class teleop extends OpMode{
         }
         if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && !spindex.isBusy){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
+                intake.paused = true;
+                intakePauseTimer.reset();
                 autoSortTimer.reset();
                 autoSortTimerStarted = false;
                 intakeCount++;
                 spindex.spinTurns(1);
                 currentPosition = (currentPosition + 1) % 3;
+
             } else if(!autoSortTimerStarted){
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();

@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
+    public static String defaultMotif = "None Detected";
+    public static float intakeReverseTime = 500;
     public static int autoSortDelayMs = 350;
     public static float turretAdjustSpeed = 0.5f;
     public static float desiredHeading = 180f;

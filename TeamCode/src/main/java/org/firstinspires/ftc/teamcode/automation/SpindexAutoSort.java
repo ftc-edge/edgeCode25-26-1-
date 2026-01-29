@@ -28,7 +28,7 @@ public class SpindexAutoSort {
     //-1=purple
     //currentPosition = index currently in front
 
-    public int sortNShoot(int[] layout, targetMotif target, int currentPosition) {
+    public int sortNShoot(int[] layout, String motif, int currentPosition) {
 
         if (layout == null || layout.length != 3) {
             telemetry.addLine("ERROR: Invalid layout");
@@ -59,8 +59,8 @@ public class SpindexAutoSort {
         //which index @ front?
 
 
-        switch (target) {
-            case GPP:
+        switch (motif) {
+            case "GPP":
                 wantedFrontIndex = 0;
                 // set to greenlocation
                 break;
@@ -69,12 +69,12 @@ public class SpindexAutoSort {
             // if u want index one to be in the front, itd be (1- current position +3) mod3
             //currentPosition = (currentPosition + 1 ) % 3;
 
-            case PGP:
+            case "PGP":
                 wantedFrontIndex = 1;
                 // set to greenlocation - 1
                 break;
 
-            case PPG:
+            case "PPG":
                 wantedFrontIndex = 2;
                 // set to greenlocation + 1
                 break;
