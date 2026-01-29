@@ -176,7 +176,7 @@ public class teleop extends OpMode{
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
-//        telemetry.addData("Hood Position", hood.getPosition());
+        telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
         telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
         telemetry.addData("Turret Target RPM", turret.getTargetRPM());
@@ -203,7 +203,7 @@ public class teleop extends OpMode{
         double strafe = gamepad1.left_stick_x;
         double pivot = gamepad1.right_stick_x;
 
-        Drive.setPower(forward, strafe, pivot);
+        Drive.setPower(pivot, strafe, forward);
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);

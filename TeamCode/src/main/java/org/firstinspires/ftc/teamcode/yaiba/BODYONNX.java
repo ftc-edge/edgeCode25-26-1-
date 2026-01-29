@@ -2,13 +2,14 @@ package org.firstinspires.ftc.teamcode.yaiba;
 
 import ai.onnxruntime.*;
 import android.content.res.AssetManager;
+import android.util.Log;
 import java.io.InputStream;
-import java.nio.FloatBuffer;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BODYONNX{
+public class BODYONNX {
+    private static final String TAG = "BODYONNX";
     private OrtEnvironment env;
     private OrtSession session;
 
@@ -26,26 +27,52 @@ public class BODYONNX{
             modelStream.read(modelBytes);
             modelStream.close();
 
-            // Create session
+            // Create session with optimization
             OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
+            opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
+            opts.setInterOpNumThreads(1);  // Match TFLite's single-thread behavior
+            opts.setIntraOpNumThreads(1);
+
             session = env.createSession(modelBytes, opts);
 
-            // Optional: Print model info for debugging
+            // Debug: Print model info
+            Log.i(TAG, "ONNX Model loaded successfully");
             session.getInputNames().forEach(name ->
-                    System.out.println("Input: " + name));
+                    Log.i(TAG, "Input: " + name));
             session.getOutputNames().forEach(name ->
-                    System.out.println("Output: " + name));
+                    Log.i(TAG, "Output: " + name));
 
         } catch (Exception e) {
+            Log.e(TAG, "Failed to load model: " + e.getMessage(), e);
             throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
                     "Failed to load model: " + e.getMessage());
         }
     }
 
     /**
+     * Run inference - matching TFLite's method signature
+     */
+    public float[] runDeterministic(float relX, float relY, float currentSin, float currentCos,
+                                    float desiredSin, float desiredCos, float stageActive,
+                                    float targetStageX, float targetStageY) {
+        float[] observations = new float[]{
+                relX, relY, currentSin, currentCos,
+                desiredSin, desiredCos, stageActive,
+                targetStageX, targetStageY
+        };
+
+        try {
+            return predict(observations);
+        } catch (OrtException e) {
+            Log.e(TAG, "Inference failed: " + e.getMessage(), e);
+            return new float[]{0f, 0f, 0f};
+        }
+    }
+
+    /**
      * Run inference on observations
      * @param observations Array of 9 floats matching Unity observation order
-     * @return Array of 3 floats [strafe, forward, rotation]
+     * @return Array of 3 floats [strafe, forward, rotation] - ALWAYS A NEW ARRAY
      */
     public float[] predict(float[] observations) throws OrtException {
         if (observations.length != NUM_OBSERVATIONS) {
@@ -53,39 +80,82 @@ public class BODYONNX{
                     "Expected " + NUM_OBSERVATIONS + " observations, got " + observations.length);
         }
 
-        // Create input tensor
+        // Force log EVERY inference
+        System.out.println("========== PREDICT CALLED ==========");
+        System.out.println("Input: " + Arrays.toString(observations));
+
         long[] shape = {1, NUM_OBSERVATIONS};
-        OnnxTensor inputTensor = OnnxTensor.createTensor(env,
-                new float[][]{observations});
 
-        Map<String, OnnxTensor> inputs = new HashMap<>();
-        inputs.put("obs_0", inputTensor);
+        float[][] inputArray = new float[1][NUM_OBSERVATIONS];
+        System.arraycopy(observations, 0, inputArray[0], 0, NUM_OBSERVATIONS);
 
-        try (OrtSession.Result results = session.run(inputs)) {
-            float[][] output = (float[][]) results.get("continuous_actions")
-                    .get()
-                    .getValue();
+        OnnxTensor inputTensor = null;
 
-            // CRITICAL FIX: Copy to new array before results.close()
-            // Don't return output[0] directly - it's internal ONNX memory!
+        try {
+            inputTensor = OnnxTensor.createTensor(env, inputArray);
+
+            System.out.println("Input tensor created");
+
+            Map<String, OnnxTensor> inputs = new HashMap<>();
+            inputs.put("obs_0", inputTensor);
+
+            System.out.println("About to run inference...");
+            long startTime = System.nanoTime();
+
+            OrtSession.Result results = session.run(inputs);
+
+            long inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
+            System.out.println("Inference completed in " + inferenceTime + "ms");
+
+            OnnxValue outputValue = results.get("continuous_actions").get();
+            float[][] outputArray = (float[][]) outputValue.getValue();
+
+            System.out.println("Raw ONNX output: " + Arrays.deepToString(outputArray));
+
+            // Create BRAND NEW array with NEW object
             float[] actions = new float[NUM_ACTIONS];
-            System.arraycopy(output[0], 0, actions, 0, NUM_ACTIONS);
+            actions[0] = outputArray[0][0];
+            actions[1] = outputArray[0][1];
+            actions[2] = outputArray[0][2];
+
+            System.out.println("Copied actions: " + Arrays.toString(actions));
+            System.out.println("Action array hashcode: " + System.identityHashCode(actions));
+
+            results.close();
+            inputTensor.close();
+
+            System.out.println("Resources closed, returning");
+            System.out.println("==========================================");
 
             return actions;
 
         } catch (Exception e) {
-            inputTensor.close();
+            System.err.println("EXCEPTION in predict: " + e.getMessage());
+            e.printStackTrace();
+            if (inputTensor != null) {
+                try {
+                    inputTensor.close();
+                } catch (Exception ex) {
+                    // ignore
+                }
+            }
             throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
                     "Inference failed: " + e.getMessage());
         }
     }
-
     /**
-     * Clean up resources
+     * Clean up resources - matching TFLite's close() pattern
      */
-    public void close() throws OrtException {
+    public void close() {
         if (session != null) {
-            session.close();
+            try {
+                session.close();
+                Log.i(TAG, "ONNX session closed");
+            } catch (Exception e) {
+                Log.w(TAG, "Error closing session: " + e.getMessage());
+            } finally {
+                session = null;
+            }
         }
         // Note: Don't close env as it's a singleton
     }

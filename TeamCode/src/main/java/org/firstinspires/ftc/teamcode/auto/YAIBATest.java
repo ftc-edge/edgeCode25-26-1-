@@ -123,20 +123,16 @@ public class YAIBATest extends OpMode {
         }
 
         // Get AI predictions
-        float[] actions;
         boolean inferenceSuccess = false;
         long inferenceTime = 0;
+        long startTime = System.nanoTime();
+        float[] actions = model.runDeterministic(
+                    observations[0], observations[1], observations[2], observations[3],
+                    observations[4], observations[5], observations[6], observations[7], observations[8]
+        );
+        inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
+        inferenceSuccess = true;
 
-        try {
-            long startTime = System.nanoTime();
-            actions = model.predict(observations);
-            inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
-            inferenceSuccess = true;
-        } catch (Exception e) {
-            telemetry.addData("Error", "Inference failed: " + e.getMessage());
-            e.printStackTrace(); // CHECK LOGCAT FOR THIS
-            actions = new float[]{0, 0, 0};
-        }
 
         // Calculate action checksum
         float actionChecksum = actions[0] + actions[1] + actions[2];
