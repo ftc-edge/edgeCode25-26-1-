@@ -128,17 +128,18 @@ public class teleop extends OpMode{
                     purCount++;
                 }
             }
-            if(grnCount + purCount == 3 && !sorted){
-                //if(spindex.withinTarget()){
-                    fortelemetry = currentPosition;
-                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
-                    currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
-//                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
-                    fortelemetry2 = currentPosition;
-                    sorted = true;
-                    intake.togglePower(Intake.intakePower);
-                //}
-            }
+//            if(grnCount + purCount == 3 && !sorted){
+//                //if(spindex.withinTarget()){
+//                    fortelemetry = currentPosition;
+//                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+//                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+//                    currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
+////                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
+//                    fortelemetry2 = currentPosition;
+//                    sorted = true;
+//                    intake.togglePower(Intake.intakePower);
+//                //}
+//            }
         }
 
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
@@ -175,6 +176,7 @@ public class teleop extends OpMode{
         if(gamepad1.triangle && !prevGamepad1.triangle){
             intake.togglePower(-Intake.intakePower);
         }
+
 
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
@@ -250,24 +252,34 @@ public class teleop extends OpMode{
                 purCount++;
             }
         }
-        if((grnCount + purCount) >= 3){
-            return;
-        }
-
 
         if (!spindex.withinTarget()){
             return;
         }
+
+
         if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && !spindex.isBusy){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
-                intake.paused = true;
-                intakePauseTimer.reset();
-                autoSortTimer.reset();
-                autoSortTimerStarted = false;
-                intakeCount++;
-                spindex.spinTurns(1);
-                currentPosition = (currentPosition + 1) % 3;
-
+                if(purCount + grnCount <= 2){
+                    sorted = false;
+                    intake.paused = true;
+                    intakePauseTimer.reset();
+                    autoSortTimer.reset();
+                    autoSortTimerStarted = false;
+                    intakeCount++;
+                    spindex.spinTurns(1);
+                    currentPosition = (currentPosition + 1) % 3;
+                }
+                else{
+                    fortelemetry = currentPosition;
+                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, "GPP", currentPosition));
+                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, "GPP", currentPosition));
+                    //currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
+                    currentPosition = autoSort.sortNShoot(currentLayout, "GPP", currentPosition);
+                    fortelemetry2 = currentPosition;
+                    sorted = true;
+                    intake.togglePower(Intake.intakePower);
+                }
             } else if(!autoSortTimerStarted){
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
