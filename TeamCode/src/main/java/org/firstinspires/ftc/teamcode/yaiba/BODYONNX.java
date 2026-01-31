@@ -80,10 +80,6 @@ public class BODYONNX {
                     "Expected " + NUM_OBSERVATIONS + " observations, got " + observations.length);
         }
 
-        // Force log EVERY inference
-        System.out.println("========== PREDICT CALLED ==========");
-        System.out.println("Input: " + Arrays.toString(observations));
-
         long[] shape = {1, NUM_OBSERVATIONS};
 
         float[][] inputArray = new float[1][NUM_OBSERVATIONS];
@@ -94,50 +90,53 @@ public class BODYONNX {
         try {
             inputTensor = OnnxTensor.createTensor(env, inputArray);
 
-            System.out.println("Input tensor created");
-
             Map<String, OnnxTensor> inputs = new HashMap<>();
             inputs.put("obs_0", inputTensor);
 
-            System.out.println("About to run inference...");
-            long startTime = System.nanoTime();
-
             OrtSession.Result results = session.run(inputs);
 
-            long inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
-            System.out.println("Inference completed in " + inferenceTime + "ms");
+            // DEBUG: Print all output names
+            Log.i(TAG, "Available outputs: " + results.size());
+            for (int i = 0; i < results.size(); i++) {
+                try {
+                    OnnxValue val = results.get(i);
+                    Log.i(TAG, "Output " + i + ": shape=" + Arrays.toString((long[]) (((float[][])val.getValue()).length > 0 ?
+                                                ((float[][])val.getValue())[0] : "scalar")));
+                } catch (Exception e) {
+                    Log.i(TAG, "Output " + i + ": " + e.getMessage());
+                }
+            }
 
-            OnnxValue outputValue = results.get("continuous_actions").get();
+            OnnxValue outputValue = results.get(4);  // Changed from get("continuous_actions")
             float[][] outputArray = (float[][]) outputValue.getValue();
 
-            System.out.println("Raw ONNX output: " + Arrays.deepToString(outputArray));
+            Log.i(TAG, "Using output[2]: " + Arrays.toString(outputArray[0]));
 
-            // Create BRAND NEW array with NEW object
+            // Extract actions
             float[] actions = new float[NUM_ACTIONS];
-            actions[0] = outputArray[0][0];
-            actions[1] = outputArray[0][1];
-            actions[2] = outputArray[0][2];
-
-            System.out.println("Copied actions: " + Arrays.toString(actions));
-            System.out.println("Action array hashcode: " + System.identityHashCode(actions));
+            actions[0] = outputArray[0][0];  // strafe
+            actions[1] = outputArray[0][1];  // forward
+            actions[2] = outputArray[0][2];  // rotation
 
             results.close();
             inputTensor.close();
 
-            System.out.println("Resources closed, returning");
-            System.out.println("==========================================");
+            // Clamp outputs
+            for (int i = 0; i < NUM_ACTIONS; i++) {
+                if (Float.isNaN(actions[i]) || Float.isInfinite(actions[i])) {
+                    actions[i] = 0.0f;
+                }
+                actions[i] = Math.max(-1.0f, Math.min(1.0f, actions[i]));
+            }
 
             return actions;
 
         } catch (Exception e) {
-            System.err.println("EXCEPTION in predict: " + e.getMessage());
-            e.printStackTrace();
+            Log.e(TAG, "Inference failed: " + e.getMessage(), e);
             if (inputTensor != null) {
                 try {
                     inputTensor.close();
-                } catch (Exception ex) {
-                    // ignore
-                }
+                } catch (Exception ex) {}
             }
             throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
                     "Inference failed: " + e.getMessage());

@@ -129,12 +129,15 @@ public class teleop extends OpMode{
                 }
             }
             if(grnCount + purCount == 3 && !sorted){
-                if(spindex.withinTarget()){
+                //if(spindex.withinTarget()){
                     fortelemetry = currentPosition;
-                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
+                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+                    currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
+//                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
                     fortelemetry2 = currentPosition;
                     sorted = true;
-                }
+                    intake.togglePower(Intake.intakePower);
+                //}
             }
         }
 
@@ -191,7 +194,8 @@ public class teleop extends OpMode{
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
         telemetry.addData("Spindex is within target", spindex.withinTarget());
-        telemetry.addData("Detected Motif", detectedMotif);
+        telemetry.addData("Detected Motif", target);
+        //telemetry.addData("purple + green count", )
 
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
         telemetry.addData("Detected Color", detectedColor);

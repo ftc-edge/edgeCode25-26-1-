@@ -54,7 +54,6 @@ public class SpindexAutoSort {
             telemetry.addData("Error", "Not enough balls");
             telemetry.update();
             return currentPosition;
-
         }
         int wantedFrontIndex = 0;
         //which index @ front?
@@ -62,7 +61,7 @@ public class SpindexAutoSort {
 
         switch (motif) {
             case "GPP":
-                wantedFrontIndex = ((3- greenLocation) + 3) % 3;
+                wantedFrontIndex = ((greenLocation)) % 3;
                 break;
 // incorporate code abt grnlocation
             //use current pos - green pos not this logic bc if current pos = 1 index #1 is in front etc
@@ -78,7 +77,7 @@ public class SpindexAutoSort {
 
             case "PPG":
                 //wantedFrontIndex = greenLocation;
-                wantedFrontIndex = ((2 - greenLocation) + 3) % 3;
+                wantedFrontIndex = (2-greenLocation);
                 // set to greenlocation + 1
                 break;
 
@@ -95,11 +94,11 @@ public class SpindexAutoSort {
         telemetry.addData("Turns", turns);
         telemetry.update();
 
-        if (turns > 0) {
-            spindex.spinTurns(turns);
-            currentPosition = (currentPosition + turns) % 3;
-        }
-        return currentPosition;
+//        if (turns > 0) {
+//            spindex.spinTurns(turns);
+//            currentPosition = (currentPosition + turns) % 3;
+//        }
+        return turns;
     }
 }
 

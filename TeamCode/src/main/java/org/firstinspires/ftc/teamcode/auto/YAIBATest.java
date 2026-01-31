@@ -17,6 +17,8 @@ import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.yaiba.BODYONNX;
 
+import ai.onnxruntime.OrtException;
+
 @TeleOp
 public class YAIBATest extends OpMode {
 
@@ -126,10 +128,12 @@ public class YAIBATest extends OpMode {
         boolean inferenceSuccess = false;
         long inferenceTime = 0;
         long startTime = System.nanoTime();
-        float[] actions = model.runDeterministic(
-                    observations[0], observations[1], observations[2], observations[3],
-                    observations[4], observations[5], observations[6], observations[7], observations[8]
-        );
+        float[] actions = null;
+        try {
+            actions = model.predict(observations);
+        } catch (OrtException e) {
+            throw new RuntimeException(e);
+        }
         inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
         inferenceSuccess = true;
 

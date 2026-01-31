@@ -9,7 +9,7 @@ public class Constants {
     public static int autoSortDelayMs = 0;
     public static float turretAdjustSpeed = 0.5f;
     public static float desiredHeading = 180f;
-    public static float HOOD1 = 0.5f;
+    public static float HOOD1 = 0f;
     public static float initHeading = -90f;
     public static float startX = 60f;
     public static float startY = 150f;
