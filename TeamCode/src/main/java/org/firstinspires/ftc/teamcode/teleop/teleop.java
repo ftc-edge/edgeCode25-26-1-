@@ -128,18 +128,6 @@ public class teleop extends OpMode{
                     purCount++;
                 }
             }
-//            if(grnCount + purCount == 3 && !sorted){
-//                //if(spindex.withinTarget()){
-//                    fortelemetry = currentPosition;
-//                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
-//                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
-//                    currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
-////                    currentPosition = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
-//                    fortelemetry2 = currentPosition;
-//                    sorted = true;
-//                    intake.togglePower(Intake.intakePower);
-//                //}
-//            }
         }
 
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
@@ -258,8 +246,8 @@ public class teleop extends OpMode{
         }
 
 
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && !spindex.isBusy){
-            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
                 if(purCount + grnCount <= 2){
                     sorted = false;
                     intake.paused = true;
@@ -272,15 +260,15 @@ public class teleop extends OpMode{
                 }
                 else{
                     fortelemetry = currentPosition;
-                    spindex.spinTurns(autoSort.sortNShoot(currentLayout, "GPP", currentPosition));
-                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, "GPP", currentPosition));
-                    //currentPosition += autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition) % 3;
-                    currentPosition = autoSort.sortNShoot(currentLayout, "GPP", currentPosition);
+                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
+                    spindex.spinTurns(turns);
+                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+                    currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;
                     sorted = true;
                     intake.togglePower(Intake.intakePower);
                 }
-            } else if(!autoSortTimerStarted){
+            } else if(!autoSortTimerStarted){ // We should start the timer
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
             }
