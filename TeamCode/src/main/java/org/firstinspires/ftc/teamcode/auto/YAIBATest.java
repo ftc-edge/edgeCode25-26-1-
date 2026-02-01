@@ -60,18 +60,13 @@ public class YAIBATest extends OpMode {
     private float[] buildObservations() {
         float[] obs = new float[9];
 
-
         // Get current heading in RADIANS
         float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
         robotX = currentPose.getX(DistanceUnit.CM) / 100f;
         robotY = currentPose.getY(DistanceUnit.CM) / 100f;
-        // obs1/2: relative position to target, using scaled positions for model input
-        double modelRobotX = robotX * MODEL_POS_SCALE;
-        double modelRobotY = robotY * MODEL_POS_SCALE;
-        double modelTargetX = targetX * MODEL_POS_SCALE;
-        double modelTargetY = targetY * MODEL_POS_SCALE;
-        double relX = modelTargetX - modelRobotX;
-        double relY = modelTargetY - modelRobotY;
+        // obs1/2: relative position to target, scaled for model input
+        double relX = targetX - (robotX * MODEL_POS_SCALE);
+        double relY = targetY - (robotY * MODEL_POS_SCALE);
         obs[0] = (float) relX;
         obs[1] = (float) relY;
 
@@ -87,11 +82,9 @@ public class YAIBATest extends OpMode {
         obs[6] = 0.0f;
 
         if(obs[6] == 1){
-            //obs8/9: intermediary stage location, using scaled positions for model input
-            double modelStageX = stageX * MODEL_POS_SCALE;
-            double modelStageY = stageY * MODEL_POS_SCALE;
-            obs[7] = (float) (modelStageX - modelRobotX);
-            obs[8] = (float) (modelStageY - modelRobotY);
+            //obs8/9: intermediary stage location, scaled for model input
+            obs[7] = (float) ((stageX - (robotX * MODEL_POS_SCALE)));
+            obs[8] = (float) ((stageY - (robotY * MODEL_POS_SCALE)));
         }else{
             obs[7] = 0f;
             obs[8] = 0f;
