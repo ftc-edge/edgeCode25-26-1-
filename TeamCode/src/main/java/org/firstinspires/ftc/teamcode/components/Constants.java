@@ -4,6 +4,10 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
+    public static double autoAimLoseDecayMultiplier = 0.95;
+    public static double autoAimLoseMultiplier = 0.7;
+    public static double limelightKP = 0.035;
+    public static double limelightKD = 0.009;
     public static String defaultMotif = "None Detected";
     public static float intakeReverseTime = 500;
     public static int autoSortDelayMs = 0;

@@ -77,6 +77,8 @@ public class teleop extends OpMode{
     int fortelemetry;
     int fortelemetry2;
 
+    double lastAutoAimPower = 0;
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -279,7 +281,8 @@ public class teleop extends OpMode{
         LLResult result = turretSpin.limelight.getLatestResult();
 
         if (result == null || !result.isValid()){
-            turretSpin.spinRightCR(0);
+            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
+            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
             return;
         }
 
@@ -298,10 +301,6 @@ public class teleop extends OpMode{
         }
 
         double tx = result.getTx();
-        // if tx is positive (target to the right) the turret needs to rotate right to center therefore -tx
-// most motors rotate + pwr = turn right. so we shouldnt need to make it negative??
-//using if no target then stop
-
         //computing how much error:
         double error = tx; //u want tx=0
 
@@ -312,28 +311,14 @@ public class teleop extends OpMode{
             return;
         }
 
-//controller
-// maybe autoaim work
-// turretPower = kP*error
-// the more the turret is "off target" (big error) more rotate
-// as we get close (error small),
-// turretPower naturally becomes very small so the motor slows down and settles.
-//kD is essentially a dampener
-
         double derivative = error - turretSpin.lastError;
         turretSpin.lastError = error;
-        double kP = 0.05;      // start here tune up or down prob
-        double kD = 0.01;
-        float power = (float) (kP * error + kD * derivative);
-
-//no overshoot
+        float power = (float) (Constants.limelightKP * error + Constants.limelightKD * derivative);
 
         turretSpin.lastError = error;
 
-//range/not all power can be used:
         power = (float) Range.clip(power, -0.75, 0.75);
-
-//apply power mirrored to servos bc they spin in opposite directions
+        lastAutoAimPower = power;
         turretSpin.spinRightCR(power);
 
 //telemetrry

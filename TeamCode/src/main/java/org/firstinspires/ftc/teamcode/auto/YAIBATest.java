@@ -19,6 +19,11 @@ import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.yaiba.BODYONNX;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.dashboard.canvas.Canvas;
+
 import ai.onnxruntime.OrtException;
 
 @TeleOp
@@ -28,8 +33,14 @@ public class YAIBATest extends OpMode {
 
     private GoBildaPinpointDriver odo;
 
-    private double robotX = 0, robotY = 0;
-    private double targetX = 60.0, targetY = 30.0; // cm
+    // Scale odometry meters to Unity-style units. If center->edge reads ~10, use 0.2 to map to ~2.
+    private static final double MODEL_POS_SCALE = 0.2;
+    private static final double TARGET_X_M = 0.60;
+    private static final double TARGET_Y_M = 0.30;
+
+    private double robotX = 0, robotY = 0; // meters (for telemetry)
+    private double targetX = TARGET_X_M;
+    private double targetY = TARGET_Y_M;
 
     Drive drive;
 
@@ -50,13 +61,19 @@ public class YAIBATest extends OpMode {
         float[] obs = new float[9];
 
 
-        // Get current heading in DEGREES
-        float currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
-        robotX = currentPose.getX(DistanceUnit.CM) / 10f;
-        robotY = currentPose.getY(DistanceUnit.CM) / 10f;
-        // obs1/2: relatige position of the
-        obs[0] = (float)(targetX - robotX);
-        obs[1] = (float)(targetY - robotY);
+        // Get current heading in RADIANS
+        float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
+        robotX = currentPose.getX(DistanceUnit.CM) / 100f;
+        robotY = currentPose.getY(DistanceUnit.CM) / 100f;
+        // obs1/2: relative position to target, using scaled positions for model input
+        double modelRobotX = robotX * MODEL_POS_SCALE;
+        double modelRobotY = robotY * MODEL_POS_SCALE;
+        double modelTargetX = targetX * MODEL_POS_SCALE;
+        double modelTargetY = targetY * MODEL_POS_SCALE;
+        double relX = modelTargetX - modelRobotX;
+        double relY = modelTargetY - modelRobotY;
+        obs[0] = (float) relX;
+        obs[1] = (float) relY;
 
         // obs3/4: sin and cos of the current angle
         obs[2] = (float)Math.sin(currentHeading);
@@ -70,9 +87,11 @@ public class YAIBATest extends OpMode {
         obs[6] = 0.0f;
 
         if(obs[6] == 1){
-            //obs8/9: intermediary stage location, 0 if nonexistent
-            obs[7] = stageX;
-            obs[8] = stageY;
+            //obs8/9: intermediary stage location, using scaled positions for model input
+            double modelStageX = stageX * MODEL_POS_SCALE;
+            double modelStageY = stageY * MODEL_POS_SCALE;
+            obs[7] = (float) (modelStageX - modelRobotX);
+            obs[8] = (float) (modelStageY - modelRobotY);
         }else{
             obs[7] = 0f;
             obs[8] = 0f;
@@ -90,6 +109,7 @@ public class YAIBATest extends OpMode {
 
     @Override
     public void init() {
+            telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
             drive = new Drive(hardwareMap);
             odo = hardwareMap.get(GoBildaPinpointDriver .class, "odo");
             odo.resetPosAndIMU();
@@ -137,7 +157,7 @@ public class YAIBATest extends OpMode {
         long startTime = System.nanoTime();
         float[] actions = null;
         try {
-            actions = model.predict(new float[] {0, 0, 0, 0, 0, 0, 0, 0, 0}, assetManager);
+            actions = model.predict(observations, assetManager);
         } catch (OrtException e) {
             throw new RuntimeException(e);
         }
@@ -151,6 +171,57 @@ public class YAIBATest extends OpMode {
         float strafe = actions[0];
         float forward = actions[1];
         float rotation = actions[2];
+
+        TelemetryPacket packet = new TelemetryPacket();
+        Canvas fieldOverlay = packet.fieldOverlay();
+
+        double heading = currentPose.getHeading(AngleUnit.RADIANS);
+
+        // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
+        double robotXInches = (robotX * MODEL_POS_SCALE) * 39.3701;
+        double robotYInches = (robotY * MODEL_POS_SCALE) * 39.3701;
+        double targetXInches = targetX * 39.3701;
+        double targetYInches = targetY * 39.3701;
+
+        // Draw target position (red circle)
+        fieldOverlay.setStroke("red");
+        fieldOverlay.setStrokeWidth(1);
+        fieldOverlay.strokeCircle(targetXInches, targetYInches, 4);
+        fieldOverlay.setFill("red");
+        fieldOverlay.setAlpha(0.3);
+        fieldOverlay.fillCircle(targetXInches, targetYInches, 4);
+
+        // Draw robot position (blue circle with direction indicator)
+        fieldOverlay.setAlpha(1.0);
+        fieldOverlay.setStroke("blue");
+        fieldOverlay.setStrokeWidth(1);
+        fieldOverlay.strokeCircle(robotXInches, robotYInches, 9);
+        fieldOverlay.setFill("blue");
+        fieldOverlay.fillCircle(robotXInches, robotYInches, 9);
+
+        // Draw direction line on robot
+        double lineLength = 9;
+        double lineEndX = robotXInches + lineLength * Math.cos(heading);
+        double lineEndY = robotYInches + lineLength * Math.sin(heading);
+        fieldOverlay.setStroke("white");
+        fieldOverlay.setStrokeWidth(2);
+        fieldOverlay.strokeLine(robotXInches, robotYInches, lineEndX, lineEndY);
+
+        // Draw desired movement vector (green line showing forward/strafe direction)
+        double movementMagnitude = Math.sqrt(forward * forward + strafe * strafe);
+        if (movementMagnitude > 0.01) {
+            // Scale the movement vector for visibility (20 inches at full power)
+            double vectorScale = 20.0;
+            double movementAngle = Math.atan2(forward, strafe);
+            double movementEndX = robotXInches + vectorScale * movementMagnitude * Math.cos(movementAngle);
+            double movementEndY = robotYInches + vectorScale * movementMagnitude * Math.sin(movementAngle);
+
+            fieldOverlay.setStroke("green");
+            fieldOverlay.setStrokeWidth(2);
+            fieldOverlay.strokeLine(robotXInches, robotYInches, movementEndX, movementEndY);
+        }
+
+        FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
         // Telemetry
         telemetry.addData("=== DIAGNOSTICS ===", "");

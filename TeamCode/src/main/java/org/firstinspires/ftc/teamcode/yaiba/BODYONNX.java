@@ -14,6 +14,7 @@ import java.util.Map;
 
 public class BODYONNX {
     private static final String TAG = "BODYONNX";
+    private static final String MODEL_FILENAME = "BODY.onnx";
     private OrtEnvironment env;
     private OrtSession session;
 
@@ -24,33 +25,7 @@ public class BODYONNX {
         // Initialize ONNX Runtime environment
         env = OrtEnvironment.getEnvironment();
 
-        try {
-            // Load model from assets
-            InputStream modelStream = assetManager.open("BODY.onnx");
-            byte[] modelBytes = new byte[modelStream.available()];
-            modelStream.read(modelBytes);
-            modelStream.close();
-
-            // Create session with optimization
-            OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
-            opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
-            opts.setInterOpNumThreads(1);  // Match TFLite's single-thread behavior
-            opts.setIntraOpNumThreads(1);
-
-            session = env.createSession(modelBytes, opts);
-
-            // Debug: Print model info
-            Log.i(TAG, "ONNX Model loaded successfully");
-            session.getInputNames().forEach(name ->
-                    Log.i(TAG, "Input: " + name));
-            session.getOutputNames().forEach(name ->
-                    Log.i(TAG, "Output: " + name));
-
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to load model: " + e.getMessage(), e);
-            throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
-                    "Failed to load model: " + e.getMessage());
-        }
+        ensureSession(assetManager);
     }
 
     /**
@@ -130,21 +105,45 @@ public class BODYONNX {
 //                    "Inference failed: " + e.getMessage());
 //        }
 
-        try {
-            assetManager.open("BODY.onnx");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        OrtEnvironment env = OrtEnvironment.getEnvironment();
-        OrtSession session = env.createSession("BODY.onnx", new OrtSession.SessionOptions());
+        ensureSession(assetManager);
 
         FloatBuffer buffer = FloatBuffer.wrap(observations);
 
-        OnnxTensor inputTensor = OnnxTensor.createTensor(env, buffer, new long[]{1, observations.length});
-
-        try (OrtSession.Result results = session.run(Collections.singletonMap("obs_0", inputTensor))) {
+        try (OnnxTensor inputTensor = OnnxTensor.createTensor(env, buffer, new long[]{1, observations.length});
+             OrtSession.Result results = session.run(Collections.singletonMap("obs_0", inputTensor))) {
             return ((float[][]) results.get(2).getValue())[0];
+        }
+    }
+
+    private void ensureSession(AssetManager assetManager) throws OrtException {
+        if (session != null) {
+            return;
+        }
+        if (env == null) {
+            env = OrtEnvironment.getEnvironment();
+        }
+
+        try (InputStream modelStream = assetManager.open(MODEL_FILENAME)) {
+            byte[] modelBytes = new byte[modelStream.available()];
+            int read = modelStream.read(modelBytes);
+            if (read <= 0) {
+                throw new IOException("Model asset is empty: " + MODEL_FILENAME);
+            }
+
+            OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
+            opts.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT);
+            opts.setInterOpNumThreads(1);
+            opts.setIntraOpNumThreads(1);
+
+            session = env.createSession(modelBytes, opts);
+
+            Log.i(TAG, "ONNX Model loaded successfully: " + MODEL_FILENAME);
+            session.getInputNames().forEach(name -> Log.i(TAG, "Input: " + name));
+            session.getOutputNames().forEach(name -> Log.i(TAG, "Output: " + name));
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load model: " + e.getMessage(), e);
+            throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
+                    "Failed to load model: " + e.getMessage());
         }
     }
     /**
