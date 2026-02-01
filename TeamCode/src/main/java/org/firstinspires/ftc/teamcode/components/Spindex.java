@@ -25,7 +25,7 @@ public class Spindex {
 
     public static int shootDelayMs = 800;
     public static int adjustDelayMs = 700;
-    public static int adjustDelay2Ms = 200;
+    public static int adjustDelay2Ms = 350;
     public static int busyTimerMs = 150;
     public boolean ifBusyTimer = false;
     public boolean isBusy = false;
