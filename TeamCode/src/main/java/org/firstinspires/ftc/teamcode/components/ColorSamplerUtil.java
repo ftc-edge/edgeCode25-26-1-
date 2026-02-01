@@ -168,8 +168,24 @@ public class ColorSamplerUtil {
             int r = rgb[0], g = rgb[1], b = rgb[2];
             float[] hsl = rgbToHsl(r, g, b);
 
-            // --- whole-frame mean ---
-            Scalar m = Core.mean(frame); // per-channel mean
+            // --- center region mean (70% width × 70% height) ---
+            int centerX = cols / 2;
+            int centerY = rows / 2;
+            int roiWidth = (int) (cols * 0.7);
+            int roiHeight = (int) (rows * 0.7);
+            int roiX = centerX - roiWidth / 2;
+            int roiY = centerY - roiHeight / 2;
+            
+            // Ensure ROI is within bounds
+            roiX = clamp(roiX, 0, cols - 1);
+            roiY = clamp(roiY, 0, rows - 1);
+            roiWidth = Math.min(roiWidth, cols - roiX);
+            roiHeight = Math.min(roiHeight, rows - roiY);
+            
+            Mat roi = frame.submat(roiY, roiY + roiHeight, roiX, roiX + roiWidth);
+            Scalar m = Core.mean(roi); // per-channel mean of center region
+            roi.release();
+            
             int meanR = clamp((int) Math.round(m.val[0]), 0, 255);
             int meanG = clamp((int) Math.round(m.val[1]), 0, 255);
             int meanB = clamp((int) Math.round(m.val[2]), 0, 255);

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.automation;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A; //limelight sutff
 
@@ -13,6 +14,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.limelightvision.LLResult;
 
 @TeleOp(name = "Turret Auto Aim", group = "TeleOp")
+@Config
 public class TurretAutoAim extends LinearOpMode {
     private CRServo leftServo;
     private CRServo rightServo;
@@ -20,6 +22,9 @@ public class TurretAutoAim extends LinearOpMode {
 
     private double lastError = 0;
     private double prevErrorSign = 0;
+
+    public static double kP = 0.015;
+    public static double kD = 0.005;
 
     @Override
     public void runOpMode() {
@@ -80,8 +85,6 @@ public class TurretAutoAim extends LinearOpMode {
 
         double derivative = error - lastError;
         lastError = error;
-        double kP = 0.02;      // start here tune up or down prob
-        double kD = 0.01;
         double power = kP * error + kD * derivative;
 
 //no overshoot

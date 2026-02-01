@@ -61,7 +61,8 @@ public class SpindexAutoSort {
 
         switch (motif) {
             case "GPP":
-                wantedFrontIndex =  (4 - greenLocation) % 3;
+//                wantedFrontIndex =  (4 - greenLocation) % 3;
+                wantedFrontIndex = greenLocation;
                 break;
 // incorporate code abt grnlocation
             //use current pos - green pos not this logic bc if current pos = 1 index #1 is in front etc
@@ -71,21 +72,22 @@ public class SpindexAutoSort {
             case "PGP":
                 //wantedFrontIndex = (greenLocation + 1) % 3;
                 //wantedFrontIndex = 1;
-                wantedFrontIndex = (Math.abs(1 - greenLocation) + 3) % 3;
+                wantedFrontIndex = greenLocation + 1;
+//                wantedFrontIndex = (Math.abs(1 - greenLocation) + 3) % 3;
                 // set to greenlocation - 1
                 break;
 
             case "PPG":
                 //wantedFrontIndex = greenLocation;
-                wantedFrontIndex = (2-greenLocation);
+                wantedFrontIndex = greenLocation + 2;
                 // set to greenlocation + 1
                 break;
-
         }
 
+        wantedFrontIndex = wantedFrontIndex % 3;
 
-        //int turns = (currentPosition-wantedFrontIndex+3) % 3;
-        int turns = (wantedFrontIndex);
+        int turns = (wantedFrontIndex-currentPosition+3) % 3;
+//        int turns = (wantedFrontIndex);
 
         telemetry.addLine("Auto Sort Telemetry");
         telemetry.addData("Green Location", greenLocation);
@@ -94,10 +96,6 @@ public class SpindexAutoSort {
         telemetry.addData("Turns", turns);
         telemetry.update();
 
-//        if (turns > 0) {
-//            spindex.spinTurns(turns);
-//            currentPosition = (currentPosition + turns) % 3;
-//        }
         return turns;
     }
 }
