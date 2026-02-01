@@ -61,7 +61,7 @@ public class SpindexAutoSort {
 
         switch (motif) {
             case "GPP":
-                wantedFrontIndex = ((greenLocation)+3) % 3;
+                wantedFrontIndex =  (4 - greenLocation) % 3;
                 break;
 // incorporate code abt grnlocation
             //use current pos - green pos not this logic bc if current pos = 1 index #1 is in front etc
@@ -71,7 +71,7 @@ public class SpindexAutoSort {
             case "PGP":
                 //wantedFrontIndex = (greenLocation + 1) % 3;
                 //wantedFrontIndex = 1;
-                wantedFrontIndex = ((1 - greenLocation) + 3) % 3;
+                wantedFrontIndex = (Math.abs(1 - greenLocation) + 3) % 3;
                 // set to greenlocation - 1
                 break;
 

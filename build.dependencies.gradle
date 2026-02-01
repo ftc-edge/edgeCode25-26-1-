@@ -19,5 +19,6 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite:2.3.0'
     implementation 'org.tensorflow:tensorflow-lite-support:0.1.0'
     implementation 'com.acmerobotics.dashboard:dashboard:0.5.0'
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:latest.release'
 }
 
