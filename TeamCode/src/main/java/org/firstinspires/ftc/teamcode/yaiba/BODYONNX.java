@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.yaiba;
 import ai.onnxruntime.*;
 import android.content.res.AssetManager;
 import android.util.Log;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
@@ -54,29 +56,13 @@ public class BODYONNX {
     /**
      * Run inference - matching TFLite's method signature
      */
-    public float[] runDeterministic(float relX, float relY, float currentSin, float currentCos,
-                                    float desiredSin, float desiredCos, float stageActive,
-                                    float targetStageX, float targetStageY) {
-        float[] observations = new float[]{
-                relX, relY, currentSin, currentCos,
-                desiredSin, desiredCos, stageActive,
-                targetStageX, targetStageY
-        };
-
-        try {
-            return predict(observations);
-        } catch (OrtException e) {
-            Log.e(TAG, "Inference failed: " + e.getMessage(), e);
-            return new float[]{0f, 0f, 0f};
-        }
-    }
 
     /**
      * Run inference on observations
      * @param observations Array of 9 floats matching Unity observation order
      * @return Array of 3 floats [strafe, forward, rotation] - ALWAYS A NEW ARRAY
      */
-    public float[] predict(float[] observations) throws OrtException {
+    public float[] predict(float[] observations, AssetManager assetManager) throws OrtException {
 //        if (observations.length != NUM_OBSERVATIONS) {
 //            throw new IllegalArgumentException(
 //                    "Expected " + NUM_OBSERVATIONS + " observations, got " + observations.length);
@@ -143,6 +129,13 @@ public class BODYONNX {
 //            throw new OrtException(OrtException.OrtErrorCode.ORT_FAIL,
 //                    "Inference failed: " + e.getMessage());
 //        }
+
+        try {
+            assetManager.open("BODY.onnx");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         OrtEnvironment env = OrtEnvironment.getEnvironment();
         OrtSession session = env.createSession("BODY.onnx", new OrtSession.SessionOptions());
 

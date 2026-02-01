@@ -4,6 +4,8 @@ import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
 import static org.firstinspires.ftc.teamcode.components.Constants.startX;
 import static org.firstinspires.ftc.teamcode.components.Constants.startY;
 
+import android.content.res.AssetManager;
+
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -38,6 +40,8 @@ public class YAIBATest extends OpMode {
     public float stageX;
     public float stageY;
     boolean notStarted;
+
+    AssetManager assetManager;
 
     /**
      * Build observation array matching Unity's CollectObservations
@@ -104,6 +108,9 @@ public class YAIBATest extends OpMode {
                 telemetry.update();
                 return;
             }
+
+        android.content.Context context = hardwareMap.appContext;
+        assetManager = context.getAssets();
     }
 
     @Override
@@ -130,7 +137,7 @@ public class YAIBATest extends OpMode {
         long startTime = System.nanoTime();
         float[] actions = null;
         try {
-            actions = model.predict(observations);
+            actions = model.predict(new float[] {0, 0, 0, 0, 0, 0, 0, 0, 0}, assetManager);
         } catch (OrtException e) {
             throw new RuntimeException(e);
         }
