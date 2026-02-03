@@ -3,6 +3,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class AutoConstants {
+    public static double MODEL_POS_SCALE = 0.2;
     public static float initHeading = -90f;
     public static float distanceTolerance = 2.5f;
     public static float startX = 60f;

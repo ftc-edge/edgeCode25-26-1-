@@ -4,6 +4,8 @@ import static org.firstinspires.ftc.teamcode.components.Constants.initHeading;
 import static org.firstinspires.ftc.teamcode.components.Constants.startX;
 import static org.firstinspires.ftc.teamcode.components.Constants.startY;
 
+import static java.lang.Thread.sleep;
+
 import android.content.res.AssetManager;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -26,6 +28,7 @@ import com.acmerobotics.dashboard.canvas.Canvas;
 
 import ai.onnxruntime.OrtException;
 
+import org.firstinspires.ftc.teamcode.components.AutoConstants;
 @TeleOp
 public class YAIBATest extends OpMode {
 
@@ -33,8 +36,7 @@ public class YAIBATest extends OpMode {
 
     private GoBildaPinpointDriver odo;
 
-    // Scale odometry meters to Unity-style units. If center->edge reads ~10, use 0.2 to map to ~2.
-    private static final double MODEL_POS_SCALE = 0.2;
+    private double MODEL_POS_SCALE = AutoConstants.MODEL_POS_SCALE;
     private static final double TARGET_X_M = 0.60;
     private static final double TARGET_Y_M = 0.30;
 
@@ -44,26 +46,24 @@ public class YAIBATest extends OpMode {
 
     Drive drive;
 
-    public Pose2D currentPose;
     public Pose2D startPose;
 
-    public float targetAngle = 0f;
+    public float targetAngle = -1.578f;
     public float stageX;
     public float stageY;
+    public float currentHeading;
     boolean notStarted;
 
     AssetManager assetManager;
 
-    /**
-     * Build observation array matching Unity's CollectObservations
-     */
+    double oldTime = 0;
+
+
     private float[] buildObservations() {
         float[] obs = new float[9];
 
         // Get current heading in RADIANS
-        float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
-        robotX = currentPose.getX(DistanceUnit.CM) / 100f;
-        robotY = currentPose.getY(DistanceUnit.CM) / 100f;
+       // float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
         // obs1/2: relative position to target, scaled for model input
         double relX = targetX - (robotX * MODEL_POS_SCALE);
         double relY = targetY - (robotY * MODEL_POS_SCALE);
@@ -94,23 +94,19 @@ public class YAIBATest extends OpMode {
     }
 
     //update the odo pods
-    private void updateOdometry() {
-        odo.update();
-        currentPose = odo.getPosition();
-        odo.setPosition(currentPose);
-    }
 
     @Override
     public void init() {
             telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
             drive = new Drive(hardwareMap);
-            odo = hardwareMap.get(GoBildaPinpointDriver .class, "odo");
-            odo.resetPosAndIMU();
+            odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
+            odo.recalibrateIMU();
             odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
             odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
             odo.setOffsets(12, -17.5, DistanceUnit.CM);
-            startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
-            odo.setPosition(startPose);
+
+            //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
+            odo.setPosition(new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -90));
             try {
                 // Load AI model
                 model = new BODYONNX(hardwareMap.appContext.getAssets());
@@ -128,12 +124,13 @@ public class YAIBATest extends OpMode {
 
     @Override
     public void loop() {
-        if(notStarted) {
-            odo.setPosition(startPose);
-            notStarted = false;
-        }else{
-            updateOdometry();
-        }
+
+        odo.update();
+
+        Pose2D currentPose = odo.getPosition();
+        robotX = currentPose.getX(DistanceUnit.CM) / 100f;
+        robotY = currentPose.getY(DistanceUnit.CM) / 100f;
+        currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
 
         // Build observations
         float[] observations = buildObservations();
@@ -165,10 +162,12 @@ public class YAIBATest extends OpMode {
         float forward = actions[1];
         float rotation = actions[2];
 
+        //drive.setPower(forward, strafe, rotation);
+
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
 
-        double heading = currentPose.getHeading(AngleUnit.RADIANS);
+        //double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
         // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
         double robotXInches = (robotX * MODEL_POS_SCALE) * 39.3701;
@@ -194,8 +193,8 @@ public class YAIBATest extends OpMode {
 
         // Draw direction line on robot
         double lineLength = 9;
-        double lineEndX = robotXInches + lineLength * Math.cos(heading);
-        double lineEndY = robotYInches + lineLength * Math.sin(heading);
+        double lineEndX = robotXInches + lineLength * Math.cos(odo.getPosition().getHeading(AngleUnit.DEGREES));
+        double lineEndY = robotYInches + lineLength * Math.sin(odo.getPosition().getHeading(AngleUnit.DEGREES));
         fieldOverlay.setStroke("white");
         fieldOverlay.setStrokeWidth(2);
         fieldOverlay.strokeLine(robotXInches, robotYInches, lineEndX, lineEndY);
@@ -217,6 +216,15 @@ public class YAIBATest extends OpMode {
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
         // Telemetry
+        telemetry.addData("=== ODOMETRY ===", " ");
+        telemetry.addData("Status", odo.getDeviceStatus());
+        telemetry.addData("Pinpoint Frequency", odo.getFrequency()); //prints/gets the current refresh rate of the Pinpoint
+        double newTime = getRuntime();
+        double loopTime = newTime-oldTime;
+        double frequency = 1/loopTime;
+        oldTime = newTime;
+        telemetry.addData("REV Hub Frequency: ", frequency); //prints the control system refresh rate
+        telemetry.addData("Heading Scalar", odo.getYawScalar());
         telemetry.addData("=== DIAGNOSTICS ===", "");
         telemetry.addData("Inference Success?", inferenceSuccess);
         telemetry.addData("Inference Time (ms)", inferenceTime);
@@ -226,7 +234,7 @@ public class YAIBATest extends OpMode {
         telemetry.addData("=== Position ===", "");
         telemetry.addData("Position", "%.2f, %.2f", robotX, robotY);
         telemetry.addData("Target", "%.2f, %.2f", targetX, targetY);
-        telemetry.addData("Rotation", "%.2f deg", currentPose.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("Rotation", "%.2f deg", Math.toDegrees(odo.getPosition().getHeading(AngleUnit.DEGREES)));
 
         telemetry.addData("=== Raw Observations ===", "");
         for (int i = 0; i < observations.length; i++) {
