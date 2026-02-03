@@ -154,7 +154,6 @@ public class YAIBATest extends OpMode {
         inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
         inferenceSuccess = true;
 
-
         // Calculate action checksum
         float actionChecksum = actions[0] + actions[1] + actions[2];
 
@@ -162,7 +161,7 @@ public class YAIBATest extends OpMode {
         float forward = actions[1];
         float rotation = actions[2];
 
-        //drive.setPower(forward, strafe, rotation);
+        drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
 
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
@@ -204,9 +203,11 @@ public class YAIBATest extends OpMode {
         if (movementMagnitude > 0.01) {
             // Scale the movement vector for visibility (20 inches at full power)
             double vectorScale = 20.0;
-            double movementAngle = Math.atan2(forward, strafe);
-            double movementEndX = robotXInches + vectorScale * movementMagnitude * Math.cos(movementAngle);
-            double movementEndY = robotYInches + vectorScale * movementMagnitude * Math.sin(movementAngle);
+            double headingRad = currentPose.getHeading(AngleUnit.DEGREES); // actually in radians
+            double fieldDx = (forward * Math.cos(headingRad)) - (strafe * Math.sin(headingRad));
+            double fieldDy = (forward * Math.sin(headingRad)) + (strafe * Math.cos(headingRad));
+            double movementEndX = robotXInches + vectorScale * fieldDx;
+            double movementEndY = robotYInches + vectorScale * fieldDy;
 
             fieldOverlay.setStroke("green");
             fieldOverlay.setStrokeWidth(2);

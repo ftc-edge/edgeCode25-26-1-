@@ -41,9 +41,10 @@ public class Drive {
     }
 
     public static void setPower(double forward, double strafe, double pivot){
+        // pivot and forward are flipped
         rightFront.setPower(forward + strafe + pivot);
         rightBack.setPower(forward - strafe + pivot);
-        leftFront.setPower(forward - strafe - pivot);
-        leftBack.setPower(forward + strafe - pivot);
+        leftFront.setPower(-forward - strafe + pivot);
+        leftBack.setPower(-forward + strafe + pivot);
     }
 }

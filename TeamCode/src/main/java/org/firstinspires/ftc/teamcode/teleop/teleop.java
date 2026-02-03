@@ -199,7 +199,7 @@ public class teleop extends OpMode{
         double strafe = gamepad1.left_stick_x;
         double pivot = gamepad1.right_stick_x;
 
-        Drive.setPower(pivot, strafe, forward);
+        Drive.setPower(forward, strafe, pivot);
 
         prevGamepad1.copy(gamepad1);
         prevGamepad2.copy(gamepad2);
