@@ -56,12 +56,14 @@ public class trapezoidalPIDSpindexer {
         spinMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         spinMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         spinMotor.setDirection(DcMotorEx.Direction.REVERSE);
+
+
     }
 
         // Constants - Tune these for your specific motor/spindexer
         private double TICKS_PER_DEGREE = 1.068; // Example value
-        private double MAX_V = 2787.625; // ticks per second
-        private double MAX_A = 1107.36; // ticks per second
+        public static double MAX_V = 2787.625; // ticks per second
+        public static double MAX_A = 1107.36; // ticks per second
 
         // State Variables
         public static double startPos, relativeTarget, finalTarget;
