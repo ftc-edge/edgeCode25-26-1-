@@ -46,17 +46,8 @@ public class spindexPIDTest extends OpMode {
 
         prevGamepad1.copy(gamepad1);
 
-        TelemetryPacket packet = new TelemetryPacket();
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
-
         targetPosition = spindex.targetPosition;
         currentPosition = spindex.spinMotor.getCurrentPosition();
-        //power
-
-        packet.put("currentPosition", currentPosition);
-        packet.put("targetPosition", targetPosition);
-        packet.put("power", power);
-
 
         telemetry.addData("currentPosition", currentPosition);
         telemetry.addData("targetPosition", targetPosition);
