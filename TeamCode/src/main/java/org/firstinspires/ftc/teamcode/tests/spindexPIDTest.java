@@ -49,7 +49,7 @@ public class spindexPIDTest extends OpMode {
 
         prevGamepad1.copy(gamepad1);
 
-        targetPosition = spindex.targetPosition;
+        targetPosition = (float) spindex.finalTarget;
         currentPosition = spindex.spinMotor.getCurrentPosition();
 
 

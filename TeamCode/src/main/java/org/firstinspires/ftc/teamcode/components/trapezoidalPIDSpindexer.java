@@ -9,17 +9,16 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class trapezoidalPIDSpindexer {
-    public static float spindexRotation = 384.5f; // originally 538
-    public static float Kp = 0.005f;
-    public static float Ki = 0;
-    public static float Kd = 0;
-    public static float Kf = 0;
-    public static double tolerance = 5.0;
+    public static float spindexRotation = 385; // originally 538
+    public static float Kp = 0.01f;
+    public static float Ki = 0.03f;
+    public static float Kd = 0.1f;
+    public static float Kf = -0.00002f;
+    public static double tolerance = 1;
 
     public DcMotor spinMotor;
 
     private PIDFController pidf;
-    public int targetPosition = 0;
 
     public trapezoidalPIDSpindexer(HardwareMap hardwareMap){
         spinMotor = hardwareMap.get(DcMotorEx.class, "spindex");
@@ -33,20 +32,19 @@ public class trapezoidalPIDSpindexer {
 
     // Constants - Tune these for your specific motor/spindexer
     // State Variables
-    public static double startPos, relativeTarget, finalTarget;
-    private double startTime = -1;
+    public  double startPos, relativeTarget, finalTarget;
     private boolean isRunning = false;
 
     // Call this once to start a 120-degree move
     public void startMove(double currentMotorPos, double numTurns) {
-        startPos = currentMotorPos;
         //relativeTarget = degrees * TICKS_PER_DEGREE;
         relativeTarget = (spindexRotation / 3) * numTurns;
-        finalTarget = startPos + relativeTarget;
+        finalTarget += relativeTarget;
     }
 
     // Call this every single frame in your main loop
     public double update(double currentPos) {
+        if (Math.abs(currentPos - finalTarget) > tolerance) isRunning = true;
         if (!isRunning) return 0;
 
         pidf = new PIDFController(Kp, Ki, Kd, Kf);
@@ -58,6 +56,6 @@ public class trapezoidalPIDSpindexer {
 
         // Calculate PID output based on the "Moving Target"
 
-        return pidf.calculate(currentPos, targetPosition);
+        return pidf.calculate(currentPos, finalTarget);
     }
 }
