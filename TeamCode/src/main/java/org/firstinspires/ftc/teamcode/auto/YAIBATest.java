@@ -65,8 +65,8 @@ public class YAIBATest extends OpMode {
         // Get current heading in RADIANS
        // float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
         // obs1/2: relative position to target, scaled for model input
-        double relX = targetX - (robotX * MODEL_POS_SCALE);
-        double relY = targetY - (robotY * MODEL_POS_SCALE);
+        double relX = -targetX - (robotX);
+        double relY = -targetY - (robotY);
         obs[0] = (float) relX;
         obs[1] = (float) relY;
 
@@ -83,8 +83,8 @@ public class YAIBATest extends OpMode {
 
         if(obs[6] == 1){
             //obs8/9: intermediary stage location, scaled for model input
-            obs[7] = (float) ((stageX - (robotX * MODEL_POS_SCALE)));
-            obs[8] = (float) ((stageY - (robotY * MODEL_POS_SCALE)));
+            obs[7] = (float) ((stageX - (robotX)));
+            obs[8] = (float) ((stageY - (robotY)));
         }else{
             obs[7] = 0f;
             obs[8] = 0f;
@@ -106,7 +106,7 @@ public class YAIBATest extends OpMode {
             odo.setOffsets(12, -17.5, DistanceUnit.CM);
 
             //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
-            odo.setPosition(new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -90));
+            odo.setPosition(new Pose2D(DistanceUnit.METER, 0, 0, AngleUnit.DEGREES, -90));
             try {
                 // Load AI model
                 model = new BODYONNX(hardwareMap.appContext.getAssets());
@@ -128,8 +128,8 @@ public class YAIBATest extends OpMode {
         odo.update();
 
         Pose2D currentPose = odo.getPosition();
-        robotX = currentPose.getX(DistanceUnit.CM) / 100f;
-        robotY = currentPose.getY(DistanceUnit.CM) / 100f;
+        robotX = currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE;
+        robotY = currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE;
         currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
 
         // Build observations
@@ -159,7 +159,7 @@ public class YAIBATest extends OpMode {
 
         float strafe = actions[0];
         float forward = actions[1];
-        float rotation = actions[2];
+        float rotation = -actions[2];
 
         drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
 
@@ -169,8 +169,8 @@ public class YAIBATest extends OpMode {
         //double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
         // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
-        double robotXInches = (robotX * MODEL_POS_SCALE) * 39.3701;
-        double robotYInches = (robotY * MODEL_POS_SCALE) * 39.3701;
+        double robotXInches = (robotX ) * 39.3701;
+        double robotYInches = (robotY ) * 39.3701;
         double targetXInches = targetX * 39.3701;
         double targetYInches = targetY * 39.3701;
 
