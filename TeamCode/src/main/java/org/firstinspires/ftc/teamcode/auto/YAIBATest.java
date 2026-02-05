@@ -37,8 +37,8 @@ public class YAIBATest extends OpMode {
     private GoBildaPinpointDriver odo;
 
     private double MODEL_POS_SCALE = AutoConstants.MODEL_POS_SCALE;
-    private static final double TARGET_X_M = 0.60;
-    private static final double TARGET_Y_M = 0.30;
+    private static final double TARGET_X_M = 0.33;
+    private static final double TARGET_Y_M = 0.15;
 
     private double robotX = 0, robotY = 0; // meters (for telemetry)
     private double targetX = TARGET_X_M;
@@ -48,7 +48,7 @@ public class YAIBATest extends OpMode {
 
     public Pose2D startPose;
 
-    public float targetAngle = -1.578f;
+    public float targetAngle = 0;
     public float stageX;
     public float stageY;
     public float currentHeading;
@@ -62,37 +62,30 @@ public class YAIBATest extends OpMode {
     private float[] buildObservations() {
         float[] obs = new float[9];
 
-        // Get current heading in RADIANS
-       // float currentHeading = (float) currentPose.getHeading(AngleUnit.RADIANS);
-        // obs1/2: relative position to target, scaled for model input
-        double relX = -targetX - (robotX);
-        double relY = -targetY - (robotY);
-        obs[0] = (float) relX;
-        obs[1] = (float) relY;
+        // 1. Target - Robot (Matches Unity: targetPos - transform.localPosition)
+        // 2. Axis Swap: FTC X is Forward (Unity Z), FTC Y is Lateral (Unity X)
+        // 3. Handedness: FTC +Y is Left, Unity +X is Right. So negate the Lateral axis.
+        double relLateral = -(targetY - robotY);
+        double relForward = (targetX - robotX);
 
-        // obs3/4: sin and cos of the current angle
-        obs[2] = (float)Math.sin(currentHeading);
-        obs[3] = (float)Math.cos(currentHeading);
+        // REMOVE THE / 10f. Your C# code does not use it.
+        obs[0] = (float) relLateral; // AI Slot 0: Lateral (Unity X)
+        obs[1] = (float) relForward; // AI Slot 1: Forward (Unity Z)
 
-        // obs5/6: sin and cos of the desired angle
-        obs[4] = (float)Math.sin(targetAngle);
-        obs[5] = (float)Math.cos(targetAngle);
+        // 4. Heading: Both must be negated to convert FTC CCW to Unity CW
+        obs[2] = (float)Math.sin(-currentHeading);
+        obs[3] = (float)Math.cos(-currentHeading);
 
-        //Obs 7: stage active, 1.0 if theres a intermediary stage
-        obs[6] = 0.0f;
+        // You missed the negation on targetAngle in your previous code!
+        obs[4] = (float)Math.sin(-targetAngle);
+        obs[5] = (float)Math.cos(-targetAngle);
 
-        if(obs[6] == 1){
-            //obs8/9: intermediary stage location, scaled for model input
-            obs[7] = (float) ((stageX - (robotX)));
-            obs[8] = (float) ((stageY - (robotY)));
-        }else{
-            obs[7] = 0f;
-            obs[8] = 0f;
-        }
+        obs[6] = 0.0f; // stageActive
+        obs[7] = 0f;
+        obs[8] = 0f;
 
         return obs;
     }
-
     //update the odo pods
 
     @Override
@@ -100,13 +93,12 @@ public class YAIBATest extends OpMode {
             telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
             drive = new Drive(hardwareMap);
             odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
-            odo.recalibrateIMU();
             odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
             odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
             odo.setOffsets(12, -17.5, DistanceUnit.CM);
 
             //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
-            odo.setPosition(new Pose2D(DistanceUnit.METER, 0, 0, AngleUnit.DEGREES, -90));
+            odo.setPosition(new Pose2D(DistanceUnit.METER, 0.5, 0.5, AngleUnit.RADIANS, 0));
             try {
                 // Load AI model
                 model = new BODYONNX(hardwareMap.appContext.getAssets());
@@ -128,8 +120,10 @@ public class YAIBATest extends OpMode {
         odo.update();
 
         Pose2D currentPose = odo.getPosition();
-        robotX = currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE;
-        robotY = currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE;
+        robotX = (currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE);
+        robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE);
+//        robotX = (Math.abs(currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE) + 1) / 2;
+//        robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE) + 1 / 2;
         currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
 
         // Build observations
@@ -157,9 +151,18 @@ public class YAIBATest extends OpMode {
         // Calculate action checksum
         float actionChecksum = actions[0] + actions[1] + actions[2];
 
-        float strafe = actions[0];
+        float strafe = -actions[0];
         float forward = actions[1];
-        float rotation = -actions[2];
+        float rotation = actions[2];
+
+        float denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotation), 1.0f);
+
+// Divide each component by the denominator.
+// If the total is <= 1.0, nothing changes.
+// If the total is > 1.0, they are all scaled down proportionally.
+        forward /= denominator;
+        strafe /= denominator;
+        rotation /= denominator;
 
         drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
 
@@ -169,10 +172,10 @@ public class YAIBATest extends OpMode {
         //double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
         // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
-        double robotXInches = (robotX ) * 39.3701;
-        double robotYInches = (robotY ) * 39.3701;
-        double targetXInches = targetX * 39.3701;
-        double targetYInches = targetY * 39.3701;
+        double robotXInches = (robotX ) * AutoConstants.telemetryScale;
+        double robotYInches = (robotY ) * AutoConstants.telemetryScale;
+        double targetXInches = targetX * AutoConstants.telemetryScale;
+        double targetYInches = targetY * AutoConstants.telemetryScale;
 
         // Draw target position (red circle)
         fieldOverlay.setStroke("red");

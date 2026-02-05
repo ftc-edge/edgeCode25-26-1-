@@ -17,7 +17,6 @@ public class Constants {
     public static float initHeading = -90f;
     public static float startX = 60f;
     public static float startY = 150f;
-
-    public static int targetId = 20;
+    
     public static float imuKp = 0.6f;
 }
