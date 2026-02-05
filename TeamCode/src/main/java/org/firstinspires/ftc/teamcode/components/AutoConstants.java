@@ -3,6 +3,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class AutoConstants {
+    public static String allianceColor = "Red";
+    public static String startingPosition = "Front";
     public static double telemetryScale = 60;
     public static double driveForwardMult = 0.2;
     public static double driveStrafeMult = 0.2;

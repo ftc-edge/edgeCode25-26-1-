@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-import static org.firstinspires.ftc.teamcode.components.Constants.targetId;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -15,6 +14,7 @@ import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Constants;
+import org.firstinspires.ftc.teamcode.components.Util;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
 
@@ -26,6 +26,14 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+
+/*
+TODO: Spindex PID
+TODO: Limelight Tracking Fix
+TODO: Odometry
+TODO: Regression
+TODO: Ensure autosort works
+ */
 
 @TeleOp
 public class teleop extends OpMode{
@@ -47,8 +55,6 @@ public class teleop extends OpMode{
     Gamepad prevGamepad1 = new Gamepad();
     Gamepad prevGamepad2 = new Gamepad();
 
-    int powerLevel = 4;
-
     public int[] currentLayout = new int[]{0, 0, 0};
     int currentPosition = 0;
 
@@ -56,24 +62,17 @@ public class teleop extends OpMode{
 
     String detectedColor;
 
-    SpindexAutoSort.targetMotif target;
-
     SpindexAutoSort autoSort;
 
     String detectedMotif = Constants.defaultMotif;
 
     private float shootSpeed = 0;
-        //Turret.targetRPM1;
-
     public boolean sorted = false;
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
     boolean autoSortTimerStarted = false;
 
-    float deltaTime;
-
-    float cameraBuffer = 0;
     int fortelemetry;
     int fortelemetry2;
 
@@ -93,43 +92,23 @@ public class teleop extends OpMode{
 
         color = new Color(hardwareMap);
 
-//        colorSensor = hardwareMap.get(RevColorSensorV3.class, "color");
-//        colorSensor.enableLed(true);
-
-        target = SpindexAutoSort.targetMotif.GPP;
     }
 
     @Override
     public void loop() {
-
-//        colors = colorSensor.getNormalizedColors();
-
-        // Switch Power Levels
-        //handlePowerLevel();
 
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
         turret.loop();
         turret.setTargetRPM(shootSpeed);
         hood.setPosition(hoodPosition);
-        spindex.updateTimer();
+        spindex.update();
 
         autoAim();
         updateColor();
 
         if(intake.getPower() != 0){
             intakeCheck();
-
-            int grnCount = 0;
-            int purCount = 0;
-            for(int i = 0; i <= 2; i ++){
-                if(currentLayout[i] == 1){
-                    grnCount++;
-                }
-                if(currentLayout[i] == -1){
-                    purCount++;
-                }
-            }
         }
 
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
@@ -174,19 +153,15 @@ public class teleop extends OpMode{
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
         telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
-        telemetry.addData("Turret Target RPM", turret.getTargetRPM());
         telemetry.addData("Turret Power", turret.getPower());
         telemetry.addData("Turret At Point", turret.getAtPoint());
         telemetry.addData("Shoot Speed", shootSpeed);
-        telemetry.addData("Intake Count", intakeCount);
         telemetry.addData("Turret Power", turretPower);
-        telemetry.addData("Auto Sort Timer Started", autoSortTimerStarted);
-        telemetry.addData("Auto Sort Timer", autoSortTimer.milliseconds());
 //        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
         telemetry.addData("Spindex is within target", spindex.withinTarget());
-        telemetry.addData("Detected Motif", target);
+        telemetry.addData("Detected Motif", detectedMotif);
         //telemetry.addData("purple + green count", )
 
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
@@ -216,7 +191,7 @@ public class teleop extends OpMode{
         return "Null";
     }
     public void updateColor(){
-        if(spindex.isBusy){
+        if(!spindex.withinTarget()){
             return;
         }
         else if(color.getColor() == "GREEN") {
@@ -286,25 +261,20 @@ public class teleop extends OpMode{
             return;
         }
 
-        if (result.getFiducialResults().get(0).getFiducialId() != targetId){
+        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()){
             if(result.getFiducialResults().get(0).getFiducialId() == 21){
-                target = SpindexAutoSort.targetMotif.GPP;
                 detectedMotif = "GPP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
-                target = SpindexAutoSort.targetMotif.PGP;
                 detectedMotif = "PGP";
             }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
-                target = SpindexAutoSort.targetMotif.PPG;
                 detectedMotif = "PPG";
             }
             return;
         }
 
         double tx = result.getTx();
-        //computing how much error:
         double error = tx; //u want tx=0
 
-//i feel like we should have a deadzone bc its continuous
         double deadband = 1.0; //degrees
         if (Math.abs(error) < deadband) {
             turretSpin.spinRightCR(0);

@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 
+import org.firstinspires.ftc.teamcode.components.Util;
 import org.firstinspires.ftc.teamcode.yaiba.BODY;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
@@ -345,7 +346,7 @@ public class YAIBA extends OpMode {
             return;
         }
 
-        if (result.getFiducialResults().get(0).getFiducialId() != Constants.targetId) {
+        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()) {
             if (result.getFiducialResults().get(0).getFiducialId() == 21) {
                 target = SpindexAutoSort.targetMotif.GPP;
                 detectedMotif = "GPP";

@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.components.trapezoidalPIDSpindexer;
 public class spindexPIDTest extends OpMode {
 
     private trapezoidalPIDSpindexer spindex;
+    Spindex spindexer;
     public static float currentPosition;
     public static float targetPosition;
     public static float power;
@@ -22,35 +23,36 @@ public class spindexPIDTest extends OpMode {
     Gamepad prevGamepad1 = new Gamepad();
     @Override
     public void init() {
-        spindex = new trapezoidalPIDSpindexer(hardwareMap);
+        spindex = new trapezoidalPIDSpindexer();
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        spindexer = new Spindex(hardwareMap);
     }
 
     @Override
     public void loop() {
 
         if(gamepad1.cross && !prevGamepad1.cross){
-            spindex.startMove(spindex.spinMotor.getCurrentPosition(), 1);
+            spindex.spinNumTurns(1);
         }
         if(gamepad1.triangle && !prevGamepad1.triangle){
-            spindex.startMove(spindex.spinMotor.getCurrentPosition(), -1);
+            spindex.spinNumTurns(-1);
         }
         if(gamepad1.circle && !prevGamepad1.circle){
-            spindex.startMove(spindex.spinMotor.getCurrentPosition(), 2);
+            spindex.spinNumTurns(2);
         }
         if(gamepad1.square && !prevGamepad1.square){
-            spindex.startMove(spindex.spinMotor.getCurrentPosition(), -2);
+            spindex.spinNumTurns(-2);
         }
 
 
-        power = (float) spindex.update(spindex.spinMotor.getCurrentPosition());
+        power = (float) spindex.update(spindexer.spinMotor.getCurrentPosition());
 
-        spindex.spinMotor.setPower(power);
+        spindexer.spinMotor.setPower(power);
 
         prevGamepad1.copy(gamepad1);
 
         targetPosition = (float) spindex.finalTarget;
-        currentPosition = spindex.spinMotor.getCurrentPosition();
+        currentPosition = spindexer.spinMotor.getCurrentPosition();
 
 
         telemetry.addData("currentPosition", currentPosition);

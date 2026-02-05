@@ -1,10 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.arcrobotics.ftclib.controller.PIDFController;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.acmerobotics.dashboard.config.Config;
 
 @Config
@@ -16,30 +12,27 @@ public class trapezoidalPIDSpindexer {
     public static float Kf = -0.00002f;
     public static double tolerance = 1;
 
-    public DcMotor spinMotor;
-
     private PIDFController pidf;
-
-    public trapezoidalPIDSpindexer(HardwareMap hardwareMap){
-        spinMotor = hardwareMap.get(DcMotorEx.class, "spindex");
-        spinMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        spinMotor.setTargetPosition(0);
-        //spinMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-        spinMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        spinMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        spinMotor.setDirection(DcMotorEx.Direction.REVERSE);
-    }
 
     // Constants - Tune these for your specific motor/spindexer
     // State Variables
-    public  double startPos, relativeTarget, finalTarget;
+    public  double relativeTarget, finalTarget;
     private boolean isRunning = false;
 
     // Call this once to start a 120-degree move
-    public void startMove(double currentMotorPos, double numTurns) {
+    public void spinNumTurns(double numTurns) {
         //relativeTarget = degrees * TICKS_PER_DEGREE;
         relativeTarget = (spindexRotation / 3) * numTurns;
         finalTarget += relativeTarget;
+    }
+
+    public void spin(int spinAmount){
+        finalTarget += spinAmount;
+    }
+
+    public void stop(double currentPos){
+        finalTarget = currentPos;
+        update(currentPos);
     }
 
     // Call this every single frame in your main loop
