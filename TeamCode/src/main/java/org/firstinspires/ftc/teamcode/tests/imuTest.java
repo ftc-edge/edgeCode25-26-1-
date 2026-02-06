@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.auto.YAIBA;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
@@ -19,7 +18,7 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 @TeleOp
 @Config
 public class imuTest extends OpMode {
-    public YAIBA auto;
+    //public YAIBA auto;
 
     private GoBildaPinpointDriver odo;
     Drive drive;

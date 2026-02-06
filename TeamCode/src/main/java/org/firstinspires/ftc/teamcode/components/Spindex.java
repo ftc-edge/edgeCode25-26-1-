@@ -74,7 +74,12 @@ public class Spindex {
             shootTimer.reset(); shot++; return;
         }
         if(shot >= 2 && !spinMotor.isBusy() && shootTimer.milliseconds() >= adjustDelay2Ms){
-            if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
+            if(shot == 2){
+                spinUp();
+                shootTimer.reset();
+                shot++;
+            }
+            else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
                 spinUp();
                 shootTimer.reset();
                 shot++;

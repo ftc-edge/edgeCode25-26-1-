@@ -1,272 +1,431 @@
 package org.firstinspires.ftc.teamcode.auto;
 
-import static org.firstinspires.ftc.teamcode.components.AutoConstants.*;
+import static java.lang.Thread.sleep;
 
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import android.content.res.AssetManager;
+import android.media.audiofx.AutomaticGainControl;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
-import org.firstinspires.ftc.teamcode.components.Color;
-import org.firstinspires.ftc.teamcode.components.Constants;
-import org.firstinspires.ftc.teamcode.components.Drive;
-import org.firstinspires.ftc.teamcode.components.Intake;
-import org.firstinspires.ftc.teamcode.components.Turret;
-import org.firstinspires.ftc.teamcode.components.TurretSpin;
-
-import org.firstinspires.ftc.teamcode.components.Util;
-import org.firstinspires.ftc.teamcode.yaiba.BODY;
-
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.components.Color;
+import org.firstinspires.ftc.teamcode.components.Constants;
+import org.firstinspires.ftc.teamcode.components.Drive;
+import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.components.Intake;
+import org.firstinspires.ftc.teamcode.components.Spindex;
+import org.firstinspires.ftc.teamcode.yaiba.BODYONNX;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
 
-import org.firstinspires.ftc.teamcode.components.Spindex;
-import org.firstinspires.ftc.teamcode.components.AutoConstants;
+import ai.onnxruntime.OrtException;
 
-@Autonomous
+import org.firstinspires.ftc.teamcode.components.AutoConstants;
+@TeleOp
 public class YAIBA extends OpMode {
 
-    private DcMotor frontLeft;
-    private DcMotor frontRight;
-    private DcMotor backLeft;
-    private DcMotor backRight;
+    private BODYONNX model;
 
-    // TFLite wrapper
-    private BODY yaiba;
     private GoBildaPinpointDriver odo;
-    private Spindex spindex;
 
-    private float[] actions;
+    private double MODEL_POS_SCALE = AutoConstants.MODEL_POS_SCALE;
+    private static final double TARGET_X_M = 0.33;
+    private static final double TARGET_Y_M = 0.15;
 
-    private float targetX = 0f;
-    private float targetY = 0f;
-
-    private double fl;
-    private double fr;
-    private double bl;
-    private double br;
-    private float forward;
-    private float strafe;
-    private float rot;
-    private int cooldownCounter = 0;
-
-    public static final float DISTANCE_TOLERANCE = distanceTolerance;
-    private float DTT;
-
-    private float shootCount = 0;
-
-    private int[] currentAmmo = new int[3];
-
-    private SpindexAutoSort autoSort;
-
-    String detectedMotif = "None Detected";
-
-    boolean hasShot = false;
-
-    String detectedColor;
-
-    Intake intake;
+    private double robotX = 0, robotY = 0; // meters (for telemetry)
+    private double targetX = TARGET_X_M;
+    private double targetY = TARGET_Y_M;
 
     Drive drive;
 
-    private enum currentState{
+    public Pose2D startPose;
+
+    public float targetAngle = 0;
+    public float stageX;
+    public float stageY;
+    public float currentHeading;
+    boolean notStarted;
+
+    AssetManager assetManager;
+
+    double oldTime = 0;
+
+    public static enum autoMode{
+        blueFront,
+        blueBack,
+        redFront,
+        redBack;
+    }
+
+    public static autoMode currentAuto;
+
+    public enum autoStage{
+        firstShootDrive,
+        firstPickupSetup,
+        firstPickup,
+        shootDrive,
         shoot,
-        firstIntake,
-        secondIntake,
-        thirdIntake,
+        gatePushSetup,
+        gatePush,
+        secondPickupSetup,
+        secondPickup,
+        thirdPickupSetup,
+        thirdPickup,
+        finish;
     }
 
-    public float agentX;
-    public float agentY;
-    public float targetStageX;
-    public float targetStageY;
-    private currentState currentState;
-    private AutoConstants AutoConstants;
+    public autoStage currentStage;
 
-    int currentPosition = 0;
+    public float DTT;
 
-    TurretSpin turretSpin;
-    Turret turret;
+    Spindex spindex;
+
+    Intake intake;
+
+    private int shootCnt = 0;
+
+    String detectedColor;
+
     Color color;
-    SpindexAutoSort.targetMotif target;
-    public float desiredHeading = -1.5708f;
-    private float clamp(float v, float lo, float hi) {
-        return Math.max(lo, Math.min(hi, v));
+
+
+
+    private float[] buildObservations() {
+        float[] obs = new float[9];
+
+        // 1. Target - Robot (Matches Unity: targetPos - transform.localPosition)
+        // 2. Axis Swap: FTC X is Forward (Unity Z), FTC Y is Lateral (Unity X)
+        // 3. Handedness: FTC +Y is Left, Unity +X is Right. So negate the Lateral axis.
+        double relLateral = -(targetY - robotY);
+        double relForward = (targetX - robotX);
+
+        DTT = (float) Math.hypot(relLateral, relForward);
+
+        // REMOVE THE / 10f. Your C# code does not use it.
+        obs[0] = (float) relLateral; // AI Slot 0: Lateral (Unity X)
+        obs[1] = (float) relForward; // AI Slot 1: Forward (Unity Z)
+
+        // 4. Heading: Both must be negated to convert FTC CCW to Unity CW
+        obs[2] = (float)Math.sin(-currentHeading);
+        obs[3] = (float)Math.cos(-currentHeading);
+
+        // You missed the negation on targetAngle in your previous code!
+        obs[4] = (float)Math.sin(-targetAngle);
+        obs[5] = (float)Math.cos(-targetAngle);
+
+        obs[6] = 0.0f; // stageActive
+        obs[7] = 0f;
+        obs[8] = 0f;
+
+        return obs;
     }
 
-    public int[] currentLayout = new int[]{0, 0, 0};
-
-    boolean sorted = false;
-
-    float stageActive;
-
-    boolean processingBall = false;
-    int intakeCount = 0;
-
-    // Replace these with your odometry or pose estimate code (encoders, IMU, external)
-    private float getAgentX() {
-        float x = 0;
-        Pose2D pose = odo.getPosition();
-        odo.update();
-        x = (float)pose.getX(DistanceUnit.CM);
-        return x;
-    }
-    private float getAgentY() {
-        float y = 0;
-        Pose2D pose = odo.getPosition();
-        odo.update();
-        y = (float)pose.getY(DistanceUnit.CM);
-        return y;
-    }
-
-    private void stateMachine(currentState state){
-        if(state == currentState.shoot){
-            targetX = 0;
-            targetY = 0;
-            stageActive = 0;
-            if(DTT < 5f && !hasShot){
-                hasShot = true;
-                spindex.shootConsecutive(color);
+    private void stateMachine(){
+        //gate push angle is 120 degrees
+        if(currentAuto == autoMode.blueFront) {
+            switch(currentStage){
+                case firstShootDrive:
+                    targetX = -0.33f;
+                    targetY = -0.33f;
+                    targetAngle = -1.578f;
+                    AutoConstants.driveForwardMult = 1;
+                    AutoConstants.driveStrafeMult = 1;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.shoot;
+                    }
+                case shoot:
+                    spindex.startShootConsecutive();
+                    if(!spindex.shooting){
+                        shootCnt++;
+                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
+                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+                        if(shootCnt == 5) currentStage = autoStage.finish;
+                    }
+                case firstPickupSetup:
+                    targetX = 0.15f;
+                    targetY = -0.33f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.firstPickup;
+                    }
+                case firstPickup:
+                    intake.togglePower(intake.intakePower);
+                    targetX = 0.15f;
+                    targetY = -0.75f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    //intakeCheck code (idk how we're gonna implement)
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case shootDrive:
+                    targetX = 0;
+                    targetY = 0;
+                    AutoConstants.driveForwardMult = 1f;
+                    AutoConstants.driveStrafeMult = 1f;
+                    if(DTT< 0.05){
+                        currentStage = autoStage.shoot;
+                    }
+                case gatePushSetup:
+                    targetX = - 0.15f;
+                    targetY = -0.66f;
+                    targetAngle = -2.0944f;
+                    if(DTT< 0.05){
+                        currentStage = autoStage.gatePush;
+                    }
+                case gatePush:
+                    targetX = - 0.15f;
+                    targetY = -0.8f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    intake.togglePower(intake.intakePower);
+                    //same issue as ball pickup
+                    //if(ballCount == 3){
+                    //currentStage = autoStage.driveToShoot
+                case secondPickupSetup:
+                    targetX = 0.41f;
+                    targetY = -0.33f;
+                    AutoConstants.driveForwardMult = 1f;
+                    AutoConstants.driveStrafeMult = 1f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.secondPickup;
+                    }
+                case secondPickup:
+                    targetX = 0.41f;
+                    targetY = -0.80f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    intake.togglePower(intake.intakePower);
+                    //intake issue
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case thirdPickupSetup:
+                    targetX =-0.15f;
+                    targetY = -0.33f;
+                    AutoConstants.driveForwardMult = 0.8f;
+                    AutoConstants.driveStrafeMult = 0.8f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.thirdPickup;
+                    }
+                case thirdPickup:
+                    targetX = -0.15f;
+                    targetY = -0.8f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case finish:
+                    targetX = -0.33f;
+                    targetY = 0f;
             }
-//            if()
         }
-        currentState = state;
+        if(currentAuto == autoMode.redFront) {
+            switch(currentStage){
+                case firstShootDrive:
+                    targetX = -0.33f;
+                    targetY = 0.33f;
+                    targetAngle = -1.578f;
+                    AutoConstants.driveForwardMult = 1;
+                    AutoConstants.driveStrafeMult = 1;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.shoot;
+                    }
+                case shoot:
+                    spindex.startShootConsecutive();
+                    if(!spindex.shooting){
+                        shootCnt++;
+                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
+                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+                        if(shootCnt == 5) currentStage = autoStage.finish;
+                    }
+                case firstPickupSetup:
+                    targetX = 0.15f;
+                    targetY = 0.33f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.firstPickup;
+                    }
+                case firstPickup:
+                    intake.togglePower(intake.intakePower);
+                    targetX = 0.15f;
+                    targetY = 0.75f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    //intakeCheck code (idk how we're gonna implement)
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case shootDrive:
+                    targetX = 0;
+                    targetY = 0;
+                    AutoConstants.driveForwardMult = 1f;
+                    AutoConstants.driveStrafeMult = 1f;
+                    if(DTT< 0.05){
+                        currentStage = autoStage.shoot;
+                    }
+                case gatePushSetup:
+                    targetX = -0.66f;
+                    targetY = -0.15f;
+                    targetAngle = 2.0944f;
+                    if(DTT< 0.05){
+                        currentStage = autoStage.gatePush;
+                    }
+                case gatePush:
+                    targetX =  0.15f;
+                    targetY = 0.66f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    intake.togglePower(intake.intakePower);
+                    //same issue as ball pickup
+                    //if(ballCount == 3){
+                    //currentStage = autoStage.driveToShoot
+                case secondPickupSetup:
+                    targetX = 0.4f;
+                    targetY = 0.33f;
+                    AutoConstants.driveForwardMult = 1f;
+                    AutoConstants.driveStrafeMult = 1f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.secondPickup;
+                    }
+                case secondPickup:
+                    targetX = 0.4f;
+                    targetY = 0.75f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    intake.togglePower(intake.intakePower);
+                    //intake issue
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case thirdPickupSetup:
+                    targetX = -0.15f;
+                    targetY = 0.33f;
+                    AutoConstants.driveForwardMult = 0.8f;
+                    AutoConstants.driveStrafeMult = 0.8f;
+                    if(DTT < 0.05){
+                        currentStage = autoStage.thirdPickup;
+                    }
+                case thirdPickup:
+                    targetX = -0.15f;
+                    targetY = 0.75f;
+                    AutoConstants.driveForwardMult = 0.35f;
+                    AutoConstants.driveStrafeMult = 0.35f;
+                    if(DTT < 0.025){
+                        currentStage = autoStage.shootDrive;
+                    }
+                case finish:
+                    targetX = 0.33;
+                    targetY = 0f;
+            }
+        }
     }
 
-    private void Shoot(){
-        sorted = false;
-        spindex.startShootConsecutive();
-        currentPosition = (currentPosition + 2 ) % 3;
-        currentLayout[currentPosition] = 0;
-    }
 
-
+    //update the odo pods
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        turretSpin = new TurretSpin(hardwareMap);
-        turret = new Turret(hardwareMap);
-        spindex = new Spindex(hardwareMap);
-        color = new Color(hardwareMap);
-        intake = new Intake(hardwareMap);
-
-        yaiba = BODY.create(hardwareMap.appContext);
-        if (yaiba == null) {
-            telemetry.addData("MODEL", "Failed to load BODY.tflite");
-            telemetry.addLine("Check: app/src/main/assets/BODY.tflite");
-            telemetry.update();
-        } else {
-            telemetry.addData("MODEL", "Loaded successfully");
-            telemetry.addData("MODEL", "Loaded successfully");
-            telemetry.update();
-        }
-
-        telemetry.addLine("YAIBA Ready");
-        telemetry.update();
-
         drive = new Drive(hardwareMap);
-
-        odo = hardwareMap.get(GoBildaPinpointDriver.class,"odo");
+        color = new Color(hardwareMap);
+        odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-        odo.setOffsets(16.5, -19, DistanceUnit.CM);
-        Pose2D startPose = new Pose2D(DistanceUnit.CM, startX, startY, AngleUnit.DEGREES, initHeading);
-        odo.setPosition(startPose);
+        odo.setOffsets(12, -17.5, DistanceUnit.CM);
 
-        currentState = currentState.shoot;
+        //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
+        if(currentAuto == autoMode.blueFront) odo.setPosition(new Pose2D(DistanceUnit.METER, -0.944, -0.66, AngleUnit.RADIANS, -1.578f));
+        if(currentAuto == autoMode.redFront) odo.setPosition(new Pose2D(DistanceUnit.METER, -0.944, 0.66, AngleUnit.RADIANS, 1.578f));
+        currentStage = autoStage.firstShootDrive;
+        try {
+            // Load AI model
+            model = new BODYONNX(hardwareMap.appContext.getAssets());
+            telemetry.addData("Status", "Model loaded successfully");
+            telemetry.update();
+        } catch (Exception e) {
+            telemetry.addData("Error", "Failed to load model: " + e.getMessage());
+            telemetry.update();
+            return;
+        }
 
-        currentAmmo = new int[]{0, 0, 0};
-
-        AutoConstants = new AutoConstants();
-
-
+        android.content.Context context = hardwareMap.appContext;
+        assetManager = context.getAssets();
     }
 
     @Override
     public void loop() {
+
         odo.update();
+
         Pose2D currentPose = odo.getPosition();
+        robotX = (currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE);
+        robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE);
+//        robotX = (Math.abs(currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE) + 1) / 2;
+//        robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE) + 1 / 2;
+        currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
 
-        turret.setTargetRPM(Turret.targetRPM1);
+        // Build observations
+        float[] observations = buildObservations();
 
-        agentX = getAgentY();
-        agentY = getAgentX();
+        stateMachine();
 
-        float relX = targetX - agentX;
-        float relY = targetY - agentY;
-
-        stateMachine(currentState);
-
-        updateColor();
-
-        //NormalizedRGBA colors = color.getNormalizedColors();
-
-        DTT = (float) Math.hypot(targetX - agentX, targetY - agentY);
-
-        actions = yaiba.runDeterministic(relX, relY, (float) Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), (float) Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), (float) Math.sin(desiredHeading), (float) Math.cos(desiredHeading), stageActive, targetStageX, targetStageY);
-
-        strafe = actions[(int) actionsIndex];
-        forward = actions[(int) (1 - actionsIndex)];
-        rot = actions[3];
-
-//
-//        if(Math.hypot(strafe, forward) < 0.10 && DTT > DISTANCE_TOLERANCE){
-//            strafe = (float) ((targetX - agentX)/(DISTANCE_TOLERANCE * AutoConstants.autoFinalStageMultiplier));
-//            forward = (float) (targetY - agentY/(DISTANCE_TOLERANCE * AutoConstants.autoFinalStageMultiplier));
-//        }
-
-
-        double rawDeg = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
-        double positiveHeading = (rawDeg % 360 + 360) % 360;
-
-        drive.setPower(forward, strafe, rot);
-
-        spindex.shootConsecutive(color);
-
-
-        if(intake.getPower() != 0){
-            intakeCheck();
-
-            int grnCount = 0;
-            int purCount = 0;
-            for(int i = 0; i <= 2; i ++){
-                if(currentLayout[i] == 1){
-                    grnCount++;
-                }
-                if(currentLayout[i] == -1){
-                    purCount++;
-                }
-            }
-            if(grnCount + purCount >= 3 && !sorted){
-                if(!spindex.withinTarget()){
-                    autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
-                    sorted = true;
-                }
-            }
+        // CALCULATE CHECKSUM - should change every frame if observations change
+        float obsChecksum = 0;
+        for (float obs : observations) {
+            obsChecksum += obs;
         }
 
-        autoAim();
+        // Get AI predictions
+        boolean inferenceSuccess = false;
+        long inferenceTime = 0;
+        long startTime = System.nanoTime();
+        float[] actions = null;
+        try {
+            actions = model.predict(observations, assetManager);
+        } catch (OrtException e) {
+            throw new RuntimeException(e);
+        }
+        inferenceTime = (System.nanoTime() - startTime) / 1_000_000;
+        inferenceSuccess = true;
 
-        // Create telemetry packet with field overlay
+        // Calculate action checksum
+        float actionChecksum = actions[0] + actions[1] + actions[2];
+
+        float strafe = -actions[0];
+        float forward = actions[1];
+        float rotation = actions[2];
+
+        float denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotation), 1.0f);
+
+// Divide each component by the denominator.
+// If the total is <= 1.0, nothing changes.
+// If the total is > 1.0, they are all scaled down proportionally.
+        forward /= denominator;
+        strafe /= denominator;
+        rotation /= denominator;
+
+        drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
 
-        double heading = currentPose.getHeading  (AngleUnit.RADIANS);
+        //double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
-        // Convert cm to inches for FTC Dashboard (uses official field frame in inches)
-        double agentXInches = agentX / 2.54;
-        double agentYInches = agentY / 2.54;
-        double targetXInches = targetX / 2.54;
-        double targetYInches = targetY / 2.54;
+        // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
+        double robotXInches = (robotX ) * AutoConstants.telemetryScale;
+        double robotYInches = (robotY ) * AutoConstants.telemetryScale;
+        double targetXInches = targetX * AutoConstants.telemetryScale;
+        double targetYInches = targetY * AutoConstants.telemetryScale;
 
         // Draw target position (red circle)
         fieldOverlay.setStroke("red");
@@ -280,128 +439,133 @@ public class YAIBA extends OpMode {
         fieldOverlay.setAlpha(1.0);
         fieldOverlay.setStroke("blue");
         fieldOverlay.setStrokeWidth(1);
-        fieldOverlay.strokeCircle(agentXInches, agentYInches, 9);
+        fieldOverlay.strokeCircle(robotXInches, robotYInches, 9);
         fieldOverlay.setFill("blue");
-        fieldOverlay.fillCircle(agentXInches, agentYInches, 9);
+        fieldOverlay.fillCircle(robotXInches, robotYInches, 9);
 
         // Draw direction line on robot
         double lineLength = 9;
-        double lineEndX = agentXInches + lineLength * Math.cos(heading);
-        double lineEndY = agentYInches + lineLength * Math.sin(heading);
+        double lineEndX = robotXInches + lineLength * Math.cos(odo.getPosition().getHeading(AngleUnit.DEGREES));
+        double lineEndY = robotYInches + lineLength * Math.sin(odo.getPosition().getHeading(AngleUnit.DEGREES));
         fieldOverlay.setStroke("white");
         fieldOverlay.setStrokeWidth(2);
-        fieldOverlay.strokeLine(agentXInches, agentYInches, lineEndX, lineEndY);
-
-        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+        fieldOverlay.strokeLine(robotXInches, robotYInches, lineEndX, lineEndY);
 
         // Draw desired movement vector (green line showing forward/strafe direction)
         double movementMagnitude = Math.sqrt(forward * forward + strafe * strafe);
         if (movementMagnitude > 0.01) {
             // Scale the movement vector for visibility (20 inches at full power)
             double vectorScale = 20.0;
-            double movementAngle = Math.atan2(forward, strafe); // Note: field uses standard trig convention
-            double movementEndX = agentXInches + vectorScale * movementMagnitude * Math.cos(movementAngle);
-            double movementEndY = agentYInches + vectorScale * movementMagnitude * Math.sin(movementAngle);
+            double headingRad = currentPose.getHeading(AngleUnit.DEGREES); // actually in radians
+            double fieldDx = (forward * Math.cos(headingRad)) - (strafe * Math.sin(headingRad));
+            double fieldDy = (forward * Math.sin(headingRad)) + (strafe * Math.cos(headingRad));
+            double movementEndX = robotXInches + vectorScale * fieldDx;
+            double movementEndY = robotYInches + vectorScale * fieldDy;
 
             fieldOverlay.setStroke("green");
             fieldOverlay.setStrokeWidth(2);
-            fieldOverlay.strokeLine(agentXInches, agentYInches, movementEndX, movementEndY);
+            fieldOverlay.strokeLine(robotXInches, robotYInches, movementEndX, movementEndY);
         }
 
-        telemetry.addData("agent", "(%.2f, %.2f)", agentX, agentY);
-        telemetry.addData("target", "(%.2f, %.2f)", targetX, targetY);
-        telemetry.addData("current Heading", odo.getHeading(AngleUnit.DEGREES));
-        telemetry.addData("activeStage", stageActive);
-        telemetry.addData("Forward", forward);
-        telemetry.addData("Strafe", strafe);
-        telemetry.addData("Rot", rot);
-        telemetry.addData("motors", "FL=%.2f FR=%.2f BL=%.2f BR=%.2f", fl, fr, bl, br);
+        FtcDashboard.getInstance().sendTelemetryPacket(packet);
+
+        // Telemetry
+        telemetry.addData("=== ODOMETRY ===", " ");
+        telemetry.addData("Status", odo.getDeviceStatus());
+        telemetry.addData("Pinpoint Frequency", odo.getFrequency()); //prints/gets the current refresh rate of the Pinpoint
+        double newTime = getRuntime();
+        double loopTime = newTime-oldTime;
+        double frequency = 1/loopTime;
+        oldTime = newTime;
+        telemetry.addData("REV Hub Frequency: ", frequency); //prints the control system refresh rate
+        telemetry.addData("Heading Scalar", odo.getYawScalar());
+        telemetry.addData("=== DIAGNOSTICS ===", "");
+        telemetry.addData("Inference Success?", inferenceSuccess);
+        telemetry.addData("Inference Time (ms)", inferenceTime);
+        telemetry.addData("Obs Checksum", "%.4f", obsChecksum);
+        telemetry.addData("Action Checksum", "%.4f", actionChecksum);
+
+        telemetry.addData("=== Position ===", "");
+        telemetry.addData("Position", "%.2f, %.2f", robotX, robotY);
+        telemetry.addData("Target", "%.2f, %.2f", targetX, targetY);
+        telemetry.addData("Rotation", "%.2f deg", Math.toDegrees(odo.getPosition().getHeading(AngleUnit.DEGREES)));
+
+        telemetry.addData("=== Raw Observations ===", "");
+        for (int i = 0; i < observations.length; i++) {
+            telemetry.addData("obs[" + i + "]", "%.3f", observations[i]);
+        }
+
+        telemetry.addData("=== Actions ===", "");
+        telemetry.addData("Actions", "F:%.3f S:%.3f R:%.3f", forward, strafe, rotation);
+
+        telemetry.addData("=== Pathing ===", "");
+        telemetry.addData("Current Stage", currentStage);
+        telemetry.addData("Current Auto", currentAuto);
         telemetry.addData("DTT", DTT);
-        telemetry.addData("shootCount", shootCount);
+
         telemetry.update();
     }
 
-    public void updateColor(){
-        if(!spindex.withinTarget()){
-            return;
-        }
-        if(color.getColor() == "GREEN") {
-            currentLayout[currentPosition] = 1;
-        }
-        if(color.getColor() == "PURPLE") {
-            currentLayout[currentPosition] = -1;
-        }
-        if(color.getColor() == "NONE"){
-            currentLayout[currentPosition] = 0;
-        }
-
-        detectedColor = color.getColor();
-    }
-
-    public void autoAim() {
-        LLResult result = turretSpin.limelight.getLatestResult();
-
-        if (result == null || !result.isValid()) {
-            turretSpin.spinRightCR(0);
-            return;
-        }
-
-        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()) {
-            if (result.getFiducialResults().get(0).getFiducialId() == 21) {
-                target = SpindexAutoSort.targetMotif.GPP;
-                detectedMotif = "GPP";
-            } else if (result.getFiducialResults().get(0).getFiducialId() == 22) {
-                target = SpindexAutoSort.targetMotif.PGP;
-                detectedMotif = "PGP";
-            } else if (result.getFiducialResults().get(0).getFiducialId() == 23) {
-                target = SpindexAutoSort.targetMotif.PPG;
-                detectedMotif = "PPG";
-            }
-            return;
-        }
-
-        double tx = result.getTx();
-        // if tx is positive (target to the right) the turret needs to rotate right to center therefore -tx
-// most motors rotate + pwr = turn right. so we shouldnt need to make it negative??
-//using if no target then stop
-
-        //computing how much error:
-        double error = tx; //u want tx=0
-
-//i feel like we should have a deadzone bc its continuous
-        double deadband = 1.0; //degrees
-        if (Math.abs(error) < deadband) {
-            turretSpin.spinRightCR(0);
-            return;
-        }
-    }
-
-    public void intakeCheck() {
-        int grnCount = 0;
-        int purCount = 0;
-        for (int i = 0; i <= 2; i++) {
-            if (currentLayout[i] == 1) {
-                grnCount++;
-            }
-            if (currentLayout[i] == -1) {
-                purCount++;
-            }
-        }
-        if ((grnCount + purCount) >= 3) {
-            return;
-        }
-
-
-        if (!spindex.withinTarget()) {
-            return;
-        }
-        if (detectedColor == "NONE") {
-            processingBall = false;
-        } else if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget() && !processingBall) {
-            processingBall = true;
-            spindex.spinTurns(1);
-            currentPosition = (currentPosition + 1) % 3;
-            intakeCount++;
-        }
-    }
+//    public void updateColor(){
+//        if(spindex.isBusy){
+//            return;
+//        }
+//        else if(color.getColor() == "GREEN") {
+//            currentLayout[currentPosition] = 1;
+//        }
+//        else if(color.getColor() == "PURPLE") {
+//            currentLayout[currentPosition] = -1;
+//        }
+//        else if(color.getColor() == "NONE"){
+//            currentLayout[currentPosition] = 0;
+//        }
+//
+//        detectedColor = color.getColor();
+//    }
+//
+//    public void intakeCheck() {
+//        int grnCount = 0;
+//        int purCount = 0;
+//        for(int i = 0; i <= 2; i ++){
+//            if(currentLayout[i] == 1){
+//                grnCount++;
+//            }
+//            if(currentLayout[i] == -1){
+//                purCount++;
+//            }
+//        }
+//
+//        if (!spindex.withinTarget()){
+//            return;
+//        }
+//
+//
+//        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+//            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
+//                if(purCount + grnCount <= 2){
+//                    sorted = false;
+//                    intake.paused = true;
+//                    intakePauseTimer.reset();
+//                    autoSortTimer.reset();
+//                    autoSortTimerStarted = false;
+//                    intakeCount++;
+//                    spindex.spinTurns(1);
+//                    currentPosition = (currentPosition + 1) % 3;
+//                }
+//                else{
+//                    fortelemetry = currentPosition;
+//                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
+//                    spindex.spinTurns(turns);
+//                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+//                    currentPosition = (currentPosition + turns) % 3;
+//                    fortelemetry2 = currentPosition;
+//                    sorted = true;
+//                    intake.togglePower(Intake.intakePower);
+//                }
+//            } else if(!autoSortTimerStarted){ // We should start the timer
+//                autoSortTimerStarted = true;
+//                autoSortTimer.reset();
+//            }
+//        }
+//    }
 }

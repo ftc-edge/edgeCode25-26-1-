@@ -6,9 +6,9 @@ public class AutoConstants {
     public static String allianceColor = "Red";
     public static String startingPosition = "Front";
     public static double telemetryScale = 60;
-    public static double driveForwardMult = 0.2;
-    public static double driveStrafeMult = 0.2;
-    public static double driveRotationMult = 0.2;
+    public static double driveForwardMult = 1;
+    public static double driveStrafeMult = -1;
+    public static double driveRotationMult = 1;
     public static double MODEL_POS_SCALE = 0.000625;
     public static float initHeading = -90f;
     public static float distanceTolerance = 2.5f;
