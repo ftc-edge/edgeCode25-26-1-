@@ -63,6 +63,8 @@ public class YAIBA_REDFRONT extends OpMode {
 
     double oldTime = 0;
 
+    private boolean startShoot;
+
     
 
     public enum autoStage{
@@ -258,10 +260,14 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveStrafeMult = -1;
                     if(DTT < 0.05){
                         currentStage = autoStage.shoot;
+                        startShoot = true;
                     }
                     break;
                 case shoot:
-                    spindex.startShootConsecutive();
+                    if(startShoot){
+                        spindex.startShootConsecutive();
+                        startShoot = false;
+                    }
                     if(!spindex.shooting){
                         shootCnt++;
                         if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
@@ -299,6 +305,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveStrafeMult = -1f;
                     if(DTT< 0.05){
                         currentStage = autoStage.shoot;
+                        startShoot = true;
                     }
                     break;
                 case gatePushSetup:
@@ -724,7 +731,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
         distToAprilTag = result.getBotposeAvgDist();
 
-        double scaled = distToAprilTag * Constants.regressionScaling;
+        double scaled = 125;    
         hood.setPosition(TurretRegression.getHoodPosition(scaled));
         telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
         turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));

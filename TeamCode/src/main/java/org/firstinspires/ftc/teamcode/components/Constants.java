@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
-    public static double regressionScaling = 44;
+    public static double regressionScaling = 30;
     public static double autoAimLoseDecayMultiplier = 0.92;
     public static double autoAimLoseMultiplier = 0.9;
     public static double limelightKP = 0.01;
