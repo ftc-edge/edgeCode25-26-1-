@@ -30,6 +30,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import ai.onnxruntime.OrtException;
@@ -67,7 +68,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     double oldTime = 0;
 
-    
+    public ElapsedTime autoSortTimer = new ElapsedTime();
+    public ElapsedTime intakePauseTimer = new ElapsedTime();
+    boolean autoSortTimerStarted = false;
+
 
     public enum autoStage{
         firstShootDrive,
@@ -98,17 +102,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     Color color;
 
-
     Turret turret;
     Hood hood;
     TurretSpin turretSpin;
     SpindexAutoSort autoSort;
     int currentPosition = 0;
     double distToAprilTag = 1;
-
-    public ElapsedTime autoSortTimer = new ElapsedTime();
-    public ElapsedTime intakePauseTimer = new ElapsedTime();
-    boolean autoSortTimerStarted = false;
 
     public boolean sorted = false;
     float intakeCount;
@@ -366,9 +365,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
 //        }
     }
 
-
-    //update the odo pods
-
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -514,6 +510,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         rotation /= denominator;
 
         drive.setPower(forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+        spindex.shootConsecutive(color);
 
         autoAim();
         updateColor();
@@ -614,8 +611,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         telemetry.update();
     }
+
     public void updateColor(){
-        if(!spindex.withinTarget()){
+        if(spindex.withinTarget()){
             return;
         }
         else if(color.getColor() == "GREEN") {

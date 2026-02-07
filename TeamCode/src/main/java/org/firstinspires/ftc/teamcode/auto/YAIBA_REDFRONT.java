@@ -518,6 +518,7 @@ public class YAIBA_REDFRONT extends OpMode {
         rotation /= denominator;
 
         drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+        spindex.shootConsecutive(color);
 
         autoAim();
         updateColor();
