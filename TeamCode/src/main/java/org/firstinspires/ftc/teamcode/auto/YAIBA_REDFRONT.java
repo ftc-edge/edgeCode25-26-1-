@@ -233,7 +233,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     break;
                 case shoot:
                     spindex.startShootConsecutive();
-                    if(!spindex.shooting){
+                    if(!iy.shooting){
                         shootCnt++;
                         if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
                         if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
@@ -412,8 +412,9 @@ public class YAIBA_REDFRONT extends OpMode {
             telemetry.update();
         }
 
-        odo.setPosition(new Pose2D(DistanceUnit.CM, -0.944 / MODEL_POS_SCALE, -0.66 / MODEL_POS_SCALE, AngleUnit.DEGREES, 1.578));
+        odo.setPosition(new Pose2D(DistanceUnit.CM, -0.944 / MODEL_POS_SCALE, 0.66 / MODEL_POS_SCALE, AngleUnit.RADIANS, 1.578));
         currentStage = autoStage.firstShootDrive;
+        odo.update();
         try {
             // Load AI model
             model = new BODYONNX(hardwareMap.appContext.getAssets());
