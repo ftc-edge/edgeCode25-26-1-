@@ -3,6 +3,9 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class AutoConstants {
+    public static double shootScaled1 = 150;
+    public static double shootScaled2 = 175;
+    public static double shootScaled3 = 125;
     public static String allianceColor = "Red";
     public static String startingPosition = "Front";
     public static double telemetryScale = 60;

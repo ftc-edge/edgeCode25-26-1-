@@ -64,6 +64,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
     public float currentHeading;
     boolean notStarted;
 
+    double scaled = 125;
+    public boolean intakeCheckEnabled = false;
     AssetManager assetManager;
 
     double oldTime = 0;
@@ -118,6 +120,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
     int fortelemetry2;
     public int[] currentLayout = new int[]{0, 0, 0};
 
+    private boolean startShoot = false;
+
 
     private float[] buildObservations() {
         float[] obs = new float[9];
@@ -160,12 +164,18 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 1;
                     AutoConstants.driveStrafeMult = -1;
                     if(DTT < 0.05){
+                        startShoot = true;
+                        scaled = AutoConstants.shootScaled1;
                         currentStage = autoStage.shoot;
                     }
                     break;
                 case shoot:
-                    spindex.startShootConsecutive();
+                    if(startShoot){
+                        startShoot = false;
+                        spindex.startShootConsecutive();
+                    }
                     if(!spindex.shooting){
+                        intakeCheckEnabled = true;
                         shootCnt++;
                         if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
                         if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
@@ -198,6 +208,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 1f;
                     AutoConstants.driveStrafeMult = -1f;
                     if(DTT< 0.05){
+                        startShoot = true;
+                        scaled = AutoConstants.shootScaled2;
                         currentStage = autoStage.shoot;
                     }
                     break;
@@ -514,7 +526,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         autoAim();
         updateColor();
-        if(intake.getPower() != 0){
+        if(intake.getPower() != 0 && intakeCheckEnabled){
             intakeCheck();
         }
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
@@ -717,7 +729,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         distToAprilTag = result.getBotposeAvgDist();
 
-        double scaled = distToAprilTag * Constants.regressionScaling;
         hood.setPosition(TurretRegression.getHoodPosition(scaled));
         telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
         turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));

@@ -49,7 +49,7 @@ public class YAIBA_REDFRONT extends OpMode {
     private double targetX = TARGET_X_M;
     private double targetY = TARGET_Y_M;
 
-    double scaled = 125;
+    double scaled = 175;
 
     Drive drive;
 
@@ -117,6 +117,8 @@ public class YAIBA_REDFRONT extends OpMode {
     int fortelemetry2;
 
     public int[] currentLayout = new int[]{0, 0, 0};
+
+    public boolean intakeCheckEnabled = false;
 
 
     private float[] buildObservations() {
@@ -262,6 +264,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 1;
                     AutoConstants.driveStrafeMult = -1;
                     if(DTT < 0.05){
+                        scaled = AutoConstants.shootScaled1;
                         currentStage = autoStage.shoot;
                         startShoot = true;
                     }
@@ -272,6 +275,7 @@ public class YAIBA_REDFRONT extends OpMode {
                         startShoot = false;
                     }
                     if(!spindex.shooting){
+                        intakeCheckEnabled = true;
                         shootCnt++;
                         if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
                         if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
@@ -307,6 +311,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 1f;
                     AutoConstants.driveStrafeMult = -1f;
                     if(DTT< 0.05){
+                        scaled = AutoConstants.shootScaled2;
                         currentStage = autoStage.shoot;
                         startShoot = true;
                     }
@@ -533,7 +538,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
         autoAim();
         updateColor();
-        if(intake.getPower() != 0){
+        if(intake.getPower() != 0 && intakeCheckEnabled){
             intakeCheck();
         }
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
