@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.auto;
 import static java.lang.Thread.sleep;
 
 import android.content.res.AssetManager;
-import android.media.audiofx.AutomaticGainControl;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -12,7 +11,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.components.Color;
-import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.components.Intake;
@@ -27,8 +25,11 @@ import com.acmerobotics.dashboard.canvas.Canvas;
 import ai.onnxruntime.OrtException;
 
 import org.firstinspires.ftc.teamcode.components.AutoConstants;
+
+import java.util.Objects;
+
 @TeleOp
-public class YAIBA extends OpMode {
+public class YAIBA_BLUEFRONT extends OpMode {
 
     private BODYONNX model;
 
@@ -56,14 +57,7 @@ public class YAIBA extends OpMode {
 
     double oldTime = 0;
 
-    public static enum autoMode{
-        blueFront,
-        blueBack,
-        redFront,
-        redBack;
-    }
-
-    public static autoMode currentAuto;
+    
 
     public enum autoStage{
         firstShootDrive,
@@ -94,7 +88,8 @@ public class YAIBA extends OpMode {
 
     Color color;
 
-
+    private int[] currentLayout;
+    private int currentPosition;
 
     private float[] buildObservations() {
         float[] obs = new float[9];
@@ -128,7 +123,7 @@ public class YAIBA extends OpMode {
 
     private void stateMachine(){
         //gate push angle is 120 degrees
-        if(currentAuto == autoMode.blueFront) {
+       // if(AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
             switch(currentStage){
                 case firstShootDrive:
                     targetX = -0.33f;
@@ -227,107 +222,107 @@ public class YAIBA extends OpMode {
                     targetX = -0.33f;
                     targetY = 0f;
             }
-        }
-        if(currentAuto == autoMode.redFront) {
-            switch(currentStage){
-                case firstShootDrive:
-                    targetX = -0.33f;
-                    targetY = 0.33f;
-                    targetAngle = -1.578f;
-                    AutoConstants.driveForwardMult = 1;
-                    AutoConstants.driveStrafeMult = 1;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.shoot;
-                    }
-                case shoot:
-                    spindex.startShootConsecutive();
-                    if(!spindex.shooting){
-                        shootCnt++;
-                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
-                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-                        if(shootCnt == 5) currentStage = autoStage.finish;
-                    }
-                case firstPickupSetup:
-                    targetX = 0.15f;
-                    targetY = 0.33f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.firstPickup;
-                    }
-                case firstPickup:
-                    intake.togglePower(intake.intakePower);
-                    targetX = 0.15f;
-                    targetY = 0.75f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
-                    //intakeCheck code (idk how we're gonna implement)
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                case shootDrive:
-                    targetX = 0;
-                    targetY = 0;
-                    AutoConstants.driveForwardMult = 1f;
-                    AutoConstants.driveStrafeMult = 1f;
-                    if(DTT< 0.05){
-                        currentStage = autoStage.shoot;
-                    }
-                case gatePushSetup:
-                    targetX = -0.66f;
-                    targetY = -0.15f;
-                    targetAngle = 2.0944f;
-                    if(DTT< 0.05){
-                        currentStage = autoStage.gatePush;
-                    }
-                case gatePush:
-                    targetX =  0.15f;
-                    targetY = 0.66f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
-                    intake.togglePower(intake.intakePower);
-                    //same issue as ball pickup
-                    //if(ballCount == 3){
-                    //currentStage = autoStage.driveToShoot
-                case secondPickupSetup:
-                    targetX = 0.4f;
-                    targetY = 0.33f;
-                    AutoConstants.driveForwardMult = 1f;
-                    AutoConstants.driveStrafeMult = 1f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.secondPickup;
-                    }
-                case secondPickup:
-                    targetX = 0.4f;
-                    targetY = 0.75f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
-                    intake.togglePower(intake.intakePower);
-                    //intake issue
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                case thirdPickupSetup:
-                    targetX = -0.15f;
-                    targetY = 0.33f;
-                    AutoConstants.driveForwardMult = 0.8f;
-                    AutoConstants.driveStrafeMult = 0.8f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.thirdPickup;
-                    }
-                case thirdPickup:
-                    targetX = -0.15f;
-                    targetY = 0.75f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                case finish:
-                    targetX = 0.33;
-                    targetY = 0f;
-            }
-        }
+        //}
+//        if(AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
+//            switch(currentStage){
+//                case firstShootDrive:
+//                    targetX = -0.33f;
+//                    targetY = 0.33f;
+//                    targetAngle = -1.578f;
+//                    AutoConstants.driveForwardMult = 1;
+//                    AutoConstants.driveStrafeMult = 1;
+//                    if(DTT < 0.05){
+//                        currentStage = autoStage.shoot;
+//                    }
+//                case shoot:
+//                    spindex.startShootConsecutive();
+//                    if(!spindex.shooting){
+//                        shootCnt++;
+//                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
+//                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
+//                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+//                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+//                        if(shootCnt == 5) currentStage = autoStage.finish;
+//                    }
+//                case firstPickupSetup:
+//                    targetX = 0.15f;
+//                    targetY = 0.33f;
+//                    if(DTT < 0.05){
+//                        currentStage = autoStage.firstPickup;
+//                    }
+//                case firstPickup:
+//                    intake.togglePower(intake.intakePower);
+//                    targetX = 0.15f;
+//                    targetY = 0.75f;
+//                    AutoConstants.driveForwardMult = 0.35f;
+//                    AutoConstants.driveStrafeMult = 0.35f;
+//                    //intakeCheck code (idk how we're gonna implement)
+//                    if(DTT < 0.025){
+//                        currentStage = autoStage.shootDrive;
+//                    }
+//                case shootDrive:
+//                    targetX = 0;
+//                    targetY = 0;
+//                    AutoConstants.driveForwardMult = 1f;
+//                    AutoConstants.driveStrafeMult = 1f;
+//                    if(DTT< 0.05){
+//                        currentStage = autoStage.shoot;
+//                    }
+//                case gatePushSetup:
+//                    targetX = -0.66f;
+//                    targetY = -0.15f;
+//                    targetAngle = 2.0944f;
+//                    if(DTT< 0.05){
+//                        currentStage = autoStage.gatePush;
+//                    }
+//                case gatePush:
+//                    targetX =  0.15f;
+//                    targetY = 0.66f;
+//                    AutoConstants.driveForwardMult = 0.35f;
+//                    AutoConstants.driveStrafeMult = 0.35f;
+//                    intake.togglePower(intake.intakePower);
+//                    //same issue as ball pickup
+//                    //if(ballCount == 3){
+//                    //currentStage = autoStage.driveToShoot
+//                case secondPickupSetup:
+//                    targetX = 0.4f;
+//                    targetY = 0.33f;
+//                    AutoConstants.driveForwardMult = 1f;
+//                    AutoConstants.driveStrafeMult = 1f;
+//                    if(DTT < 0.05){
+//                        currentStage = autoStage.secondPickup;
+//                    }
+//                case secondPickup:
+//                    targetX = 0.4f;
+//                    targetY = 0.75f;
+//                    AutoConstants.driveForwardMult = 0.35f;
+//                    AutoConstants.driveStrafeMult = 0.35f;
+//                    intake.togglePower(intake.intakePower);
+//                    //intake issue
+//                    if(DTT < 0.025){
+//                        currentStage = autoStage.shootDrive;
+//                    }
+//                case thirdPickupSetup:
+//                    targetX = -0.15f;
+//                    targetY = 0.33f;
+//                    AutoConstants.driveForwardMult = 0.8f;
+//                    AutoConstants.driveStrafeMult = 0.8f;
+//                    if(DTT < 0.05){
+//                        currentStage = autoStage.thirdPickup;
+//                    }
+//                case thirdPickup:
+//                    targetX = -0.15f;
+//                    targetY = 0.75f;
+//                    AutoConstants.driveForwardMult = 0.35f;
+//                    AutoConstants.driveStrafeMult = 0.35f;
+//                    if(DTT < 0.025){
+//                        currentStage = autoStage.shootDrive;
+//                    }
+//                case finish:
+//                    targetX = 0.33;
+//                    targetY = 0f;
+//            }
+//        }
     }
 
 
@@ -338,19 +333,75 @@ public class YAIBA extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         drive = new Drive(hardwareMap);
         color = new Color(hardwareMap);
+        spindex = new Spindex(hardwareMap);
+        intake = new Intake(hardwareMap);
+
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(12, -17.5, DistanceUnit.CM);
 
+//        if(AutoConstants.allianceColor == "Red"){
+//            if(AutoConstants.startingPosition == "Front"){
+//                AutoConstants.currentAuto = AutoConstants.autoMode.redFront;
+//            }else{
+//                AutoConstants.currentAuto = AutoConstants.autoMode.redBack;
+//            }
+//        }else{
+//            if(AutoConstants.startingPosition == "Front"){
+//                AutoConstants.currentAuto = AutoConstants.autoMode.blueFront;
+//            }else{
+//                AutoConstants.currentAuto = AutoConstants.autoMode.blueBack;
+//            }
+//        }
         //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
-        if(currentAuto == autoMode.blueFront) odo.setPosition(new Pose2D(DistanceUnit.METER, -0.944, -0.66, AngleUnit.RADIANS, -1.578f));
-        if(currentAuto == autoMode.redFront) odo.setPosition(new Pose2D(DistanceUnit.METER, -0.944, 0.66, AngleUnit.RADIANS, 1.578f));
+
+//        double startX = 0;
+//        double startY = 0;
+//        double startHeading = 0;
+//        if(AutoConstants.currentAuto == null){
+//            if(Objects.equals(AutoConstants.allianceColor, "Red")){
+//                if(Objects.equals(AutoConstants.startingPosition, "Front")){
+//                    startX = -0.944;
+//                    startY = 0.66;
+//                    startHeading = 1.578;
+//                }else{
+//                    //nothing for now
+//                }
+//            }else{
+//                if(Objects.equals(AutoConstants.startingPosition, "Front")){
+//                    startX = -0.944;
+//                    startY = -0.66;
+//                    startHeading = -1.578;
+//                }else{
+//                    //nothing for now
+//                }
+//            }
+//        }else{
+//            if (AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
+//                startX = -0.944;
+//                startY = -0.66;
+//                startHeading = -1.578;
+//            } else if (AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
+//                startX = -0.944;
+//                startY = 0.66;
+//                startHeading = 1.578;
+//            }
+//        }
+        while (odo.getDeviceStatus() != GoBildaPinpointDriver.DeviceStatus.READY && !Thread.currentThread().isInterrupted()) {
+            odo.update();
+            telemetry.addData("status", odo.getDeviceStatus());
+            telemetry.addData("status2",Thread.currentThread().isInterrupted() );
+            telemetry.update();
+        }
+
+        odo.setPosition(new Pose2D(DistanceUnit.CM, -0.944 / MODEL_POS_SCALE, -0.66 / MODEL_POS_SCALE, AngleUnit.DEGREES, -1.578));
         currentStage = autoStage.firstShootDrive;
         try {
             // Load AI model
             model = new BODYONNX(hardwareMap.appContext.getAssets());
             telemetry.addData("Status", "Model loaded successfully");
+            telemetry.addData("initial position", odo.getPosition().getX(DistanceUnit.CM));
             telemetry.update();
         } catch (Exception e) {
             telemetry.addData("Error", "Failed to load model: " + e.getMessage());
@@ -414,7 +465,7 @@ public class YAIBA extends OpMode {
         strafe /= denominator;
         rotation /= denominator;
 
-        drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+        drive.setPower(forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
 
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
@@ -500,28 +551,28 @@ public class YAIBA extends OpMode {
 
         telemetry.addData("=== Pathing ===", "");
         telemetry.addData("Current Stage", currentStage);
-        telemetry.addData("Current Auto", currentAuto);
+        telemetry.addData("Current Auto", AutoConstants.currentAuto);
         telemetry.addData("DTT", DTT);
 
         telemetry.update();
     }
 
-//    public void updateColor(){
-//        if(spindex.isBusy){
-//            return;
-//        }
-//        else if(color.getColor() == "GREEN") {
-//            currentLayout[currentPosition] = 1;
-//        }
-//        else if(color.getColor() == "PURPLE") {
-//            currentLayout[currentPosition] = -1;
-//        }
-//        else if(color.getColor() == "NONE"){
-//            currentLayout[currentPosition] = 0;
-//        }
-//
-//        detectedColor = color.getColor();
-//    }
+    public void updateColor(){
+        if(spindex.withinTarget()){
+            return;
+        }
+        else if(color.getColor() == "GREEN") {
+            currentLayout[currentPosition] = 1;
+        }
+        else if(color.getColor() == "PURPLE") {
+            currentLayout[currentPosition] = -1;
+        }
+        else if(color.getColor() == "NONE"){
+            currentLayout[currentPosition] = 0;
+        }
+
+        detectedColor = color.getColor();
+    }
 //
 //    public void intakeCheck() {
 //        int grnCount = 0;

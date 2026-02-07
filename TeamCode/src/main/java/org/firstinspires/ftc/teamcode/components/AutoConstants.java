@@ -36,4 +36,13 @@ public class AutoConstants {
     public static float humanPlayerPrepX = 150f;
     public static float humanPlayerY = 150f;
     public static float humanPlayerX = 150f;
+
+    public static enum autoMode{
+        blueFront,
+        blueBack,
+        redFront,
+        redBack;
+    }
+
+    public static autoMode currentAuto;
 }
