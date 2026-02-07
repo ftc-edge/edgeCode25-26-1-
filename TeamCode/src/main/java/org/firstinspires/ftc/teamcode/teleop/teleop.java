@@ -147,6 +147,12 @@ public class teleop extends OpMode{
             intake.togglePower(-Intake.intakePower);
         }
 
+        double scaled = AutoConstants.shootScaled3;
+        hood.setPosition(TurretRegression.getHoodPosition(scaled));
+        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
+        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
+        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+
 
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
@@ -165,6 +171,7 @@ public class teleop extends OpMode{
         telemetry.addData("Current Position", currentPosition);
         telemetry.addData("Spindex is within target", spindex.withinTarget());
         telemetry.addData("Detected Motif", detectedMotif);
+        telemetry.addData("Linelight Error", turretSpin.lastError);
         //telemetry.addData("purple + green count", )
 
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
@@ -300,11 +307,6 @@ public class teleop extends OpMode{
         distToAprilTag = result.getBotposeAvgDist();
 
 //        double scaled = distToAprilTag * Constants.regressionScaling;
-        double scaled = 195;
-        hood.setPosition(TurretRegression.getHoodPosition(scaled));
-        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
-        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
-        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
     }
 
 

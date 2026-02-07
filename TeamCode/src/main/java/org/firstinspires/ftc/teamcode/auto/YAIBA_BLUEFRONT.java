@@ -30,7 +30,6 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import ai.onnxruntime.OrtException;
@@ -72,6 +71,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
+    public ElapsedTime timer = new ElapsedTime(); // ADDED (ElapsedTime-based shooting delay)
     boolean autoSortTimerStarted = false;
 
 
@@ -155,226 +155,140 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     private void stateMachine(){
         //gate push angle is 120 degrees
-       // if(AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
-            switch(currentStage){
-                case firstShootDrive:
-                    targetX = -0.33f;
-                    targetY = -0.33f;
-                    targetAngle = -1.578f;
-                    AutoConstants.driveForwardMult = 1;
-                    AutoConstants.driveStrafeMult = -1;
-                    if(DTT < 0.05){
-                        startShoot = true;
-                        scaled = AutoConstants.shootScaled1;
-                        currentStage = autoStage.shoot;
-                    }
-                    break;
-                case shoot:
-                    if(startShoot){
-                        startShoot = false;
+        // if(AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
+        switch(currentStage){
+            case firstShootDrive:
+                targetX = 0f;
+                targetY = 0f;
+                targetAngle = -1.578f;
+                AutoConstants.driveForwardMult = 1;
+                AutoConstants.driveStrafeMult = -1;
+                if(DTT < 0.05){
+                    startShoot = true;
+                    scaled = AutoConstants.shootScaled1;
+                    currentStage = autoStage.shoot;
+                    timer.reset(); // ADDED: start delay timer when entering shoot stage
+                }
+                break;
+
+            case shoot:
+                if(timer.milliseconds() > AutoConstants.beforeShootDelayMS) {
+                    if (startShoot) {
                         spindex.startShootConsecutive();
+                        startShoot = false;
                     }
-                    if(!spindex.shooting){
+                    if (!spindex.shooting) {
                         intakeCheckEnabled = true;
                         shootCnt++;
-                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
-                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-                        if(shootCnt == 5) currentStage = autoStage.finish;
+                        if (shootCnt == 1) currentStage = autoStage.firstPickupSetup;
+                        if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                        if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+                        if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+                        if (shootCnt == 5) currentStage = autoStage.finish;
+                        timer.reset();
                     }
-                    break;
-                case firstPickupSetup:
-                    targetX = 0.15f;
-                    targetY = -0.33f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.firstPickup;
-                    }
-                    break;
-                case firstPickup:
-                    intake.togglePower(intake.intakePower);
-                    targetX = 0.15f;
-                    targetY = -0.75f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = -0.35f;
-                    //intakeCheck code (idk how we're gonna implement)
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                    break;
-                case shootDrive:
-                    targetX = 0;
-                    targetY = 0;
-                    AutoConstants.driveForwardMult = 1f;
-                    AutoConstants.driveStrafeMult = -1f;
-                    if(DTT< 0.05){
-                        startShoot = true;
-                        scaled = AutoConstants.shootScaled2;
-                        currentStage = autoStage.shoot;
-                    }
-                    break;
-                case gatePushSetup:
-                    targetX = - 0.15f;
-                    targetY = -0.66f;
-                    targetAngle = -2.0944f;
-                    if(DTT< 0.05){
-                        currentStage = autoStage.gatePush;
-                    }
-                    break;
-                case gatePush:
-                    targetX = - 0.15f;
-                    targetY = -0.8f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = -0.35f;
-                    intake.togglePower(intake.intakePower);
-                    break;
-                    //same issue as ball pickup
-                    //if(ballCount == 3){
-                    //currentStage = autoStage.driveToShoot
-                case secondPickupSetup:
-                    targetX = 0.41f;
-                    targetY = -0.33f;
-                    AutoConstants.driveForwardMult = 1f;
-                    AutoConstants.driveStrafeMult = -1f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.secondPickup;
-                    }
-                    break;
-                case secondPickup:
-                    targetX = 0.41f;
-                    targetY = -0.80f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = -0.35f;
-                    intake.togglePower(intake.intakePower);
-                    //intake issue
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                    break;
-                case thirdPickupSetup:
-                    targetX =-0.15f;
-                    targetY = -0.33f;
-                    AutoConstants.driveForwardMult = 0.8f;
-                    AutoConstants.driveStrafeMult = -0.8f;
-                    if(DTT < 0.05){
-                        currentStage = autoStage.thirdPickup;
-                    }
-                    break;
-                case thirdPickup:
-                    targetX = -0.15f;
-                    targetY = -0.8f;
-                    AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = -0.35f;
-                    if(DTT < 0.025){
-                        currentStage = autoStage.shootDrive;
-                    }
-                    break;
-                case finish:
-                    targetX = -0.33f;
-                    targetY = 0f;
-                    break;
-            }
+                }
+                break;
+
+            case firstPickupSetup:
+                targetX = 0.15f;
+                targetY = -0.33f;
+                buildObservations();
+                if(DTT < 0.05){
+                    currentStage = autoStage.firstPickup;
+                }
+                break;
+
+            case firstPickup:
+                intake.togglePower(intake.intakePower);
+                targetX = 0.15f;
+                targetY = -0.75f;
+                AutoConstants.driveForwardMult = 0.35f;
+                AutoConstants.driveStrafeMult = -0.35f;
+                //intakeCheck code (idk how we're gonna implement)
+                if(DTT < 0.05){
+                    currentStage = autoStage.shootDrive;
+                }
+                break;
+
+            case shootDrive:
+                targetX = 0;
+                targetY = 0;
+                AutoConstants.driveForwardMult = 1f;
+                AutoConstants.driveStrafeMult = -1f;
+                if(DTT< 0.05){
+                    startShoot = true;
+                    scaled = AutoConstants.shootScaled2;
+                    currentStage = autoStage.shoot;
+                    // NOTE: red version does NOT reset timer here, so we keep behavior consistent
+                }
+                break;
+
+            case gatePushSetup:
+                targetX = - 0.15f;
+                targetY = -0.66f;
+                targetAngle = -2.0944f;
+                if(DTT< 0.05){
+                    currentStage = autoStage.gatePush;
+                }
+                break;
+
+            case gatePush:
+                targetX = - 0.15f;
+                targetY = -0.8f;
+                AutoConstants.driveForwardMult = 0.35f;
+                AutoConstants.driveStrafeMult = -0.35f;
+                intake.togglePower(intake.intakePower);
+                break;
+
+            case secondPickupSetup:
+                targetX = 0.41f;
+                targetY = -0.33f;
+                AutoConstants.driveForwardMult = 1f;
+                AutoConstants.driveStrafeMult = -1f;
+                if(DTT < 0.05){
+                    currentStage = autoStage.secondPickup;
+                }
+                break;
+
+            case secondPickup:
+                targetX = 0.41f;
+                targetY = -0.80f;
+                AutoConstants.driveForwardMult = 0.35f;
+                AutoConstants.driveStrafeMult = -0.35f;
+                intake.togglePower(intake.intakePower);
+                //intake issue
+                if(DTT < 0.025){
+                    currentStage = autoStage.shootDrive;
+                }
+                break;
+
+            case thirdPickupSetup:
+                targetX =-0.15f;
+                targetY = -0.33f;
+                AutoConstants.driveForwardMult = 0.8f;
+                AutoConstants.driveStrafeMult = -0.8f;
+                if(DTT < 0.05){
+                    currentStage = autoStage.thirdPickup;
+                }
+                break;
+
+            case thirdPickup:
+                targetX = -0.15f;
+                targetY = -0.8f;
+                AutoConstants.driveForwardMult = 0.35f;
+                AutoConstants.driveStrafeMult = -0.35f;
+                if(DTT < 0.025){
+                    currentStage = autoStage.shootDrive;
+                }
+                break;
+
+            case finish:
+                targetX = -0.33f;
+                targetY = 0f;
+                break;
+        }
         //}
-//        if(AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
-//            switch(currentStage){
-//                case firstShootDrive:
-//                    targetX = -0.33f;
-//                    targetY = 0.33f;
-//                    targetAngle = -1.578f;
-//                    AutoConstants.driveForwardMult = 1;
-//                    AutoConstants.driveStrafeMult = 1;
-//                    if(DTT < 0.05){
-//                        currentStage = autoStage.shoot;
-//                    }
-//                case shoot:
-//                    spindex.startShootConsecutive();
-//                    if(!spindex.shooting){
-//                        shootCnt++;
-//                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-//                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
-//                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-//                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-//                        if(shootCnt == 5) currentStage = autoStage.finish;
-//                    }
-//                case firstPickupSetup:
-//                    targetX = 0.15f;
-//                    targetY = 0.33f;
-//                    if(DTT < 0.05){
-//                        currentStage = autoStage.firstPickup;
-//                    }
-//                case firstPickup:
-//                    intake.togglePower(intake.intakePower);
-//                    targetX = 0.15f;
-//                    targetY = 0.75f;
-//                    AutoConstants.driveForwardMult = 0.35f;
-//                    AutoConstants.driveStrafeMult = 0.35f;
-//                    //intakeCheck code (idk how we're gonna implement)
-//                    if(DTT < 0.025){
-//                        currentStage = autoStage.shootDrive;
-//                    }
-//                case shootDrive:
-//                    targetX = 0;
-//                    targetY = 0;
-//                    AutoConstants.driveForwardMult = 1f;
-//                    AutoConstants.driveStrafeMult = 1f;
-//                    if(DTT< 0.05){
-//                        currentStage = autoStage.shoot;
-//                    }
-//                case gatePushSetup:
-//                    targetX = -0.66f;
-//                    targetY = -0.15f;
-//                    targetAngle = 2.0944f;
-//                    if(DTT< 0.05){
-//                        currentStage = autoStage.gatePush;
-//                    }
-//                case gatePush:
-//                    targetX =  0.15f;
-//                    targetY = 0.66f;
-//                    AutoConstants.driveForwardMult = 0.35f;
-//                    AutoConstants.driveStrafeMult = 0.35f;
-//                    intake.togglePower(intake.intakePower);
-//                    //same issue as ball pickup
-//                    //if(ballCount == 3){
-//                    //currentStage = autoStage.driveToShoot
-//                case secondPickupSetup:
-//                    targetX = 0.4f;
-//                    targetY = 0.33f;
-//                    AutoConstants.driveForwardMult = 1f;
-//                    AutoConstants.driveStrafeMult = 1f;
-//                    if(DTT < 0.05){
-//                        currentStage = autoStage.secondPickup;
-//                    }
-//                case secondPickup:
-//                    targetX = 0.4f;
-//                    targetY = 0.75f;
-//                    AutoConstants.driveForwardMult = 0.35f;
-//                    AutoConstants.driveStrafeMult = 0.35f;
-//                    intake.togglePower(intake.intakePower);
-//                    //intake issue
-//                    if(DTT < 0.025){
-//                        currentStage = autoStage.shootDrive;
-//                    }
-//                case thirdPickupSetup:
-//                    targetX = -0.15f;
-//                    targetY = 0.33f;
-//                    AutoConstants.driveForwardMult = 0.8f;
-//                    AutoConstants.driveStrafeMult = 0.8f;
-//                    if(DTT < 0.05){
-//                        currentStage = autoStage.thirdPickup;
-//                    }
-//                case thirdPickup:
-//                    targetX = -0.15f;
-//                    targetY = 0.75f;
-//                    AutoConstants.driveForwardMult = 0.35f;
-//                    AutoConstants.driveStrafeMult = 0.35f;
-//                    if(DTT < 0.025){
-//                        currentStage = autoStage.shootDrive;
-//                    }
-//                case finish:
-//                    targetX = 0.33;
-//                    targetY = 0f;
-//            }
-//        }
     }
 
     @Override
@@ -397,53 +311,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(12, -17.5, DistanceUnit.CM);
 
-//        if(AutoConstants.allianceColor == "Red"){
-//            if(AutoConstants.startingPosition == "Front"){
-//                AutoConstants.currentAuto = AutoConstants.autoMode.redFront;
-//            }else{
-//                AutoConstants.currentAuto = AutoConstants.autoMode.redBack;
-//            }
-//        }else{
-//            if(AutoConstants.startingPosition == "Front"){
-//                AutoConstants.currentAuto = AutoConstants.autoMode.blueFront;
-//            }else{
-//                AutoConstants.currentAuto = AutoConstants.autoMode.blueBack;
-//            }
-//        }
-        //startPose = new Pose2D(DistanceUnit.CM, 0, 0, AngleUnit.DEGREES, -1.578);
-
-//        double startX = 0;
-//        double startY = 0;
-//        double startHeading = 0;
-//        if(AutoConstants.currentAuto == null){
-//            if(Objects.equals(AutoConstants.allianceColor, "Red")){
-//                if(Objects.equals(AutoConstants.startingPosition, "Front")){
-//                    startX = -0.944;
-//                    startY = 0.66;
-//                    startHeading = 1.578;
-//                }else{
-//                    //nothing for now
-//                }
-//            }else{
-//                if(Objects.equals(AutoConstants.startingPosition, "Front")){
-//                    startX = -0.944;
-//                    startY = -0.66;
-//                    startHeading = -1.578;
-//                }else{
-//                    //nothing for now
-//                }
-//            }
-//        }else{
-//            if (AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
-//                startX = -0.944;
-//                startY = -0.66;
-//                startHeading = -1.578;
-//            } else if (AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
-//                startX = -0.944;
-//                startY = 0.66;
-//                startHeading = 1.578;
-//            }
-//        }
         while (odo.getDeviceStatus() != GoBildaPinpointDriver.DeviceStatus.READY && !Thread.currentThread().isInterrupted()) {
             odo.update();
             telemetry.addData("status", odo.getDeviceStatus());
@@ -477,8 +344,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
         Pose2D currentPose = odo.getPosition();
         robotX = (currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE);
         robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE);
-//        robotX = (Math.abs(currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE) + 1) / 2;
-//        robotY = (currentPose.getY(DistanceUnit.CM) * MODEL_POS_SCALE) + 1 / 2;
         currentHeading = (float) currentPose.getHeading(AngleUnit.DEGREES);
 
         // Build observations
@@ -514,9 +379,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         float denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotation), 1.0f);
 
-// Divide each component by the denominator.
-// If the total is <= 1.0, nothing changes.
-// If the total is > 1.0, they are all scaled down proportionally.
         forward /= denominator;
         strafe /= denominator;
         rotation /= denominator;
@@ -534,10 +396,13 @@ public class YAIBA_BLUEFRONT extends OpMode {
         turret.loop();
         spindex.update();
 
+        hood.setPosition(TurretRegression.getHoodPosition(scaled));
+        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
+        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
+        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
-
-        //double heading = currentPose.getHeading(AngleUnit.RADIANS);
 
         // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
         double robotXInches = (robotX ) * AutoConstants.telemetryScale;
@@ -590,12 +455,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
         // Telemetry
         telemetry.addData("=== ODOMETRY ===", " ");
         telemetry.addData("Status", odo.getDeviceStatus());
-        telemetry.addData("Pinpoint Frequency", odo.getFrequency()); //prints/gets the current refresh rate of the Pinpoint
+        telemetry.addData("Pinpoint Frequency", odo.getFrequency());
         double newTime = getRuntime();
         double loopTime = newTime-oldTime;
         double frequency = 1/loopTime;
         oldTime = newTime;
-        telemetry.addData("REV Hub Frequency: ", frequency); //prints the control system refresh rate
+        telemetry.addData("REV Hub Frequency: ", frequency);
         telemetry.addData("Heading Scalar", odo.getYawScalar());
         telemetry.addData("=== DIAGNOSTICS ===", "");
         telemetry.addData("Inference Success?", inferenceSuccess);
@@ -640,6 +505,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         detectedColor = color.getColor();
     }
+
     public void intakeCheck() {
         int grnCount = 0;
         int purCount = 0;
@@ -656,9 +522,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
             return;
         }
 
-
         if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
-            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
+            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
                 if(purCount + grnCount <= 2){
                     sorted = false;
                     intake.paused = true;
@@ -671,7 +536,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 }
                 else{
                     fortelemetry = currentPosition;
-                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
+                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
                     spindex.spinTurns(turns);
                     telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
                     currentPosition = (currentPosition + turns) % 3;
@@ -679,7 +544,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     sorted = true;
                     intake.togglePower(Intake.intakePower);
                 }
-            } else if(!autoSortTimerStarted){ // We should start the timer
+            } else if(!autoSortTimerStarted){
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
             }
@@ -728,10 +593,5 @@ public class YAIBA_BLUEFRONT extends OpMode {
         turretSpin.spinRightCR(power);
 
         distToAprilTag = result.getBotposeAvgDist();
-
-        hood.setPosition(TurretRegression.getHoodPosition(scaled));
-        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
-        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
-        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
     }
 }

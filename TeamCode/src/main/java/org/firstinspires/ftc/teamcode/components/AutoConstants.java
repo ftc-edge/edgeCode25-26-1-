@@ -13,6 +13,7 @@ public class AutoConstants {
     public static double driveStrafeMult = -1;
     public static double driveRotationMult = 1;
     public static double MODEL_POS_SCALE = 0.000625;
+    public static int beforeShootDelayMS = 500;
     public static float initHeading = -90f;
     public static float distanceTolerance = 2.5f;
     public static float startX = 60f;

@@ -106,6 +106,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
+    public ElapsedTime timer = new ElapsedTime();
     boolean autoSortTimerStarted = false;
 
     public boolean sorted = false;
@@ -267,25 +268,29 @@ public class YAIBA_REDFRONT extends OpMode {
                         scaled = AutoConstants.shootScaled1;
                         currentStage = autoStage.shoot;
                         startShoot = true;
+                        timer.reset();
                     }
                     break;
                 case shoot:
-                    if(startShoot){
-                        spindex.startShootConsecutive();
-                        startShoot = false;
-                    }
-                    if(!spindex.shooting){
-                        intakeCheckEnabled = true;
-                        shootCnt++;
-                        if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-                        if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
-                        if(shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-                        if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-                        if(shootCnt == 5) currentStage = autoStage.finish;
+                    if(timer.milliseconds() > AutoConstants.beforeShootDelayMS) {
+                        if (startShoot) {
+                            spindex.startShootConsecutive();
+                            startShoot = false;
+                        }
+                        if (!spindex.shooting) {
+                            intakeCheckEnabled = true;
+                            shootCnt++;
+                            if (shootCnt == 1) currentStage = autoStage.firstPickupSetup;
+                            if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                            if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+                            if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+                            if (shootCnt == 5) currentStage = autoStage.finish;
+                            timer.reset();
+                        }
                     }
                     break;
                 case firstPickupSetup:
-                    targetX = 0.15f;
+                    targetX = 0.07f;
                     targetY = 0.33f;
                     buildObservations();
                     if(DTT < 0.05){
@@ -294,18 +299,18 @@ public class YAIBA_REDFRONT extends OpMode {
                     break;
                 case firstPickup:
                     intake.togglePower(intake.intakePower);
-                    targetX = 0.15f;
+                    targetX = 0.07f;
                     targetY = 0.75f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
                     AutoConstants.driveStrafeMult = -0.35f;
-                    //intakeCheck code (idk how we're gonna implement)
-                    if(DTT < 0.05){
+                    intakeCheckEnabled = true;
+                    if(DTT < 0.065){
                         currentStage = autoStage.shootDrive;
                     }
                     break;
                 case shootDrive:
-                    targetX = 0;
+                    targetX = -0.15f;
                     targetY = 0;
                     buildObservations();
                     AutoConstants.driveForwardMult = 1f;
@@ -598,6 +603,11 @@ public class YAIBA_REDFRONT extends OpMode {
 
         FtcDashboard.getInstance().sendTelemetryPacket(packet);
 
+        hood.setPosition(TurretRegression.getHoodPosition(scaled));
+        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
+        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
+        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+
         // Telemetry
         telemetry.addData("=== ODOMETRY ===", " ");
         telemetry.addData("Status", odo.getDeviceStatus());
@@ -738,11 +748,6 @@ public class YAIBA_REDFRONT extends OpMode {
         turretSpin.spinRightCR(power);
 
         distToAprilTag = result.getBotposeAvgDist();
-
-        hood.setPosition(TurretRegression.getHoodPosition(scaled));
-        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
-        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
-        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
     }
 
 }
