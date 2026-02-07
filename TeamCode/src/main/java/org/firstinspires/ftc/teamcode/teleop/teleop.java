@@ -7,6 +7,8 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.components.AutoConstants;
 import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
@@ -17,7 +19,7 @@ import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Util;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
-
+import org.firstinspires.ftc.teamcode.components.TurretRegression;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -59,6 +61,7 @@ public class teleop extends OpMode{
     int currentPosition = 0;
 
     float intakeCount;
+    double distToAprilTag = 1;
 
     String detectedColor;
 
@@ -100,13 +103,10 @@ public class teleop extends OpMode{
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
         turret.loop();
-        turret.setTargetRPM(shootSpeed);
-        hood.setPosition(hoodPosition);
         spindex.update();
 
         autoAim();
         updateColor();
-
         if(intake.getPower() != 0){
             intakeCheck();
         }
@@ -150,6 +150,8 @@ public class teleop extends OpMode{
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
+        telemetry.addData("Alliance Color", AutoConstants.allianceColor);
+        telemetry.addData("Distance to April Tag", distToAprilTag);
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
         telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
@@ -166,6 +168,7 @@ public class teleop extends OpMode{
 
         telemetry.addData("Mean6",   "(%.1f°, %.1f%%, %.1f%%)", color.getHSL()[0], color.getHSL()[1], color.getHSL()[2]);
         telemetry.addData("Detected Color", detectedColor);
+        telemetry.addData("TargetID", Util.getTargetId());
 
         telemetry.update();
 
@@ -269,6 +272,8 @@ public class teleop extends OpMode{
             }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
                 detectedMotif = "PPG";
             }
+            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
+            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
             return;
         }
 
@@ -291,7 +296,14 @@ public class teleop extends OpMode{
         lastAutoAimPower = power;
         turretSpin.spinRightCR(power);
 
-//telemetrry
+        distToAprilTag = result.getBotposeAvgDist();
 
+        double scaled = distToAprilTag * Constants.regressionScaling;
+        hood.setPosition(TurretRegression.getHoodPosition(scaled));
+        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
+        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
+        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
     }
+
+
 }

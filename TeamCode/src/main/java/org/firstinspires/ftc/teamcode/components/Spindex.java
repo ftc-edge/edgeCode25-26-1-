@@ -13,9 +13,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class Spindex {
     public static int spinUpNumRotations = 1;
 
-    public static int beforeShootAdjust = 70;
+    public static int beforeShootAdjust = 60;
     public static int adjustDelayMs = 700;
-    public static int adjustDelay2Ms = 350;
+    public static int adjustDelay2Ms = 450;
+    public static int readColorDelayMs = 350;
     public static int busyTimerMs = 150;
 
     public int targetPosition;
@@ -74,7 +75,7 @@ public class Spindex {
             shootTimer.reset(); shot++; return;
         }
         if(shot >= 2 && !spinMotor.isBusy() && shootTimer.milliseconds() >= adjustDelay2Ms){
-            if(shot == 2){
+            if(shot <= 4){ // 2, 3, 4, we dont check
                 spinUp();
                 shootTimer.reset();
                 shot++;
@@ -84,10 +85,19 @@ public class Spindex {
                 shootTimer.reset();
                 shot++;
             }else{
-                shooting = false;
-                shot = 0;
+                shot = -4;
                 shootTimer.reset();
             }
+        }
+        if(shot < -1 && shootTimer.milliseconds() >= readColorDelayMs){ // adjust so that the camera reads all ball positions, shot = -4, -3, -2
+            shot++;
+            spinTurns(1);
+            shootTimer.reset();
+        }
+        if(shot == -1) {
+            shooting = false;
+            shot = 0;
+            shootTimer.reset();
         }
     }
 

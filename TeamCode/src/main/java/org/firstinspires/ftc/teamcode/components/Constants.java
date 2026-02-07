@@ -4,7 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
-    public static double autoAimLoseDecayMultiplier = 0.98;
+    public static double regressionScaling = 44;
+    public static double autoAimLoseDecayMultiplier = 0.92;
     public static double autoAimLoseMultiplier = 0.9;
     public static double limelightKP = 0.01;
     public static double limelightKD = 0.009;
@@ -17,6 +18,5 @@ public class Constants {
     public static float initHeading = -90f;
     public static float startX = 60f;
     public static float startY = 150f;
-
     public static float imuKp = 0.6f;
 }

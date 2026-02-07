@@ -22,11 +22,11 @@ package org.firstinspires.ftc.teamcode.components;
 
 
 public class TurretRegression {
-    int[] distances = {49,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200};
-    double[] hoodPosition = {0,0.145,0.255,0.39,0.425,0.425,0.425,0.445,0.445,0.5,0.5,0.5,0.5,0.5,0.5,0.445};
-    double[] turretRPM = {108.63,120.11,128.62,135.32,135.54,135.54,135.54,133.84,133.84,127.06,127.06,133.796,133.796,133.02,133.12,133.12};
+    static int[] distances = {49,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200};
+    static double[] hoodPosition = {0,0.145,0.255,0.39,0.425,0.425,0.425,0.445,0.445,0.5,0.5,0.5,0.5,0.5,0.5,0.445};
+    static double[] turretRPM = {108.63,120.11,128.62,135.32,135.54,135.54,135.54,133.84,133.84,127.06,127.06,133.796,133.796,133.02,133.12,133.12};
     
-    public double getHoodPosition(float distance){
+    public static double getHoodPosition(double distance){
         if (distance <= distances[0]){
             return hoodPosition[0];
         }
@@ -47,7 +47,7 @@ public class TurretRegression {
         return -1;
     }
 
-    public double getTurretRPM(float distance){
+    public static double getTurretRPM(double distance){
         if (distance <= distances[0]){
             return turretRPM[0];
         }

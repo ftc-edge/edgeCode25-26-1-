@@ -6,18 +6,28 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
 import org.firstinspires.ftc.teamcode.components.AutoConstants;
 import org.firstinspires.ftc.teamcode.components.Color;
+import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Spindex;
+import org.firstinspires.ftc.teamcode.components.Turret;
+import org.firstinspires.ftc.teamcode.components.TurretRegression;
+import org.firstinspires.ftc.teamcode.components.TurretSpin;
+import org.firstinspires.ftc.teamcode.components.Util;
 import org.firstinspires.ftc.teamcode.yaiba.BODYONNX;
 
 import java.util.Objects;
@@ -83,7 +93,26 @@ public class YAIBA_REDFRONT extends OpMode {
     String detectedColor;
 
     Color color;
+    Turret turret;
+    Hood hood;
+    TurretSpin turretSpin;
+    SpindexAutoSort autoSort;
+    int currentPosition = 0;
+    double distToAprilTag = 1;
 
+    public ElapsedTime autoSortTimer = new ElapsedTime();
+    public ElapsedTime intakePauseTimer = new ElapsedTime();
+    boolean autoSortTimerStarted = false;
+
+    public boolean sorted = false;
+    float intakeCount;
+    String detectedMotif = Constants.defaultMotif;
+    double lastAutoAimPower = 0;
+
+    int fortelemetry;
+    int fortelemetry2;
+
+    public int[] currentLayout = new int[]{0, 0, 0};
 
 
     private float[] buildObservations() {
@@ -348,10 +377,17 @@ public class YAIBA_REDFRONT extends OpMode {
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        drive = new Drive(hardwareMap);
-        color = new Color(hardwareMap);
-        spindex = new Spindex(hardwareMap);
+
+        turret = new Turret(hardwareMap);
         intake = new Intake(hardwareMap);
+        spindex = new Spindex(hardwareMap);
+        hood = new Hood(hardwareMap);
+        turretSpin = new TurretSpin(hardwareMap);
+        drive = new Drive(hardwareMap);
+        autoSort = new SpindexAutoSort(hardwareMap, telemetry);
+
+        color = new Color(hardwareMap);
+
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
@@ -446,8 +482,6 @@ public class YAIBA_REDFRONT extends OpMode {
         // Build observations
         float[] observations = buildObservations();
 
-
-
         // CALCULATE CHECKSUM - should change every frame if observations change
         float obsChecksum = 0;
         for (float obs : observations) {
@@ -484,6 +518,16 @@ public class YAIBA_REDFRONT extends OpMode {
         rotation /= denominator;
 
         drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+
+        autoAim();
+        updateColor();
+        if(intake.getPower() != 0){
+            intakeCheck();
+        }
+        if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
+
+        turret.loop();
+        spindex.update();
 
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();
@@ -574,67 +618,116 @@ public class YAIBA_REDFRONT extends OpMode {
 
         telemetry.update();
     }
+    public void updateColor(){
+        if(!spindex.withinTarget()){
+            return;
+        }
+        else if(color.getColor() == "GREEN") {
+            currentLayout[currentPosition] = 1;
+        }
+        else if(color.getColor() == "PURPLE") {
+            currentLayout[currentPosition] = -1;
+        }
+        else if(color.getColor() == "NONE"){
+            currentLayout[currentPosition] = 0;
+        }
 
-//    public void updateColor(){
-//        if(spindex.isBusy){
-//            return;
-//        }
-//        else if(color.getColor() == "GREEN") {
-//            currentLayout[currentPosition] = 1;
-//        }
-//        else if(color.getColor() == "PURPLE") {
-//            currentLayout[currentPosition] = -1;
-//        }
-//        else if(color.getColor() == "NONE"){
-//            currentLayout[currentPosition] = 0;
-//        }
-//
-//        detectedColor = color.getColor();
-//    }
-//
-//    public void intakeCheck() {
-//        int grnCount = 0;
-//        int purCount = 0;
-//        for(int i = 0; i <= 2; i ++){
-//            if(currentLayout[i] == 1){
-//                grnCount++;
-//            }
-//            if(currentLayout[i] == -1){
-//                purCount++;
-//            }
-//        }
-//
-//        if (!spindex.withinTarget()){
-//            return;
-//        }
-//
-//
-//        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
-//            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
-//                if(purCount + grnCount <= 2){
-//                    sorted = false;
-//                    intake.paused = true;
-//                    intakePauseTimer.reset();
-//                    autoSortTimer.reset();
-//                    autoSortTimerStarted = false;
-//                    intakeCount++;
-//                    spindex.spinTurns(1);
-//                    currentPosition = (currentPosition + 1) % 3;
-//                }
-//                else{
-//                    fortelemetry = currentPosition;
-//                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
-//                    spindex.spinTurns(turns);
-//                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
-//                    currentPosition = (currentPosition + turns) % 3;
-//                    fortelemetry2 = currentPosition;
-//                    sorted = true;
-//                    intake.togglePower(Intake.intakePower);
-//                }
-//            } else if(!autoSortTimerStarted){ // We should start the timer
-//                autoSortTimerStarted = true;
-//                autoSortTimer.reset();
-//            }
-//        }
-//    }
+        detectedColor = color.getColor();
+    }
+    public void intakeCheck() {
+        int grnCount = 0;
+        int purCount = 0;
+        for(int i = 0; i <= 2; i ++){
+            if(currentLayout[i] == 1){
+                grnCount++;
+            }
+            if(currentLayout[i] == -1){
+                purCount++;
+            }
+        }
+
+        if (!spindex.withinTarget()){
+            return;
+        }
+
+
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+            if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
+                if(purCount + grnCount <= 2){
+                    sorted = false;
+                    intake.paused = true;
+                    intakePauseTimer.reset();
+                    autoSortTimer.reset();
+                    autoSortTimerStarted = false;
+                    intakeCount++;
+                    spindex.spinTurns(1);
+                    currentPosition = (currentPosition + 1) % 3;
+                }
+                else{
+                    fortelemetry = currentPosition;
+                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
+                    spindex.spinTurns(turns);
+                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+                    currentPosition = (currentPosition + turns) % 3;
+                    fortelemetry2 = currentPosition;
+                    sorted = true;
+                    intake.togglePower(Intake.intakePower);
+                }
+            } else if(!autoSortTimerStarted){ // We should start the timer
+                autoSortTimerStarted = true;
+                autoSortTimer.reset();
+            }
+        }
+    }
+
+    public void autoAim() {
+        LLResult result = turretSpin.limelight.getLatestResult();
+
+        if (result == null || !result.isValid()){
+            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
+            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
+            return;
+        }
+
+        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()){
+            if(result.getFiducialResults().get(0).getFiducialId() == 21){
+                detectedMotif = "GPP";
+            }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
+                detectedMotif = "PGP";
+            }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
+                detectedMotif = "PPG";
+            }
+            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
+            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
+            return;
+        }
+
+        double tx = result.getTx();
+        double error = tx; //u want tx=0
+
+        double deadband = 1.0; //degrees
+        if (Math.abs(error) < deadband) {
+            turretSpin.spinRightCR(0);
+            return;
+        }
+
+        double derivative = error - turretSpin.lastError;
+        turretSpin.lastError = error;
+        float power = (float) (Constants.limelightKP * error + Constants.limelightKD * derivative);
+
+        turretSpin.lastError = error;
+
+        power = (float) Range.clip(power, -0.75, 0.75);
+        lastAutoAimPower = power;
+        turretSpin.spinRightCR(power);
+
+        distToAprilTag = result.getBotposeAvgDist();
+
+        double scaled = distToAprilTag * Constants.regressionScaling;
+        hood.setPosition(TurretRegression.getHoodPosition(scaled));
+        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
+        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
+        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+    }
+
 }
