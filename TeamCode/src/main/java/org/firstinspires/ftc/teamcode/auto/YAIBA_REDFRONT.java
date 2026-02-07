@@ -254,9 +254,10 @@ public class YAIBA_REDFRONT extends OpMode {
         //if(AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
             switch(currentStage){
                 case firstShootDrive:
-                    targetX = -0.33f;
-                    targetY = 0.33f;
+                    targetX = -0.15;
+                    targetY = 0;
                     targetAngle = 1.578f;
+
                     buildObservations();
                     AutoConstants.driveForwardMult = 1;
                     AutoConstants.driveStrafeMult = -1;
@@ -295,7 +296,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 0.35f;
                     AutoConstants.driveStrafeMult = -0.35f;
                     //intakeCheck code (idk how we're gonna implement)
-                    if(DTT < 0.025){
+                    if(DTT < 0.05){
                         currentStage = autoStage.shootDrive;
                     }
                     break;
@@ -348,7 +349,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveStrafeMult = -0.35f;
                     intake.togglePower(intake.intakePower);
                     //intake issue
-                    if(DTT < 0.025){
+                    if(DTT < 0.05){
                         currentStage = autoStage.shootDrive;
                     }
                     break;
@@ -368,7 +369,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
                     AutoConstants.driveStrafeMult = -0.35f;
-                    if(DTT < 0.025){
+                    if(DTT < 0.05){
                         currentStage = autoStage.shootDrive;
                     }
                     break;
