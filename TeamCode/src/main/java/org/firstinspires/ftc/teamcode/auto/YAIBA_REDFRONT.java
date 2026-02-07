@@ -49,6 +49,8 @@ public class YAIBA_REDFRONT extends OpMode {
     private double targetX = TARGET_X_M;
     private double targetY = TARGET_Y_M;
 
+    double scaled = 125;
+
     Drive drive;
 
     public Pose2D startPose;
@@ -731,7 +733,6 @@ public class YAIBA_REDFRONT extends OpMode {
 
         distToAprilTag = result.getBotposeAvgDist();
 
-        double scaled = 125;    
         hood.setPosition(TurretRegression.getHoodPosition(scaled));
         telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
         turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
