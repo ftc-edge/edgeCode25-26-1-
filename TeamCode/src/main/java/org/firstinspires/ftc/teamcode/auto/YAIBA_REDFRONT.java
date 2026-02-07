@@ -230,6 +230,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     if(DTT < 0.05){
                         currentStage = autoStage.shoot;
                     }
+                    break;
                 case shoot:
                     spindex.startShootConsecutive();
                     if(!spindex.shooting){
@@ -240,6 +241,7 @@ public class YAIBA_REDFRONT extends OpMode {
                         if(shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
                         if(shootCnt == 5) currentStage = autoStage.finish;
                     }
+                    break;
                 case firstPickupSetup:
                     targetX = 0.15f;
                     targetY = 0.33f;
@@ -247,17 +249,19 @@ public class YAIBA_REDFRONT extends OpMode {
                     if(DTT < 0.05){
                         currentStage = autoStage.firstPickup;
                     }
+                    break;
                 case firstPickup:
                     intake.togglePower(intake.intakePower);
                     targetX = 0.15f;
                     targetY = 0.75f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
+                    AutoConstants.driveStrafeMult = -0.35f;
                     //intakeCheck code (idk how we're gonna implement)
                     if(DTT < 0.025){
                         currentStage = autoStage.shootDrive;
                     }
+                    break;
                 case shootDrive:
                     targetX = 0;
                     targetY = 0;
@@ -267,6 +271,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     if(DTT< 0.05){
                         currentStage = autoStage.shoot;
                     }
+                    break;
                 case gatePushSetup:
                     targetX = -0.66f;
                     targetY = -0.15f;
@@ -275,13 +280,15 @@ public class YAIBA_REDFRONT extends OpMode {
                     if(DTT< 0.05){
                         currentStage = autoStage.gatePush;
                     }
+                    break;
                 case gatePush:
                     targetX =  0.15f;
                     targetY = 0.66f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
+                    AutoConstants.driveStrafeMult = -0.35f;
                     intake.togglePower(intake.intakePower);
+                    break;
                     //same issue as ball pickup
                     //if(ballCount == 3){
                     //currentStage = autoStage.driveToShoot
@@ -290,39 +297,43 @@ public class YAIBA_REDFRONT extends OpMode {
                     targetY = 0.33f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 1f;
-                    AutoConstants.driveStrafeMult = 1f;
+                    AutoConstants.driveStrafeMult = -1f;
                     if(DTT < 0.05){
                         currentStage = autoStage.secondPickup;
                     }
+                    break;
                 case secondPickup:
                     targetX = 0.4f;
                     targetY = 0.75f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
+                    AutoConstants.driveStrafeMult = -0.35f;
                     intake.togglePower(intake.intakePower);
                     //intake issue
                     if(DTT < 0.025){
                         currentStage = autoStage.shootDrive;
                     }
+                    break;
                 case thirdPickupSetup:
                     targetX = -0.15f;
                     targetY = 0.33f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.8f;
-                    AutoConstants.driveStrafeMult = 0.8f;
+                    AutoConstants.driveStrafeMult = -0.8f;
                     if(DTT < 0.05){
                         currentStage = autoStage.thirdPickup;
                     }
+                    break;
                 case thirdPickup:
                     targetX = -0.15f;
                     targetY = 0.75f;
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
-                    AutoConstants.driveStrafeMult = 0.35f;
+                    AutoConstants.driveStrafeMult = -0.35f;
                     if(DTT < 0.025){
                         currentStage = autoStage.shootDrive;
                     }
+                    break;
                 case finish:
                     targetX = 0.33;
                     targetY = 0f;
@@ -420,6 +431,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
     @Override
     public void loop() {
+        stateMachine();
 
         odo.update();
 
@@ -433,7 +445,7 @@ public class YAIBA_REDFRONT extends OpMode {
         // Build observations
         float[] observations = buildObservations();
 
-        stateMachine();
+
 
         // CALCULATE CHECKSUM - should change every frame if observations change
         float obsChecksum = 0;
