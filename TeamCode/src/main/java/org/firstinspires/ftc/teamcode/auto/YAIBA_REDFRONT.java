@@ -233,7 +233,7 @@ public class YAIBA_REDFRONT extends OpMode {
                     break;
                 case shoot:
                     spindex.startShootConsecutive();
-                    if(!iy.shooting){
+                    if(!spindex.shooting){
                         shootCnt++;
                         if(shootCnt == 1) currentStage = autoStage.firstPickupSetup;
                         if(shootCnt == 2) currentStage = autoStage.gatePushSetup;
