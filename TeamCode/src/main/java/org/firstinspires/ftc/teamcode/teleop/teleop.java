@@ -300,7 +300,7 @@ public class teleop extends OpMode{
         distToAprilTag = result.getBotposeAvgDist();
 
 //        double scaled = distToAprilTag * Constants.regressionScaling;
-        double scaled = 195;
+        double scaled = AutoConstants.shootScaled3;
         hood.setPosition(TurretRegression.getHoodPosition(scaled));
         telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
         turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
