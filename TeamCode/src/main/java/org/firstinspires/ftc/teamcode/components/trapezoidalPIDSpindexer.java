@@ -6,10 +6,10 @@ import com.acmerobotics.dashboard.config.Config;
 @Config
 public class trapezoidalPIDSpindexer {
     public static float spindexRotation = 385; // originally 538
-    public static float Kp = 0.01f;
+    public static float Kp = 0.005f;
     public static float Ki = 0.03f;
     public static float Kd = 0.1f;
-    public static float Kf = -0.00002f;
+    public static float Kf = 0f;
     public static double tolerance = 1;
 
     private PIDFController pidf;

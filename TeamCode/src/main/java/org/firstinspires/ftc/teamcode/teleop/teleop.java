@@ -130,6 +130,7 @@ public class teleop extends OpMode{
             currentLayout[currentPosition] = 0;
         }
         spindex.shootConsecutive(color);
+
         if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
             spindex.spinTurns(1);
             currentPosition = (currentPosition + 1 ) % 3;
