@@ -16,8 +16,8 @@ public class trapezoidalPIDSpindexer {
 
     // Constants - Tune these for your specific motor/spindexer
     // State Variables
-    public  double relativeTarget, finalTarget;
-    private boolean isRunning = false;
+    public double relativeTarget, finalTarget;
+    public boolean isRunning = false;
 
     // Call this once to start a 120-degree move
     public void spinNumTurns(double numTurns) {

@@ -518,6 +518,7 @@ public class YAIBA_REDFRONT extends OpMode {
         rotation /= denominator;
 
         drive.setPower( forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
+        spindex.update();
         spindex.shootConsecutive(color);
 
         autoAim();
@@ -528,7 +529,6 @@ public class YAIBA_REDFRONT extends OpMode {
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
 
         turret.loop();
-        spindex.update();
 
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();

@@ -46,6 +46,7 @@ public class Spindex {
     }
 
     public void update(){
+        isBusy = pid.isRunning;
         power = pid.update(spinMotor.getCurrentPosition());
         spinMotor.setPower(power);
     }
