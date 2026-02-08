@@ -38,6 +38,7 @@ import org.firstinspires.ftc.teamcode.components.AutoConstants;
 
 import java.util.Objects;
 
+// TODO: intake further
 @TeleOp
 public class YAIBA_BLUEFRONT extends OpMode {
 
@@ -163,6 +164,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoConstants.driveForwardMult = 1;
                 AutoConstants.driveStrafeMult = -1;
+                buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
                     scaled = AutoConstants.shootScaled1;
@@ -202,11 +204,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
             case firstPickup:
                 intake.togglePower(intake.intakePower);
                 targetX = 0.15f;
-                targetY = -0.75f;
+                targetY = -0.82f;
                 AutoConstants.driveForwardMult = 0.35f;
                 AutoConstants.driveStrafeMult = -0.35f;
+                buildObservations();
                 //intakeCheck code (idk how we're gonna implement)
-                if(DTT < 0.05){
+                if(DTT < 0.06){
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -216,6 +219,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = 0;
                 AutoConstants.driveForwardMult = 1f;
                 AutoConstants.driveStrafeMult = -1f;
+                buildObservations();
                 if(DTT< 0.05){
                     startShoot = true;
                     scaled = AutoConstants.shootScaled2;
@@ -228,6 +232,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetX = - 0.15f;
                 targetY = -0.66f;
                 targetAngle = -2.0944f;
+                buildObservations();
                 if(DTT< 0.05){
                     currentStage = autoStage.gatePush;
                 }
@@ -246,6 +251,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = -0.33f;
                 AutoConstants.driveForwardMult = 1f;
                 AutoConstants.driveStrafeMult = -1f;
+                buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.secondPickup;
                 }
@@ -257,6 +263,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 AutoConstants.driveForwardMult = 0.35f;
                 AutoConstants.driveStrafeMult = -0.35f;
                 intake.togglePower(intake.intakePower);
+                buildObservations();
                 //intake issue
                 if(DTT < 0.025){
                     currentStage = autoStage.shootDrive;
@@ -268,6 +275,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = -0.33f;
                 AutoConstants.driveForwardMult = 0.8f;
                 AutoConstants.driveStrafeMult = -0.8f;
+                buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.thirdPickup;
                 }
@@ -278,6 +286,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = -0.8f;
                 AutoConstants.driveForwardMult = 0.35f;
                 AutoConstants.driveStrafeMult = -0.35f;
+                buildObservations();
                 if(DTT < 0.025){
                     currentStage = autoStage.shootDrive;
                 }

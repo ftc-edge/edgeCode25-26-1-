@@ -281,10 +281,10 @@ public class YAIBA_REDFRONT extends OpMode {
                             intakeCheckEnabled = true;
                             shootCnt++;
                             if (shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-                            if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
-                            if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-                            if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-                            if (shootCnt == 5) currentStage = autoStage.finish;
+                            //if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                            if (shootCnt == 2) currentStage = autoStage.secondPickupSetup;
+                            if (shootCnt == 3) currentStage = autoStage.thirdPickupSetup;
+                            if (shootCnt == 4) currentStage = autoStage.finish;
                             timer.reset();
                         }
                     }
@@ -307,6 +307,8 @@ public class YAIBA_REDFRONT extends OpMode {
                     intakeCheckEnabled = true;
                     if(DTT < 0.065){
                         currentStage = autoStage.shootDrive;
+                        intake.togglePower(intake.intakePower);
+                        intakeCheckEnabled = false;
                     }
                     break;
                 case shootDrive:
@@ -358,9 +360,12 @@ public class YAIBA_REDFRONT extends OpMode {
                     AutoConstants.driveForwardMult = 0.35f;
                     AutoConstants.driveStrafeMult = -0.35f;
                     intake.togglePower(intake.intakePower);
+                    intakeCheckEnabled = true;
                     //intake issue
                     if(DTT < 0.05){
                         currentStage = autoStage.shootDrive;
+                        intakeCheckEnabled = false;
+                        intake.togglePower(intake.intakePower);
                     }
                     break;
                 case thirdPickupSetup:
@@ -379,8 +384,10 @@ public class YAIBA_REDFRONT extends OpMode {
                     buildObservations();
                     AutoConstants.driveForwardMult = 0.35f;
                     AutoConstants.driveStrafeMult = -0.35f;
+                    intakeCheckEnabled = true;
                     if(DTT < 0.05){
                         currentStage = autoStage.shootDrive;
+                        intakeCheckEnabled = false;
                     }
                     break;
                 case finish:
