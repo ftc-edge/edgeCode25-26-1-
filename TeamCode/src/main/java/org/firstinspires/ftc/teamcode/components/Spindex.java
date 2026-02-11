@@ -19,12 +19,10 @@ public class Spindex {
     public static int readColorDelayMs = 650;
     public static int busyTimerMs = 150;
 
-    public int targetPosition;
-
     public boolean ifBusyTimer = false;
     private boolean isBusy = false;
 
-    private trapezoidalPIDSpindexer pid;
+    private SpindexPID pid;
 
     private static ElapsedTime shootTimer = new ElapsedTime();
     private static ElapsedTime busyTimer = new ElapsedTime();
@@ -33,7 +31,27 @@ public class Spindex {
 
     public  double power = 0;
 
+    //pid variables
+
+    private double targetPosition = 0; // In encoder ticks
+
+    // Tuning coefficients (Need to be tuned for your specific motor/weight)
+    public static double kP = 0.005, kI = 0, kD = 0.0001;
+
+    private double integralSum = 0;
+    private double lastError = 0;
+    private ElapsedTime timer = new ElapsedTime();
     public DcMotor spinMotor;
+    SpindexPID profile;
+    public static float t_a;
+    public static float t_c;
+    public static float t_total;
+
+    public static float d_a;
+    public static float d_c;
+
+    public static float maxAccel;
+    public static float maxVel;
     public Spindex(HardwareMap hardwareMap){
         spinMotor = hardwareMap.get(DcMotorEx.class, "spindex");
         spinMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
@@ -42,13 +60,17 @@ public class Spindex {
         spinMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         spinMotor.setDirection(DcMotorEx.Direction.REVERSE);
 
-        pid = new trapezoidalPIDSpindexer();
+        pid = new SpindexPID(hardwareMap);
+
+        //profile = new SpindexPID();
     }
 
     public void update(){
-        isBusy = pid.isRunning;
-        power = pid.update(spinMotor.getCurrentPosition());
-        spinMotor.setPower(power);
+        //isBusy = pid.isRunning;
+//        power = pid.update(spinMotor.getCurrentPosition());
+//        spinMotor.setPower(power);
+       pid.update();
+
     }
 
     public boolean withinTarget() {
@@ -104,8 +126,9 @@ public class Spindex {
 
     public void stop(){
         spinMotor.setPower(0);
-        pid.stop(spinMotor.getCurrentPosition());
+        pid.stop();
     }
+
 
     //    public void updateTimer(){
 //        if (abs(getCurrentPosition() - getTargetPosition()) > 18) {
@@ -127,10 +150,14 @@ public class Spindex {
 //    }
 
     public void spinTurns(int numTurns){
-        pid.spinNumTurns(numTurns);
+        pid.setTargetStep(numTurns);
     }
 
     public void spinUp(){
-        pid.spinNumTurns(-1 * spinUpNumRotations);
+        pid.setTargetStep(-1 * spinUpNumRotations);
     }
+
+
+
+
 }

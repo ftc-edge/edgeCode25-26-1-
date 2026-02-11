@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.teamcode.components.Spindex;
+import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.trapezoidalPIDSpindexer;
 
 @TeleOp
@@ -21,37 +22,43 @@ public class spindexPIDTest extends OpMode {
     private FtcDashboard dashboard;
 
     Gamepad prevGamepad1 = new Gamepad();
+
+    SpindexPID pid;
     @Override
     public void init() {
         spindex = new trapezoidalPIDSpindexer();
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         spindexer = new Spindex(hardwareMap);
+        pid = new SpindexPID(hardwareMap);
     }
 
     @Override
     public void loop() {
 
+
         if(gamepad1.cross && !prevGamepad1.cross){
-            spindex.spinNumTurns(1);
+            pid.setTargetStep(1);
         }
         if(gamepad1.triangle && !prevGamepad1.triangle){
-            spindex.spinNumTurns(-1);
+            pid.setTargetStep(-1);
         }
         if(gamepad1.circle && !prevGamepad1.circle){
-            spindex.spinNumTurns(2);
+            pid.setTargetStep(2);
         }
         if(gamepad1.square && !prevGamepad1.square){
-            spindex.spinNumTurns(-2);
+            pid.setTargetStep(-2);
         }
 
+        pid.update();
 
-        power = (float) spindex.update(spindexer.spinMotor.getCurrentPosition());
 
-        spindexer.spinMotor.setPower(power);
+//        power = (float) spindex.update(spindexer.spinMotor.getCurrentPosition());
+//
+//        spindexer.spinMotor.setPower(power);
 
         prevGamepad1.copy(gamepad1);
 
-        targetPosition = (float) spindex.finalTarget;
+        targetPosition = (float) pid.getTargetPosition();
         currentPosition = spindexer.spinMotor.getCurrentPosition();
 
 

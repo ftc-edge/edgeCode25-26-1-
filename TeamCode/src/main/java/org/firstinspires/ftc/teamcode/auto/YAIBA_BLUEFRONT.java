@@ -265,7 +265,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 intake.togglePower(intake.intakePower);
                 buildObservations();
                 //intake issue
-                if(DTT < 0.025){
+                if(DTT < 0.05){
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -287,7 +287,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 AutoConstants.driveForwardMult = 0.35f;
                 AutoConstants.driveStrafeMult = -0.35f;
                 buildObservations();
-                if(DTT < 0.025){
+                if(DTT < 0.05){
                     currentStage = autoStage.shootDrive;
                 }
                 break;

@@ -257,7 +257,7 @@ public class YAIBA_REDFRONT extends OpMode {
         //if(AutoConstants.currentAuto == AutoConstants.autoMode.redFront) {
             switch(currentStage){
                 case firstShootDrive:
-                    targetX = -0.15;
+                    targetX = 0;
                     targetY = 0;
                     targetAngle = 1.578f;
 
@@ -281,7 +281,7 @@ public class YAIBA_REDFRONT extends OpMode {
                             intakeCheckEnabled = true;
                             shootCnt++;
                             if (shootCnt == 1) currentStage = autoStage.firstPickupSetup;
-                            //if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                            if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
                             if (shootCnt == 2) currentStage = autoStage.secondPickupSetup;
                             if (shootCnt == 3) currentStage = autoStage.thirdPickupSetup;
                             if (shootCnt == 4) currentStage = autoStage.finish;
