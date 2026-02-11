@@ -10,7 +10,7 @@ public class Color {
     public static int greenHueLowerLimit = 120;
     public static int greenHueUpperLimit = 225;
     public static int purpleHueLowerLimit = 225;
-    public static int purpleHueUpperLimit = 360;
+    public static int purpleHueUpperLimit = 330;
 
     ColorSamplerUtil colorSampler;
 

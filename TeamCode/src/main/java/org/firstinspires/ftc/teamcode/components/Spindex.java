@@ -16,7 +16,7 @@ public class Spindex {
     public static int beforeShootAdjust = 60;
     public static int adjustDelayMs = 700;
     public static int adjustDelay2Ms = 450;
-    public static int readColorDelayMs = 350;
+    public static int readColorDelayMs = 650;
     public static int busyTimerMs = 150;
 
     public int targetPosition;
