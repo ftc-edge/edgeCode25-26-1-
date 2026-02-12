@@ -14,21 +14,15 @@ import org.firstinspires.ftc.teamcode.components.trapezoidalPIDSpindexer;
 @TeleOp
 public class spindexPIDTest extends OpMode {
 
-    private trapezoidalPIDSpindexer spindex;
-    Spindex spindexer;
     public static float currentPosition;
     public static float targetPosition;
-    public static float power;
-    private FtcDashboard dashboard;
 
     Gamepad prevGamepad1 = new Gamepad();
 
     SpindexPID pid;
     @Override
     public void init() {
-        spindex = new trapezoidalPIDSpindexer();
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        spindexer = new Spindex(hardwareMap);
         pid = new SpindexPID(hardwareMap);
     }
 
@@ -65,12 +59,12 @@ public class spindexPIDTest extends OpMode {
         prevGamepad1.copy(gamepad1);
 
         targetPosition = (float) pid.getTargetPosition();
-        currentPosition = spindexer.spinMotor.getCurrentPosition();
+        currentPosition = pid.getCurrentPosition();
 
 
         telemetry.addData("currentPosition", currentPosition);
         telemetry.addData("targetPosition", targetPosition);
-        telemetry.addData("power", power);
+        telemetry.addData("power", pid.isAtTarget());
         telemetry.update();
 
     }

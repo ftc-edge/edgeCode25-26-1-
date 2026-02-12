@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.components;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.acmerobotics.dashboard.config.Config;
@@ -13,6 +14,8 @@ import com.qualcomm.robotcore.util.Range;
 public class TurretSpin {
     CRServo leftServo;
     CRServo rightServo;
+
+    DcMotorEx servoEncoder;
 
     public Limelight3A limelight;
 
@@ -33,6 +36,7 @@ public class TurretSpin {
         leftServo = hardwareMap.get(CRServo.class, "leftServo");
         rightServo = hardwareMap.get(CRServo.class, "rightServo");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        servoEncoder = hardwareMap.get(DcMotorEx.class, "BLmotor");
 
         limelight.pipelineSwitch(0);
         limelight.start();
@@ -89,12 +93,16 @@ public class TurretSpin {
         return distToAprilTag;
     }
 
+    public double getCurrentPosition(){
+        return servoEncoder.getCurrentPosition();
+    }
+
     public void spinRightCR(double spinPower){
         leftServo.setPower(spinPower);
         rightServo.setPower(spinPower);
     }
 
-    public void spinLeftCR(float spinPower){
+    public void spinLeftCR(double spinPower){
         leftServo.setPower(-spinPower);
         rightServo.setPower(-spinPower);
     }

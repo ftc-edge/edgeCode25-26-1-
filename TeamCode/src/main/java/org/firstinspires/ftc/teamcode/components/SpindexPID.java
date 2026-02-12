@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.components.Spindex.beforeShootAdjus
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -42,6 +43,7 @@ public class SpindexPID {
     //  Hardware Constants
     // ──────────────────────────────────────────────────────────────────────────
 
+    public static double powerFactor = 1;
     /** Encoder counts per full motor revolution. */
     public static double TICKS_PER_REV     = 537.7;
 
@@ -136,7 +138,7 @@ public class SpindexPID {
 
 
     public SpindexPID(HardwareMap hardwareMap) {
-        motor = hardwareMap.get(DcMotor.class, "spindex");
+        motor = hardwareMap.get(DcMotorEx.class, "spindex");
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -243,7 +245,7 @@ public class SpindexPID {
             output = Math.copySign(MIN_POWER, output);
         }
 
-        motor.setPower(output);
+        motor.setPower(output * powerFactor);
         return output;
     }
 
