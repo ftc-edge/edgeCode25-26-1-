@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Spindex;
+import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretRegression;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
@@ -34,9 +35,7 @@ import com.qualcomm.robotcore.util.Range;
 
 import ai.onnxruntime.OrtException;
 
-import org.firstinspires.ftc.teamcode.components.AutoConstants;
-
-import java.util.Objects;
+import org.firstinspires.ftc.teamcode.components.AutoBlueConstants;
 
 // TODO: intake further
 @TeleOp
@@ -46,7 +45,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     private GoBildaPinpointDriver odo;
 
-    private double MODEL_POS_SCALE = AutoConstants.MODEL_POS_SCALE;
+    private double MODEL_POS_SCALE = AutoBlueConstants.MODEL_POS_SCALE;
     private static final double TARGET_X_M = 0.33;
     private static final double TARGET_Y_M = 0.15;
 
@@ -84,6 +83,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         shoot,
         gatePushSetup,
         gatePush,
+        gatePickup,
         secondPickupSetup,
         secondPickup,
         thirdPickupSetup,
@@ -109,6 +109,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
     Hood hood;
     TurretSpin turretSpin;
     SpindexAutoSort autoSort;
+
+    SpindexPID pid;
     int currentPosition = 0;
     double distToAprilTag = 1;
 
@@ -122,6 +124,14 @@ public class YAIBA_BLUEFRONT extends OpMode {
     public int[] currentLayout = new int[]{0, 0, 0};
 
     private boolean startShoot = false;
+
+    boolean startedTimer = false;
+
+    public ElapsedTime gateTimer = new ElapsedTime();
+
+    boolean arrived = false;
+
+    public ElapsedTime intakeTimer = new ElapsedTime();
 
 
     private float[] buildObservations() {
@@ -159,27 +169,27 @@ public class YAIBA_BLUEFRONT extends OpMode {
         // if(AutoConstants.currentAuto == AutoConstants.autoMode.blueFront) {
         switch(currentStage){
             case firstShootDrive:
-                targetX = 0f;
-                targetY = 0f;
+                targetX = AutoBlueConstants.shootX;
+                targetY = AutoBlueConstants.shootY;
                 targetAngle = -1.578f;
-                AutoConstants.driveForwardMult = 1;
-                AutoConstants.driveStrafeMult = -1;
+                AutoBlueConstants.driveForwardMult = 1;
+                AutoBlueConstants.driveStrafeMult = -1;
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
-                    scaled = AutoConstants.shootScaled1;
+                    scaled = AutoBlueConstants.shootScaled1;
                     currentStage = autoStage.shoot;
                     timer.reset(); // ADDED: start delay timer when entering shoot stage
                 }
                 break;
 
             case shoot:
-                if(timer.milliseconds() > AutoConstants.beforeShootDelayMS) {
+                if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
                     if (startShoot) {
-                        spindex.startShootConsecutive();
+                        pid.startShootConsecutive();
                         startShoot = false;
                     }
-                    if (!spindex.shooting) {
+                    if (!pid.shooting) {
                         intakeCheckEnabled = true;
                         shootCnt++;
                         if (shootCnt == 1) currentStage = autoStage.firstPickupSetup;
@@ -193,8 +203,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case firstPickupSetup:
-                targetX = 0.15f;
-                targetY = -0.33f;
+                targetX = AutoBlueConstants.intake1PrepX;
+                targetY = AutoBlueConstants.intakePrepY;
+                targetAngle = -1.578f;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.firstPickup;
@@ -203,35 +214,43 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
             case firstPickup:
                 intake.togglePower(intake.intakePower);
-                targetX = 0.15f;
-                targetY = -0.82f;
-                AutoConstants.driveForwardMult = 0.35f;
-                AutoConstants.driveStrafeMult = -0.35f;
+                targetX = AutoBlueConstants.intake1PrepX;
+                targetY = AutoBlueConstants.intakeY;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 buildObservations();
-                //intakeCheck code (idk how we're gonna implement)
-                if(DTT < 0.06){
-                    currentStage = autoStage.shootDrive;
+                intakeCheckEnabled = true;
+                if(DTT < 0.05){
+                    if(!arrived){
+                        intakeTimer.reset();
+                        arrived = true;
+                    }else if(intakeTimer.seconds() > AutoBlueConstants.intakeTime){
+                        currentStage = autoStage.shootDrive;
+                        intake.togglePower(intake.intakePower);
+                    }
                 }
                 break;
 
             case shootDrive:
-                targetX = 0;
-                targetY = 0;
-                AutoConstants.driveForwardMult = 1f;
-                AutoConstants.driveStrafeMult = -1f;
+                targetX = AutoBlueConstants.shootX;
+                targetY = AutoBlueConstants.shootY;
+                intake.togglePower(0);
+                targetAngle = -1.578f;
+                AutoBlueConstants.driveForwardMult = 1f;
+                AutoBlueConstants.driveStrafeMult = -1f;
                 buildObservations();
                 if(DTT< 0.05){
                     startShoot = true;
-                    scaled = AutoConstants.shootScaled2;
+                    scaled = AutoBlueConstants.shootScaled2;
                     currentStage = autoStage.shoot;
                     // NOTE: red version does NOT reset timer here, so we keep behavior consistent
                 }
                 break;
 
             case gatePushSetup:
-                targetX = - 0.15f;
-                targetY = -0.66f;
-                targetAngle = -2.0944f;
+                targetX = AutoBlueConstants.gatePushPrepX;
+                targetY = AutoBlueConstants.gatePushPrepY;
+                //targetAngle = -2.0944f;
                 buildObservations();
                 if(DTT< 0.05){
                     currentStage = autoStage.gatePush;
@@ -239,18 +258,34 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case gatePush:
-                targetX = - 0.15f;
-                targetY = -0.8f;
-                AutoConstants.driveForwardMult = 0.35f;
-                AutoConstants.driveStrafeMult = -0.35f;
+                targetX = AutoBlueConstants.gatePushPrepX;
+                targetY = AutoBlueConstants.gatePushY;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 intake.togglePower(intake.intakePower);
+                if(DTT < 0.05){
+                        currentStage = autoStage.gatePickup;
+                }
                 break;
+            case gatePickup:
+                targetX = AutoBlueConstants.gatePickupX;
+                targetY = AutoBlueConstants.gatePickupY;
+                targetAngle = (float) AutoBlueConstants.gateHeading;
+                if(DTT < 0.05){
+                    if(!startedTimer){
+                        gateTimer.reset();
+                        startedTimer = true;
+                    }else if(gateTimer.seconds() > AutoBlueConstants.gateTime){
+                        currentStage = autoStage.shootDrive;
+                    }
+                }
+
 
             case secondPickupSetup:
-                targetX = 0.41f;
-                targetY = -0.33f;
-                AutoConstants.driveForwardMult = 1f;
-                AutoConstants.driveStrafeMult = -1f;
+                targetX = AutoBlueConstants.intake2PrepX;
+                targetY = AutoBlueConstants.intakePrepY;
+                AutoBlueConstants.driveForwardMult = 1f;
+                AutoBlueConstants.driveStrafeMult = -1f;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.secondPickup;
@@ -258,23 +293,29 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case secondPickup:
-                targetX = 0.41f;
-                targetY = -0.80f;
-                AutoConstants.driveForwardMult = 0.35f;
-                AutoConstants.driveStrafeMult = -0.35f;
+                targetX = AutoBlueConstants.intake2PrepX;
+                targetY = AutoBlueConstants.intakeY;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 intake.togglePower(intake.intakePower);
                 buildObservations();
                 //intake issue
                 if(DTT < 0.05){
-                    currentStage = autoStage.shootDrive;
+                    if(!arrived){
+                        intakeTimer.reset();
+                        arrived = true;
+                    }else if(intakeTimer.seconds() > AutoBlueConstants.intakeTime){
+                        currentStage = autoStage.shootDrive;
+                        intake.togglePower(intake.intakePower);
+                    }
                 }
                 break;
 
             case thirdPickupSetup:
-                targetX =-0.15f;
-                targetY = -0.33f;
-                AutoConstants.driveForwardMult = 0.8f;
-                AutoConstants.driveStrafeMult = -0.8f;
+                targetX = AutoBlueConstants.intake3PrepX;
+                targetY = AutoBlueConstants.intakePrepY;
+                AutoBlueConstants.driveForwardMult = 1f;
+                AutoBlueConstants.driveStrafeMult = -1f;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.thirdPickup;
@@ -282,18 +323,24 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case thirdPickup:
-                targetX = -0.15f;
-                targetY = -0.8f;
-                AutoConstants.driveForwardMult = 0.35f;
-                AutoConstants.driveStrafeMult = -0.35f;
+                targetX = AutoBlueConstants.intake3PrepX;
+                targetY = AutoBlueConstants.intakePrepY;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 buildObservations();
                 if(DTT < 0.05){
-                    currentStage = autoStage.shootDrive;
+                    if(!arrived){
+                        intakeTimer.reset();
+                        arrived = true;
+                    }else if(intakeTimer.seconds() > AutoBlueConstants.intakeTime){
+                        currentStage = autoStage.shootDrive;
+                        intake.togglePower(intake.intakePower);
+                    }
                 }
                 break;
 
             case finish:
-                targetX = -0.33f;
+                targetX = 0.5f;
                 targetY = 0f;
                 break;
         }
@@ -315,6 +362,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
         turretSpin = new TurretSpin(hardwareMap);
         autoSort = new SpindexAutoSort(hardwareMap, telemetry);
 
+        pid = new SpindexPID(hardwareMap);
+
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
@@ -327,7 +376,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
             telemetry.update();
         }
 
-        odo.setPosition(new Pose2D(DistanceUnit.CM, -0.944 / MODEL_POS_SCALE, -0.66 / MODEL_POS_SCALE, AngleUnit.RADIANS, -1.578));
+        odo.setPosition(new Pose2D(DistanceUnit.CM, -0.944 / MODEL_POS_SCALE, -0.66 / MODEL_POS_SCALE, AngleUnit.RADIANS, -1.578f));
         currentStage = autoStage.firstShootDrive;
         try {
             // Load AI model
@@ -392,8 +441,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
         strafe /= denominator;
         rotation /= denominator;
 
-        drive.setPower(forward * AutoConstants.driveForwardMult, strafe * AutoConstants.driveStrafeMult, rotation * AutoConstants.driveRotationMult);
-        spindex.shootConsecutive(color);
+        drive.setPower(forward * AutoBlueConstants.driveForwardMult, strafe * AutoBlueConstants.driveStrafeMult, rotation * AutoBlueConstants.driveRotationMult);
+
+        turret.loop();
+        pid.update();
+
+        pid.shootConsecutive(color);
 
         autoAim();
         updateColor();
@@ -402,8 +455,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         }
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
 
-        turret.loop();
-        spindex.update();
+
 
         hood.setPosition(TurretRegression.getHoodPosition(scaled));
         telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
@@ -414,10 +466,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
         Canvas fieldOverlay = packet.fieldOverlay();
 
         // Convert meters to inches for FTC Dashboard (uses official field frame in inches)
-        double robotXInches = (robotX ) * AutoConstants.telemetryScale;
-        double robotYInches = (robotY ) * AutoConstants.telemetryScale;
-        double targetXInches = targetX * AutoConstants.telemetryScale;
-        double targetYInches = targetY * AutoConstants.telemetryScale;
+        double robotXInches = (robotX ) * AutoBlueConstants.telemetryScale;
+        double robotYInches = (robotY ) * AutoBlueConstants.telemetryScale;
+        double targetXInches = targetX * AutoBlueConstants.telemetryScale;
+        double targetYInches = targetY * AutoBlueConstants.telemetryScale;
 
         // Draw target position (red circle)
         fieldOverlay.setStroke("red");
@@ -492,14 +544,19 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         telemetry.addData("=== Pathing ===", "");
         telemetry.addData("Current Stage", currentStage);
-        telemetry.addData("Current Auto", AutoConstants.currentAuto);
+        telemetry.addData("Current Auto", AutoBlueConstants.currentAuto);
         telemetry.addData("DTT", DTT);
+        telemetry.addData("Shooting", pid.shooting);
+
+        telemetry.addData("=== COLOR ===", "");
+        telemetry.addData("Color", color.getColor());
+
 
         telemetry.update();
     }
 
     public void updateColor(){
-        if(spindex.withinTarget()){
+        if(!pid.isAtTarget()){
             return;
         }
         else if(color.getColor() == "GREEN") {
@@ -527,11 +584,11 @@ public class YAIBA_BLUEFRONT extends OpMode {
             }
         }
 
-        if (!spindex.withinTarget()){
+        if (!pid.isAtTarget()){
             return;
         }
 
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && pid.isAtTarget()){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
                 if(purCount + grnCount <= 2){
                     sorted = false;
@@ -540,13 +597,13 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     autoSortTimer.reset();
                     autoSortTimerStarted = false;
                     intakeCount++;
-                    spindex.spinTurns(1);
+                    pid.setTargetStep(1);
                     currentPosition = (currentPosition + 1) % 3;
                 }
                 else{
                     fortelemetry = currentPosition;
                     int turns = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
-                    spindex.spinTurns(turns);
+                    pid.setTargetStep(turns);
                     telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;

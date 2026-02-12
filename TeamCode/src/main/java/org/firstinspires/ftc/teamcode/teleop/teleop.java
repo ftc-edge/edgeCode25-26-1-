@@ -7,12 +7,12 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.teamcode.components.AutoConstants;
+import org.firstinspires.ftc.teamcode.components.AutoBlueConstants;
 import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.Hood;
 import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
+import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Constants;
@@ -50,6 +50,8 @@ public class teleop extends OpMode{
     Color color;
 
     TurretSpin turretSpin;
+
+    SpindexPID pid;
     Hood hood;
     float hoodPosition = Constants.HOOD1;
     float turretPower;
@@ -82,6 +84,7 @@ public class teleop extends OpMode{
 
     double lastAutoAimPower = 0;
 
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -93,7 +96,7 @@ public class teleop extends OpMode{
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
         autoSort = new SpindexAutoSort(hardwareMap, telemetry);
-
+        pid = new SpindexPID(hardwareMap);
         color = new Color(hardwareMap);
 
     }
@@ -104,7 +107,8 @@ public class teleop extends OpMode{
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
         turret.loop();
-        spindex.update();
+        //.update();
+        pid.update();
 
         autoAim();
         updateColor();
@@ -117,20 +121,20 @@ public class teleop extends OpMode{
         //turretSpin.spinRightCR((gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretSpinSpeed);
 
         // Spindex
-        if (gamepad1.dpad_right && !prevGamepad1.dpad_right) {
+        if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
             sorted = false;
-            spindex.startShootConsecutive();
+            pid.startShootConsecutive();
             currentPosition = (currentPosition + 2 ) % 3;
             currentLayout[currentPosition] = 0;
         }
-        spindex.shootConsecutive(color);
+        pid.shootConsecutive(color);
 
-        if (gamepad1.dpad_left && !prevGamepad1.dpad_left) {
-            spindex.spinTurns(1);
+        if (gamepad1.left_bumper && !prevGamepad1.left_bumper) {
+            pid.setTargetStep(1);
             currentPosition = (currentPosition + 1 ) % 3;
         }
         if (gamepad1.dpad_up  && !prevGamepad1.dpad_up) {
-            spindex.stop();
+            pid.stop();
         }
 
         // Intake
@@ -145,7 +149,7 @@ public class teleop extends OpMode{
             flywheel = !flywheel;
         }
         if (flywheel){
-            double scaled = AutoConstants.shootScaled3;
+            double scaled = AutoBlueConstants.shootScaled3;
             hood.setPosition(TurretRegression.getHoodPosition(scaled));
             telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
             turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
@@ -159,7 +163,7 @@ public class teleop extends OpMode{
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
-        telemetry.addData("Alliance Color", AutoConstants.allianceColor);
+        telemetry.addData("Alliance Color", AutoBlueConstants.allianceColor);
         telemetry.addData("Distance to April Tag", distToAprilTag);
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
@@ -204,7 +208,7 @@ public class teleop extends OpMode{
         return "Null";
     }
     public void updateColor(){
-        if(!spindex.withinTarget()){
+        if(!pid.isAtTarget()){
             return;
         }
         else if(color.getColor() == "GREEN") {
@@ -231,12 +235,12 @@ public class teleop extends OpMode{
             }
         }
 
-        if (!spindex.withinTarget()){
+        if (!pid.isAtTarget()){
             return;
         }
 
 
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && spindex.withinTarget()){
+        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && pid.isAtTarget()){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
                 if(purCount + grnCount <= 2){
                     sorted = false;
@@ -245,13 +249,13 @@ public class teleop extends OpMode{
                     autoSortTimer.reset();
                     autoSortTimerStarted = false;
                     intakeCount++;
-                    spindex.spinTurns(1);
+                    pid.setTargetStep(1);
                     currentPosition = (currentPosition + 1) % 3;
                 }
                 else{
                     fortelemetry = currentPosition;
-                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
-                    spindex.spinTurns(turns);
+                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
+                    pid.setTargetStep(turns);
                     telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;

@@ -48,6 +48,12 @@ public class spindexPIDTest extends OpMode {
         if(gamepad1.square && !prevGamepad1.square){
             pid.setTargetStep(-2);
         }
+        if(gamepad1.left_bumper && !prevGamepad1.left_bumper){
+            pid.setTargetStep(-3);
+        }
+        if(gamepad1.right_bumper && !prevGamepad1.right_bumper){
+            pid.setTargetStep(3);
+        }
 
         pid.update();
 

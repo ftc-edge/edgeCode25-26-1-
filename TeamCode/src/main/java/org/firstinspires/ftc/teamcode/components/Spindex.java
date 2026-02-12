@@ -69,7 +69,7 @@ public class Spindex {
         //isBusy = pid.isRunning;
 //        power = pid.update(spinMotor.getCurrentPosition());
 //        spinMotor.setPower(power);
-       pid.update();
+//       pid.update();
 
     }
 
@@ -79,6 +79,7 @@ public class Spindex {
 
     public void startShootConsecutive(){
         shooting = true;
+        shot = 0;
         shootTimer.reset();
     }
     public void shootConsecutive(Color spindexColor){
@@ -97,31 +98,46 @@ public class Spindex {
             pid.spin(-beforeShootAdjust);
             shootTimer.reset(); shot++; return;
         }
-        if(shot >= 2 && !spinMotor.isBusy() && shootTimer.milliseconds() >= adjustDelay2Ms){
-            if(shot <= 4){ // 2, 3, 4, we dont check
-                spinUp();
+        if(shot >= 2 && pid.isAtTarget() && shootTimer.milliseconds() >= adjustDelay2Ms){
+            if(shot == 3){
+                pid.setTargetStep(-3);
                 shootTimer.reset();
                 shot++;
             }
             else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
-                spinUp();
+                pid.setTargetStep(-3);
                 shootTimer.reset();
                 shot++;
             }else{
-                shot = -4;
                 shootTimer.reset();
+                shooting = false;
             }
+            return;
         }
-        if(shot < -1 && shootTimer.milliseconds() >= readColorDelayMs){ // adjust so that the camera reads all ball positions, shot = -4, -3, -2
-            shot++;
-            spinTurns(1);
-            shootTimer.reset();
-        }
-        if(shot == -1) {
-            shooting = false;
-            shot = 0;
-            shootTimer.reset();
-        }
+//            if(shot <= 4){ // 2, 3, 4, we dont check
+//                spinUp();
+//                shootTimer.reset();
+//                shot++;
+//            }
+//            else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
+//                spinUp();
+//                shootTimer.reset();
+//                shot++;
+//            }else{
+//                shot = -4;
+//                shootTimer.reset();
+//            }
+//        }
+//        if(shot < -1 && shootTimer.milliseconds() >= readColorDelayMs){ // adjust so that the camera reads all ball positions, shot = -4, -3, -2
+//            shot++;
+//            spinTurns(1);
+//            shootTimer.reset();
+//        }
+//        if(shot == -1) {
+//            shooting = false;
+//            shot = 0;
+//            shootTimer.reset();
+//        }
     }
 
     public void stop(){
