@@ -63,13 +63,10 @@ public class teleop extends OpMode{
     int currentPosition = 0;
 
     float intakeCount;
-    double distToAprilTag = 1;
 
     String detectedColor;
 
     SpindexAutoSort autoSort;
-
-    String detectedMotif = Constants.defaultMotif;
 
     private float shootSpeed = 0;
     boolean flywheel = true;
@@ -82,8 +79,7 @@ public class teleop extends OpMode{
     int fortelemetry;
     int fortelemetry2;
 
-    double lastAutoAimPower = 0;
-
+    boolean prevShootingBoolean = false;
 
     @Override
     public void init() {
@@ -110,7 +106,7 @@ public class teleop extends OpMode{
         //.update();
         pid.update();
 
-        autoAim();
+        turretSpin.autoAim();
         updateColor();
         if(intake.getPower() != 0){
             intakeCheck();
@@ -164,7 +160,7 @@ public class teleop extends OpMode{
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Alliance Color", AutoBlueConstants.allianceColor);
-        telemetry.addData("Distance to April Tag", distToAprilTag);
+        telemetry.addData("Distance to April Tag", turretSpin.distToAprilTag);
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
         telemetry.addData("Turret Current RPM", turret.getCurrentRPM());
@@ -176,7 +172,7 @@ public class teleop extends OpMode{
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
         telemetry.addData("Spindex is within target", spindex.withinTarget());
-        telemetry.addData("Detected Motif", detectedMotif);
+        telemetry.addData("Detected Motif", turretSpin.detectedMotif);
         telemetry.addData("Linelight Error", turretSpin.lastError);
         //telemetry.addData("purple + green count", )
 
@@ -208,6 +204,12 @@ public class teleop extends OpMode{
         return "Null";
     }
     public void updateColor(){
+        if(!pid.shooting && prevShootingBoolean){
+            // Falling edge -> it just finished shooting
+            currentLayout = new int[]{0, 0, 0};
+        }
+        prevShootingBoolean = pid.shooting;
+
         if(!pid.isAtTarget()){
             return;
         }
@@ -254,9 +256,9 @@ public class teleop extends OpMode{
                 }
                 else{
                     fortelemetry = currentPosition;
-                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition);
+                    int turns = autoSort.sortNShoot(currentLayout, turretSpin.detectedMotif, currentPosition);
                     pid.setTargetStep(turns);
-                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, turretSpin.detectedMotif, currentPosition));
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;
                     sorted = true;
@@ -269,51 +271,6 @@ public class teleop extends OpMode{
         }
     }
 
-    public void autoAim() {
-        LLResult result = turretSpin.limelight.getLatestResult();
-
-        if (result == null || !result.isValid()){
-            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
-            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
-            return;
-        }
-
-        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()){
-            if(result.getFiducialResults().get(0).getFiducialId() == 21){
-                detectedMotif = "GPP";
-            }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
-                detectedMotif = "PGP";
-            }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
-                detectedMotif = "PPG";
-            }
-            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
-            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
-            return;
-        }
-
-        double tx = result.getTx();
-        double error = tx; //u want tx=0
-
-        double deadband = 1.0; //degrees
-        if (Math.abs(error) < deadband) {
-            turretSpin.spinRightCR(0);
-            return;
-        }
-
-        double derivative = error - turretSpin.lastError;
-        turretSpin.lastError = error;
-        float power = (float) (Constants.limelightKP * error + Constants.limelightKD * derivative);
-
-        turretSpin.lastError = error;
-
-        power = (float) Range.clip(power, -0.75, 0.75);
-        lastAutoAimPower = power;
-        turretSpin.spinRightCR(power);
-
-        distToAprilTag = result.getBotposeAvgDist();
-
-//        double scaled = distToAprilTag * Constants.regressionScaling;
-    }
 
 
 }

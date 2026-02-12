@@ -64,7 +64,6 @@ public class YAIBA_REDFRONT extends OpMode {
     double oldTime = 0;
 
     private boolean startShoot;
-
     
 
     public enum autoStage{
@@ -100,7 +99,6 @@ public class YAIBA_REDFRONT extends OpMode {
     TurretSpin turretSpin;
     SpindexAutoSort autoSort;
     int currentPosition = 0;
-    double distToAprilTag = 1;
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
@@ -109,8 +107,6 @@ public class YAIBA_REDFRONT extends OpMode {
 
     public boolean sorted = false;
     float intakeCount;
-    String detectedMotif = Constants.defaultMotif;
-    double lastAutoAimPower = 0;
 
     int fortelemetry;
     int fortelemetry2;
@@ -546,7 +542,7 @@ public class YAIBA_REDFRONT extends OpMode {
         spindex.update();
         spindex.shootConsecutive(color);
 
-        autoAim();
+        turretSpin.autoAim();
         updateColor();
         if(intake.getPower() != 0 && intakeCheckEnabled){
             intakeCheck();
@@ -696,9 +692,9 @@ public class YAIBA_REDFRONT extends OpMode {
                 }
                 else{
                     fortelemetry = currentPosition;
-                    int turns = autoSort.sortNShoot(currentLayout, detectedMotif                                                                , currentPosition);
+                    int turns = autoSort.sortNShoot(currentLayout, turretSpin.detectedMotif, currentPosition);
                     spindex.spinTurns(turns);
-                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, detectedMotif, currentPosition));
+                    telemetry.addData("auto sort", autoSort.sortNShoot(currentLayout, turretSpin.detectedMotif, currentPosition));
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;
                     sorted = true;
@@ -709,50 +705,6 @@ public class YAIBA_REDFRONT extends OpMode {
                 autoSortTimer.reset();
             }
         }
-    }
-
-    public void autoAim() {
-        LLResult result = turretSpin.limelight.getLatestResult();
-
-        if (result == null || !result.isValid()){
-            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
-            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
-            return;
-        }
-
-        if (result.getFiducialResults().get(0).getFiducialId() != Util.getTargetId()){
-            if(result.getFiducialResults().get(0).getFiducialId() == 21){
-                detectedMotif = "GPP";
-            }else if(result.getFiducialResults().get(0).getFiducialId() == 22){
-                detectedMotif = "PGP";
-            }else if(result.getFiducialResults().get(0).getFiducialId() == 23){
-                detectedMotif = "PPG";
-            }
-            turretSpin.spinRightCR((float) (lastAutoAimPower * Constants.autoAimLoseMultiplier));
-            lastAutoAimPower *= Constants.autoAimLoseDecayMultiplier;
-            return;
-        }
-
-        double tx = result.getTx();
-        double error = tx; //u want tx=0
-
-        double deadband = 1.0; //degrees
-        if (Math.abs(error) < deadband) {
-            turretSpin.spinRightCR(0);
-            return;
-        }
-
-        double derivative = error - turretSpin.lastError;
-        turretSpin.lastError = error;
-        float power = (float) (Constants.limelightKP * error + Constants.limelightKD * derivative);
-
-        turretSpin.lastError = error;
-
-        power = (float) Range.clip(power, -0.75, 0.75);
-        lastAutoAimPower = power;
-        turretSpin.spinRightCR(power);
-
-        distToAprilTag = result.getBotposeAvgDist();
     }
 
 }
