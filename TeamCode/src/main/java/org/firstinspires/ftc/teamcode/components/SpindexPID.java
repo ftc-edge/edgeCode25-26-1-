@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.components.Spindex.beforeShootAdjus
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -42,6 +43,7 @@ public class SpindexPID {
     //  Hardware Constants
     // ──────────────────────────────────────────────────────────────────────────
 
+    public static double powerFactor = 1;
     /** Encoder counts per full motor revolution. */
     public static double TICKS_PER_REV     = 537.7;
 
@@ -136,7 +138,7 @@ public class SpindexPID {
 
 
     public SpindexPID(HardwareMap hardwareMap) {
-        motor = hardwareMap.get(DcMotor.class, "spindex");
+        motor = hardwareMap.get(DcMotorEx.class, "spindex");
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -243,7 +245,7 @@ public class SpindexPID {
             output = Math.copySign(MIN_POWER, output);
         }
 
-        motor.setPower(output);
+        motor.setPower(output * powerFactor);
         return output;
     }
 
@@ -305,48 +307,24 @@ public class SpindexPID {
             shootTimer.reset(); shot++; return;
         }
         if(shot >= 2 && isAtTarget() && shootTimer.milliseconds() >= adjustDelay2Ms){
-            if(shot == 2){
+            if(shot == 2){ // shoot (go 3 directly)
                 setTargetStep(-3);
                 shootTimer.reset();
                 shot++;
             }
-            else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
+            else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){ // shot, but still more to go
                 setTargetStep(-1);
                 shootTimer.reset();
                 shot++;
             }else if(shot > 5){
                 shootTimer.reset();
+                shot = 0;
                 shooting = false;
             }else{
                 shootTimer.reset();
+                shot = 0;
                 shooting = false;
-            }
-            return;
-        }
-//            if(shot <= 4){ // 2, 3, 4, we dont check
-//                spinUp();
-//                shootTimer.reset();
-//                shot++;
-//            }
-//            else if(spindexColor.getColor() == "PURPLE" || spindexColor.getColor() == "GREEN"){
-//                spinUp();
-//                shootTimer.reset();
-//                shot++;
-//            }else{
-//                shot = -4;
-//                shootTimer.reset();
-//            }
-//        }
-//        if(shot < -1 && shootTimer.milliseconds() >= readColorDelayMs){ // adjust so that the camera reads all ball positions, shot = -4, -3, -2
-//            shot++;
-//            spinTurns(1);
-//            shootTimer.reset();
-//        }
-//        if(shot == -1) {
-//            shooting = false;
-//            shot = 0;
-//            shootTimer.reset();
-//        }
+            }}
     }
     public void setTargetStep(int step) {
         targetPosition += (int) Math.round(step * TICKS_PER_STEP);
