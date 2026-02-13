@@ -279,8 +279,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         currentStage = autoStage.shootDrive;
                     }
                 }
-
-
+                break;
             case secondPickupSetup:
                 targetX = AutoBlueConstants.intake2PrepX;
                 targetY = AutoBlueConstants.intakePrepY;
