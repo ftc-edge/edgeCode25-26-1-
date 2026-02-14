@@ -25,20 +25,20 @@ public class AutoBlueConstants {
     public static autoMode currentAuto;
 
     public static double intakePrepY = -0.33;
-    public static double intakeY = -0.95;
-    public static double intake1PrepX = 0.15;
+    public static double intakeY = -0.85;
+    public static double intake1PrepX = 0.125;
     public static double intake2PrepX = 0.48;
     public static double intake3PrepX = -0.15;
-    public static double gatePushPrepX = 0.1;
+    public static double gatePushPrepX = 0.09;
     public static double gatePushPrepY = -0.5;
-    public static double gatePushY = -0.8;
-    public static double gateHeading = -0.785398;
-    public static double gatePickupX = 0.185;
-    public static double gatePickupY = -1;
+    public static double gatePushY = -0.89;
+    public static double gateHeading = -2.41;
+    public static double gatePickupX = 0.23;
+    public static double gatePickupY = -0.98;
 
-    public static double shootX = -0.15;
-    public static double shootY = -0.15;
+    public static double shootX = -0.25;
+    public static double shootY = -0.25;
 
-    public static double gateTime = 3;
-    public static double intakeTime = 2.5;
+    public static double gateTime = 2;
+    public static double intakeTime = 1.5;
 }

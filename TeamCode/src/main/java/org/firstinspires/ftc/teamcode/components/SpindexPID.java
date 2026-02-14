@@ -1,12 +1,8 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import static org.firstinspires.ftc.teamcode.components.Spindex.beforeShootAdjust;
-
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -86,7 +82,7 @@ public class SpindexPID {
      * Acceptable position error in encoder ticks.
      * ±8 ticks ≈ ±5.4° of arc at the motor shaft.
      */
-    public static int   POSITION_TOLERANCE  = 1;
+    public static int   POSITION_TOLERANCE  = 5;
 
     /**
      * Integral anti-windup cap. The accumulated integral is clamped to this
@@ -106,9 +102,9 @@ public class SpindexPID {
      */
     public static double MAX_POWER           = 1.0;
 
-    public static int beforeShootAdjust = 60;
-    public static int adjustDelayMs = 700;
-    public static int adjustDelay2Ms = 450;
+    public static double beforeShootAdjust = 0.5;
+    public static double adjustDelay = 0.450;
+    public static double adjustDelay2 = 0.100;
 
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -299,14 +295,14 @@ public class SpindexPID {
         // first stage, turn forward a little
         // 2-4 stage, shoot each ball
         if (shot == 0) {
-            spin(beforeShootAdjust);
+            setTargetStep(beforeShootAdjust);
             shootTimer.reset(); shot++; return;
         }
-        if (shot == 1 && shootTimer.milliseconds() >= adjustDelayMs) {
-            spin(-beforeShootAdjust);
+        if (shot == 1 && isAtTarget() && shootTimer.seconds() >= adjustDelay) {
+            setTargetStep(-beforeShootAdjust);
             shootTimer.reset(); shot++; return;
         }
-        if(shot >= 2 && isAtTarget() && shootTimer.milliseconds() >= adjustDelay2Ms){
+        if(shot >= 2 && isAtTarget() && shootTimer.seconds() >= adjustDelay2){
             if(shot == 2){ // shoot (go 3 directly)
                 setTargetStep(-3);
                 shootTimer.reset();
@@ -326,7 +322,7 @@ public class SpindexPID {
                 shooting = false;
             }}
     }
-    public void setTargetStep(int step) {
+    public void setTargetStep(double step) {
         targetPosition += (int) Math.round(step * TICKS_PER_STEP);
         atTarget       = false;
         integralSum    = 0;   // reset integral on new command
