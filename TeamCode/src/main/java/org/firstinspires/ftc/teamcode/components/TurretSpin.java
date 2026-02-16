@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -105,5 +106,10 @@ public class TurretSpin {
     public void spinLeftCR(double spinPower){
         leftServo.setPower(-spinPower);
         rightServo.setPower(-spinPower);
+    }
+
+
+    public void spinToPos(double target){
+
     }
 }

@@ -134,6 +134,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     boolean prevShootingBoolean = false;
 
+    boolean hasPushed = false;
+
 
     private float[] buildObservations() {
         float[] obs = new float[9];
@@ -190,7 +192,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         pid.setTargetStep(-3);
                         startShoot = false;
                     }
-                    if (!pid.shooting) {
+                    if (pid.isAtTarget()) {
                         intakeCheckEnabled = true;
                         shootCnt++;
                         currentStage = autoStage.firstPickupSetup;
@@ -280,15 +282,22 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 buildObservations();
                 intake.setPower(1);
                 if(DTT < 0.05){
+                    if(!hasPushed){
+                        hasPushed = true;
+                        gateTimer.reset();
+                    }else if(gateTimer.seconds() < AutoBlueConstants.pushTime){
                         currentStage = autoStage.gatePickup;
+                    }
                 }
                 break;
             case gatePickup:
+                intake.setPower(1);
                 targetX = AutoBlueConstants.gatePickupX;
                 targetY = AutoBlueConstants.gatePickupY;
                 targetAngle = (float) AutoBlueConstants.gateHeading;
                 buildObservations();
                 if(DTT < 0.05){
+                    //intake.setPower(1);
                     if(!startedTimer){
                         gateTimer.reset();
                         startedTimer = true;
@@ -296,6 +305,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         intake.setPower(-1);
                         currentStage = autoStage.shootDrive;
                     }
+                }
+                if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
+                    intake.setPower(-1);
+                    currentStage = autoStage.shootDrive;
                 }
                 break;
             case secondPickupSetup:
@@ -323,7 +336,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         arrived = true;
                     }else if(intakeTimer.seconds() > AutoBlueConstants.intakeTime){
                         currentStage = autoStage.shootDrive;
-                        //intake.togglePower(intake.intakePower);
                     }
                 }
                 break;
@@ -424,6 +436,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         // Build observations
         float[] observations = buildObservations();
 
+        updateColor();
         stateMachine();
 
         // CALCULATE CHECKSUM - should change every frame if observations change
