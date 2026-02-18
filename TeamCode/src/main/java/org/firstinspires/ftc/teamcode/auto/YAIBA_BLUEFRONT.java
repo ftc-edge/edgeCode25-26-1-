@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.components.Intake;
 import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.Turret;
+import org.firstinspires.ftc.teamcode.components.TurretRTP;
 import org.firstinspires.ftc.teamcode.components.TurretRegression;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Util;
@@ -30,6 +31,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -44,6 +46,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
     private BODYONNX model;
 
     private GoBildaPinpointDriver odo;
+
+    TurretRTP rtp;
 
     private double MODEL_POS_SCALE = AutoBlueConstants.MODEL_POS_SCALE;
     private static final double TARGET_X_M = 0.33;
@@ -136,6 +140,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     boolean hasPushed = false;
 
+    boolean motifCheck = false;
+
 
     private float[] buildObservations() {
         float[] obs = new float[9];
@@ -177,6 +183,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1;
                 AutoBlueConstants.driveStrafeMult = -1;
+                rtp.targetPosition = rtp.getSafeTarget(45);
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
@@ -196,6 +203,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         intakeCheckEnabled = true;
                         shootCnt++;
                         currentStage = autoStage.firstPickupSetup;
+                        motifCheck = true;
                         timer.reset();
                     }
                 }
@@ -225,6 +233,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetX = AutoBlueConstants.intake1PrepX;
                 targetY = AutoBlueConstants.intakePrepY;
                 targetAngle = -1.578f;
+                rtp.targetPosition = rtp.getSafeTarget(100);
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.firstPickup;
@@ -260,6 +269,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
+                rtp.targetPosition = rtp.getSafeTarget(45);
                 buildObservations();
                 if(DTT< 0.05){
                     startShoot = true;
@@ -406,10 +416,14 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         pid = new SpindexPID(hardwareMap);
 
+        rtp = new TurretRTP(hardwareMap);
+
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(12, -17.5, DistanceUnit.CM);
+
+
 
         while (odo.getDeviceStatus() != GoBildaPinpointDriver.DeviceStatus.READY && !Thread.currentThread().isInterrupted()) {
             odo.update();
@@ -432,8 +446,15 @@ public class YAIBA_BLUEFRONT extends OpMode {
             return;
         }
 
+
         android.content.Context context = hardwareMap.appContext;
         assetManager = context.getAssets();
+
+        rtp.turretEncoder.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        rtp.turretEncoder.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        rtp.targetPosition = 0;
+
+
     }
 
     @Override
@@ -486,13 +507,18 @@ public class YAIBA_BLUEFRONT extends OpMode {
         rotation /= denominator;
 
         drive.setPower(forward * AutoBlueConstants.driveForwardMult, strafe * AutoBlueConstants.driveStrafeMult, rotation * AutoBlueConstants.driveRotationMult);
-
-        turret.loop();
         pid.update();
 
         pid.shootConsecutive(color);
+        //motifCheck();
 
-        turretSpin.autoAim();
+        int currentPosition = rtp.turretEncoder.getCurrentPosition();
+        double currentDegrees = rtp.normalizeAngle(rtp.ticksToDegrees(currentPosition));
+
+        double power = rtp.calculateSmartPID(currentDegrees, rtp.normalizeAngle(rtp.ticksToDegrees(rtp.targetPosition)));
+
+        rtp.setTurretPower(power);
+
         updateColor();
         if(intake.getPower() != 0 && intakeCheckEnabled){
             intakeCheck();
@@ -664,6 +690,21 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
             }
+        }
+    }
+
+    public void motifCheck(){
+        if(!motifCheck) return;
+
+        turretSpin.autoAim();
+
+        if(turretSpin.result != null || turretSpin.result.isValid()){
+            if(turretSpin.result.getFiducialResults().get(0).getFiducialId() >= 21 && turretSpin.result.getFiducialResults().get(0).getFiducialId() <= 23){
+                rtp.targetPosition = rtp.getSafeTarget(45);
+                motifCheck = false;
+            }
+        }else{
+            rtp.targetPosition = rtp.getSafeTarget(90);
         }
     }
 }

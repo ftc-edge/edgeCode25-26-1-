@@ -71,10 +71,10 @@ public class TurretAutoAimODO {
         turretTargetUserDegrees = ((turretTargetUserDegrees % 360) + 360) % 360;
 
         // Get current turret position in USER space
-        double currentTurretUserDegrees = rtp.getCurrentTurretAngleUser();
+        double currentTurretUserDegrees = rtp.getCurrentTurretAngle();
 
         // Convert target to encoder space and get safe target ticks
-        double safeTargetTicks = rtp.getSafeTargetFromUser(turretTargetUserDegrees);
+        double safeTargetTicks = rtp.getSafeTarget(turretTargetUserDegrees);
         rtp.targetPosition = safeTargetTicks;
 
         // Convert target ticks to encoder degrees for PID
@@ -82,7 +82,7 @@ public class TurretAutoAimODO {
         targetEncoderDegrees = rtp.normalizeAngle(targetEncoderDegrees);
 
         // Get current position in encoder space for PID
-        double currentEncoderDegrees = rtp.getCurrentTurretAngleEncoder();
+        double currentEncoderDegrees = rtp.getCurrentTurretAngle();
 
         // Calculate power using PID in encoder space
         double power = rtp.calculateSmartPID(currentEncoderDegrees, targetEncoderDegrees);
@@ -112,6 +112,6 @@ public class TurretAutoAimODO {
 
         telemetry.addData("=== CONTROL ===", "");
         telemetry.addData("Power", "%.3f", power);
-        telemetry.addData("Angle Inversion", rtp.INVERT_ANGLES ? "ON (45°→315°)" : "OFF");
+        //telemetry.addData("Angle Inversion", rtp.INVERT_ANGLES ? "ON (45°→315°)" : "OFF");
     }
 }

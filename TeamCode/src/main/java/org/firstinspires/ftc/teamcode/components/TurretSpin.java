@@ -29,6 +29,8 @@ public class TurretSpin {
 
     public static double targetHeight = .4;
 
+    public LLResult result;
+
     public String detectedMotif = Constants.defaultMotif;
 
     //    public static float spinPower = 0.2f;
@@ -44,7 +46,7 @@ public class TurretSpin {
     }
 
     public void autoAim(){
-        LLResult result = limelight.getLatestResult();
+        result = limelight.getLatestResult();
 
         if (result == null || !result.isValid()){
             spinRightCR(lastAutoAimPower * Constants.autoAimLoseMultiplier);
@@ -84,7 +86,7 @@ public class TurretSpin {
         }
 
         lastAutoAimPower = power;
-        spinRightCR(power);
+//        spinRightCR(power);
 
         distToAprilTag = Math.sqrt(Math.pow(result.getBotposeAvgDist(), 2) - Math.pow(targetHeight, 2));
         distToAprilTag *= Constants.regressionScaling;
