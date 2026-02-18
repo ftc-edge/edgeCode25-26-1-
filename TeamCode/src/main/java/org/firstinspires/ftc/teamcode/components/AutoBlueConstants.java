@@ -28,12 +28,12 @@ public class AutoBlueConstants {
     public static double intakeY = -0.9;
     public static double intake1PrepX = 0.125;
     public static double intake2PrepX = 0.48;
-    public static double intake3PrepX = -0.15;
+    public static double intake3PrepX = -0.20;
     public static double gatePushPrepX = 0.075;
     public static double gatePushPrepY = -0.5;
     public static double gatePushY = -0.85;
     public static double gateHeading = -2;
-    public static double gatePickupX = 0.26;
+    public static double gatePickupX = 0.2425;
     public static double gatePickupY = -0.915;
 
     public static double shootX = -0.25;

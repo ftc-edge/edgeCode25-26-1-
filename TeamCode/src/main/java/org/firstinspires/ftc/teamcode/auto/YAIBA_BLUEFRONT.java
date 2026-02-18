@@ -188,11 +188,11 @@ public class YAIBA_BLUEFRONT extends OpMode {
             case firstShot:
                 intake.setPower(0);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
-                    if (startShoot) {
+                    if (startShoot && turret.atTarget()) {
                         pid.setTargetStep(-3);
                         startShoot = false;
                     }
-                    if (pid.isAtTarget()) {
+                    if (pid.isAtTarget() && !startShoot) {
                         intakeCheckEnabled = true;
                         shootCnt++;
                         currentStage = autoStage.firstPickupSetup;
@@ -202,6 +202,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case shoot:
+                arrived = false;
                 intake.setPower(0);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
                     if (startShoot) {
@@ -246,6 +247,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         currentStage = autoStage.shootDrive;
                         //intake.togglePower(intake.intakePower);
                     }
+                }
+                if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
+                    intake.setPower(-0.25f);
+                    currentStage = autoStage.shootDrive;
                 }
                 break;
 
@@ -302,12 +307,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         gateTimer.reset();
                         startedTimer = true;
                     }else if(gateTimer.seconds() > AutoBlueConstants.gateTime){
-                        intake.setPower(-1);
+                        intake.setPower(-0.25f);
                         currentStage = autoStage.shootDrive;
                     }
                 }
                 if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
-                    intake.setPower(-1);
+                    intake.setPower(-0.25f);
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -338,6 +343,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         currentStage = autoStage.shootDrive;
                     }
                 }
+                if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
+                    intake.setPower(-0.25f);
+                    currentStage = autoStage.shootDrive;
+                }
                 break;
 
             case thirdPickupSetup:
@@ -365,6 +374,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }else if(intakeTimer.seconds() > AutoBlueConstants.intakeTime){
                         currentStage = autoStage.shootDrive;
                     }
+                }
+                if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
+                    intake.setPower(-0.25f);
+                    currentStage = autoStage.shootDrive;
                 }
                 break;
 
@@ -427,6 +440,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
     public void loop() {
 
         odo.update();
+        turret.loop();
 
         Pose2D currentPose = odo.getPosition();
         robotX = (currentPose.getX(DistanceUnit.CM) * MODEL_POS_SCALE);
@@ -487,10 +501,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
 
 
-        hood.setPosition(0.3);
-        telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
-        turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
-        telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+        hood.setPosition(0.675);
+        turret.setTargetRPM(135);
+        telemetry.addData("target hood pos", hood.getPosition());
+        telemetry.addData("target turret rpm", 140);
 
         TelemetryPacket packet = new TelemetryPacket();
         Canvas fieldOverlay = packet.fieldOverlay();

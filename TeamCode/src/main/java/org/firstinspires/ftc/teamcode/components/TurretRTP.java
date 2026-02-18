@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -18,201 +16,162 @@ public class TurretRTP{
     public DcMotorEx turretEncoder;
 
     // Servo direction configuration
-    public final boolean INVERT_SERVO2 = false;
+    public static boolean INVERT_SERVO2 = false;
+    public static boolean INVERT_ENCODER = false;
 
-    // FORBIDDEN ZONE CONFIGURATION
-    public final double FORBIDDEN_START_DEGREES = 115;
-    public final double FORBIDDEN_END_DEGREES = 145;
+    // ANGLE INVERSION: Set true if your 45° is showing as 315°
+    // This flips the entire angle coordinate system
+    public static boolean INVERT_ANGLES = true;
 
-    // PID Controller constants
-    public static double kP = 0.003;
-    public static double kI = 0.0001;
-    public static double kD = 0.0002;
+    // FORBIDDEN ZONE - in ENCODER space (physical position where wires tangle)
+    public static double FORBIDDEN_START_DEGREES = 115;
+    public static double FORBIDDEN_END_DEGREES = 145;
+
+    // PID Controller constants - Tunable via FTC Dashboard
+    public static double kP = 0.015;
+    public static double kI = 0.0005;
+    public static double kD = 0.002;
 
     // Control variables
     public double targetPosition = 0.0;  // In encoder ticks
     public double previousError = 0.0;
     public double integralSum = 0.0;
     public ElapsedTime timer = new ElapsedTime();
+    public boolean firstPIDCall = true;
 
     // Encoder settings
-    public final double TICKS_PER_REVOLUTION = 8192 * ((double) 130 /24);
-    public final double DEGREES_PER_TICK = 360.0 / TICKS_PER_REVOLUTION;
-    public final double TICKS_PER_DEGREE = TICKS_PER_REVOLUTION / 360.0;
+    public static double TICKS_PER_REVOLUTION = 8192 * (130/24);
+    public double DEGREES_PER_TICK = 360.0 / TICKS_PER_REVOLUTION;
+    public double TICKS_PER_DEGREE = TICKS_PER_REVOLUTION / 360.0;
 
     // Deadzone
-    public final double DEADZONE_TICKS = TICKS_PER_DEGREE * 2.0;
-    
-    public TurretRTP(HardwareMap hardwareMap){
+    public static double DEADZONE_TICKS = 50;
+
+    public TurretRTP(HardwareMap hardwareMap) {
         turretServo1 = hardwareMap.get(CRServo.class, "leftServo");
         turretServo2 = hardwareMap.get(CRServo.class, "rightServo");
         turretEncoder = hardwareMap.get(DcMotorEx.class, "BLmotor");
 
-        // Configure encoder
-        turretEncoder.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         turretEncoder.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-
-        // Initialize target to current position
         targetPosition = turretEncoder.getCurrentPosition();
+
+        timer.reset();
+        firstPIDCall = true;
     }
 
-//    @Override
-//    public void init() {
-//        // Initialize hardware
-//        turretServo1 = hardwareMap.get(CRServo.class, "leftServo");
-//        turretServo2 = hardwareMap.get(CRServo.class, "rightServo");
-//        turretEncoder = hardwareMap.get(DcMotorEx.class, "BLmotor");
-//
-//        // Configure encoder
-//        turretEncoder.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-//        turretEncoder.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-//
-//        // Initialize target to current position
-//        targetPosition = turretEncoder.getCurrentPosition();
-//
-//        telemetry.addData("Status", "Initialized");
-//        telemetry.addData("Forbidden Zone", "%.1f° to %.1f°", FORBIDDEN_START_DEGREES, FORBIDDEN_END_DEGREES);
-//        telemetry.addData("Current", "%.1f°", ticksToDegrees(turretEncoder.getCurrentPosition()));
-//        telemetry.update();
-//    }
-
-//    @Override
-//    public void loop() {
-//        // Get current encoder position
-//        int currentPosition = turretEncoder.getCurrentPosition();
-//        double currentDegrees = normalizeAngle(ticksToDegrees(currentPosition));
-//
-//        // Emergency stop if turret enters forbidden zone
-//        if (isInForbiddenZone(currentDegrees)) {
-//            turretServo1.setPower(0);
-//            turretServo2.setPower(0);
-//            telemetry.addData("⚠️ WARNING", "IN FORBIDDEN ZONE!");
-//            telemetry.addData("Current", "%.1f°", currentDegrees);
-//            telemetry.addData("", "Manually move out or press A to reset");
-//            telemetry.update();
-//            return;
-//        }
-//
-//        // Control input - Left stick X adjusts target
-//        if (Math.abs(gamepad1.left_stick_x) > 0.1) {
-//            double adjustment = gamepad1.left_stick_x * 3.0; // degrees per frame
-//            double currentTargetDegrees = normalizeAngle(ticksToDegrees(targetPosition));
-//            double newTargetDegrees = currentTargetDegrees + adjustment;
-//            newTargetDegrees = normalizeAngle(newTargetDegrees);
-//
-//            // If new target would be in forbidden zone, snap to nearest boundary
-//            if (isInForbiddenZone(newTargetDegrees)) {
-//                newTargetDegrees = snapToNearestBoundary(newTargetDegrees);
-//            }
-//
-//            targetPosition = newTargetDegrees * TICKS_PER_DEGREE;
-//        }
-//
-//        // D-pad for preset angles
-//        if (gamepad1.dpad_left) {
-//            targetPosition = getSafeTarget(90);
-//        } else if (gamepad1.dpad_right) {
-//            targetPosition = getSafeTarget(180);
-//        } else if (gamepad1.dpad_up) {
-//            targetPosition = getSafeTarget(270);
-//        } else if (gamepad1.dpad_down) {
-//            targetPosition = getSafeTarget(0);
-//        }
-//
-//        // A button to reset encoder
-//        if (gamepad1.a) {
-//            turretEncoder.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-//            turretEncoder.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-//            targetPosition = 0;
-//            integralSum = 0;
-//            previousError = 0;
-//        }
-//
-//        // Calculate power using smart PID that routes around forbidden zone
-//        double power = calculateSmartPID(currentDegrees, normalizeAngle(ticksToDegrees(targetPosition)));
-//
-//        // Apply power to servos
-//        setTurretPower(power);
-//
-//        // Telemetry
-//        double targetDegrees = normalizeAngle(ticksToDegrees(targetPosition));
-//        String routeInfo = getRouteInfo(currentDegrees, targetDegrees);
-//
-//        telemetry.addData("Target", "%.1f°", targetDegrees);
-//        telemetry.addData("Current", "%.1f°", currentDegrees);
-//        telemetry.addData("Route", routeInfo);
-//        telemetry.addData("Power", "%.3f", power);
-//        telemetry.addData("Forbidden", "%.1f° to %.1f°", FORBIDDEN_START_DEGREES, FORBIDDEN_END_DEGREES);
-//
-//        if (isNearForbiddenZone(currentDegrees, 10)) {
-//            telemetry.addData("⚠️", "Near forbidden zone!");
-//        }
-//
-//        telemetry.addData("", "");
-//        telemetry.addData("Controls", "Stick: Adjust | D-Pad: Presets | A: Reset");
-//        telemetry.update();
-//    }
-
     /**
-     * Get safe target - snap to boundary if in forbidden zone
+     * Convert user-space degrees to encoder-space degrees
+     * User space: what you think of as 45° is 45°
+     * Encoder space: what the encoder actually reads
      */
-    public double getSafeTarget(double desiredDegrees) {
-        if (isInForbiddenZone(desiredDegrees)) {
-            desiredDegrees = snapToNearestBoundary(desiredDegrees);
+    public double userToEncoderDegrees(double userDegrees) {
+        if (INVERT_ANGLES) {
+            return 360 - normalizeAngle(userDegrees);
         }
-        return desiredDegrees * TICKS_PER_DEGREE;
+        return userDegrees;
     }
 
     /**
-     * Smart PID that calculates error considering routing around forbidden zone
+     * Convert encoder-space degrees to user-space degrees
      */
-    public double calculateSmartPID(double currentDegrees, double targetDegrees) {
-        // Calculate both possible paths
-        double clockwiseDistance = calculateClockwiseDistance(currentDegrees, targetDegrees);
+    public double encoderToUserDegrees(double encoderDegrees) {
+        if (INVERT_ANGLES) {
+            return 360 - normalizeAngle(encoderDegrees);
+        }
+        return encoderDegrees;
+    }
+
+    /**
+     * Convert ticks to encoder-space degrees (NO inversion here, raw reading)
+     */
+    public double ticksToEncoderDegrees(double ticks) {
+        if (INVERT_ENCODER) {
+            ticks = -ticks;
+        }
+        return ticks * DEGREES_PER_TICK;
+    }
+
+    /**
+     * Get current turret angle in USER space (what you expect to see)
+     */
+    public double getCurrentTurretAngleUser() {
+        double encoderDegrees = ticksToEncoderDegrees(turretEncoder.getCurrentPosition());
+        return normalizeAngle(encoderToUserDegrees(encoderDegrees));
+    }
+
+    /**
+     * Get current turret angle in ENCODER space (for internal calculations)
+     */
+    public double getCurrentTurretAngleEncoder() {
+        return normalizeAngle(ticksToEncoderDegrees(turretEncoder.getCurrentPosition()));
+    }
+
+    /**
+     * Set target in USER space degrees
+     * Converts to encoder space, checks forbidden zone, returns ticks
+     */
+    public double getSafeTargetFromUser(double userDegrees) {
+        // Convert to encoder space
+        double encoderDegrees = userToEncoderDegrees(userDegrees);
+
+        // Check forbidden zone (in encoder space)
+        if (isInForbiddenZone(encoderDegrees)) {
+            encoderDegrees = snapToNearestBoundary(encoderDegrees);
+        }
+
+        return encoderDegrees * TICKS_PER_DEGREE;
+    }
+
+    /**
+     * Smart PID - works in ENCODER space
+     */
+    public double calculateSmartPID(double currentEncoderDegrees, double targetEncoderDegrees) {
+        double clockwiseDistance = calculateClockwiseDistance(currentEncoderDegrees, targetEncoderDegrees);
         double counterClockwiseDistance = 360 - clockwiseDistance;
 
-        // Check which paths are safe
-        boolean clockwiseSafe = !pathCrossesForbiddenZoneDirection(currentDegrees, targetDegrees, true);
-        boolean counterClockwiseSafe = !pathCrossesForbiddenZoneDirection(currentDegrees, targetDegrees, false);
+        boolean clockwiseSafe = !pathCrossesForbiddenZoneDirection(currentEncoderDegrees, targetEncoderDegrees, true);
+        boolean counterClockwiseSafe = !pathCrossesForbiddenZoneDirection(currentEncoderDegrees, targetEncoderDegrees, false);
 
-        // Choose the error (path) to use
         double error;
         if (clockwiseSafe && counterClockwiseSafe) {
-            // Both safe - take shorter path
             if (clockwiseDistance < counterClockwiseDistance) {
-                error = clockwiseDistance; // Positive = clockwise
+                error = clockwiseDistance;
             } else {
-                error = -counterClockwiseDistance; // Negative = counter-clockwise
+                error = -counterClockwiseDistance;
             }
         } else if (clockwiseSafe) {
-            error = clockwiseDistance; // Must go clockwise
+            error = clockwiseDistance;
         } else if (counterClockwiseSafe) {
-            error = -counterClockwiseDistance; // Must go counter-clockwise
+            error = -counterClockwiseDistance;
         } else {
-            // Neither safe (shouldn't happen) - stop
             return 0;
         }
 
-        // Convert error to ticks
         double errorTicks = error * TICKS_PER_DEGREE;
 
-        // Apply deadzone
         if (Math.abs(errorTicks) < DEADZONE_TICKS) {
             integralSum = 0;
             previousError = 0;
             return 0.0;
         }
 
-        // PID calculations
+        double dt;
+        if (firstPIDCall) {
+            dt = 0.02;
+            firstPIDCall = false;
+        } else {
+            dt = timer.seconds();
+        }
+        timer.reset();
+        dt = Range.clip(dt, 0.02, 0.2);
+
         double P = kP * errorTicks;
 
-        double dt = timer.seconds();
-        timer.reset();
         integralSum += errorTicks * dt;
         integralSum = Range.clip(integralSum, -100.0, 100.0);
         double I = kI * integralSum;
 
-        double derivative = (dt > 0) ? (errorTicks - previousError) / dt : 0;
+        double derivative = (errorTicks - previousError) / dt;
         double D = kD * derivative;
         previousError = errorTicks;
 
@@ -220,55 +179,34 @@ public class TurretRTP{
         return Range.clip(output, -1.0, 1.0);
     }
 
-    /**
-     * Calculate clockwise distance from start to end (always positive)
-     */
     public double calculateClockwiseDistance(double start, double end) {
         double distance = end - start;
         if (distance < 0) distance += 360;
         return distance;
     }
 
-    /**
-     * Check if path from start to end crosses forbidden zone in specified direction
-     * @param startDeg Starting angle
-     * @param endDeg Ending angle
-     * @param clockwise True for clockwise, false for counter-clockwise
-     */
     public boolean pathCrossesForbiddenZoneDirection(double startDeg, double endDeg, boolean clockwise) {
         startDeg = normalizeAngle(startDeg);
         endDeg = normalizeAngle(endDeg);
 
         if (clockwise) {
-            // Going clockwise: increasing angles with wraparound at 360
             if (startDeg < endDeg) {
-                // Simple case: 50° → 200° (no wraparound)
-                // Check if forbidden zone (115-145) is between start and end
                 return (FORBIDDEN_START_DEGREES > startDeg && FORBIDDEN_START_DEGREES < endDeg) ||
                         (FORBIDDEN_END_DEGREES > startDeg && FORBIDDEN_END_DEGREES < endDeg) ||
                         (startDeg >= FORBIDDEN_START_DEGREES && startDeg <= FORBIDDEN_END_DEGREES) ||
                         (endDeg >= FORBIDDEN_START_DEGREES && endDeg <= FORBIDDEN_END_DEGREES);
             } else {
-                // Wraparound case: 270° → 90° (wraps through 0/360)
-                // Path is: 270° → 360°/0° → 90°
-                // Check if forbidden zone is in either segment
                 return (FORBIDDEN_START_DEGREES > startDeg) || (FORBIDDEN_END_DEGREES < endDeg) ||
                         (startDeg >= FORBIDDEN_START_DEGREES && startDeg <= FORBIDDEN_END_DEGREES) ||
                         (endDeg >= FORBIDDEN_START_DEGREES && endDeg <= FORBIDDEN_END_DEGREES);
             }
         } else {
-            // Going counter-clockwise: decreasing angles with wraparound at 0
             if (startDeg > endDeg) {
-                // Simple case: 200° → 50° (no wraparound)
-                // Check if forbidden zone is between start and end
                 return (FORBIDDEN_START_DEGREES < startDeg && FORBIDDEN_START_DEGREES > endDeg) ||
                         (FORBIDDEN_END_DEGREES < startDeg && FORBIDDEN_END_DEGREES > endDeg) ||
                         (startDeg >= FORBIDDEN_START_DEGREES && startDeg <= FORBIDDEN_END_DEGREES) ||
                         (endDeg >= FORBIDDEN_START_DEGREES && endDeg <= FORBIDDEN_END_DEGREES);
             } else {
-                // Wraparound case: 90° → 270° counter-clockwise (wraps through 0/360)
-                // Path is: 90° → 0°/360° → 270°
-                // Check if forbidden zone is in either segment
                 return (FORBIDDEN_END_DEGREES < startDeg) || (FORBIDDEN_START_DEGREES > endDeg) ||
                         (startDeg >= FORBIDDEN_START_DEGREES && startDeg <= FORBIDDEN_END_DEGREES) ||
                         (endDeg >= FORBIDDEN_START_DEGREES && endDeg <= FORBIDDEN_END_DEGREES);
@@ -276,43 +214,16 @@ public class TurretRTP{
         }
     }
 
-    /**
-     * Check if path from start to end crosses forbidden zone
-     */
-    public boolean pathCrossesForbiddenZone(double startDeg, double endDeg) {
-        startDeg = normalizeAngle(startDeg);
-        endDeg = normalizeAngle(endDeg);
-
-        // If we're going clockwise
-        if (endDeg > startDeg) {
-            // Check if forbidden zone is between start and end
-            return (startDeg < FORBIDDEN_START_DEGREES && endDeg > FORBIDDEN_START_DEGREES) ||
-                    (startDeg < FORBIDDEN_END_DEGREES && endDeg > FORBIDDEN_END_DEGREES) ||
-                    (startDeg < FORBIDDEN_START_DEGREES && endDeg > FORBIDDEN_END_DEGREES);
-        } else if (endDeg < startDeg) {
-            // Going counter-clockwise OR wrapping around through 0
-            // Check if we pass through 0 and if forbidden zone is in the wrapped path
-            return !((endDeg < FORBIDDEN_START_DEGREES && startDeg < FORBIDDEN_START_DEGREES) ||
-                    (endDeg > FORBIDDEN_END_DEGREES && startDeg > FORBIDDEN_END_DEGREES));
-        }
-
-        return false;
-    }
-
-    /**
-     * Get human-readable route info
-     */
-    public String getRouteInfo(double current, double target) {
-        double clockwise = calculateClockwiseDistance(current, target);
+    public String getRouteInfo(double currentEncoderDeg, double targetEncoderDeg) {
+        double clockwise = calculateClockwiseDistance(currentEncoderDeg, targetEncoderDeg);
         double counterClockwise = 360 - clockwise;
 
-        boolean cwSafe = !pathCrossesForbiddenZoneDirection(current, target, true);
-        boolean ccwSafe = !pathCrossesForbiddenZoneDirection(current, target, false);
+        boolean cwSafe = !pathCrossesForbiddenZoneDirection(currentEncoderDeg, targetEncoderDeg, true);
+        boolean ccwSafe = !pathCrossesForbiddenZoneDirection(currentEncoderDeg, targetEncoderDeg, false);
 
         if (Math.abs(clockwise) < 2) return "At target";
 
         if (cwSafe && ccwSafe) {
-            // Both safe - show which is shorter
             if (clockwise < counterClockwise) {
                 return String.format("CW %.0f° (shorter)", clockwise);
             } else {
@@ -327,58 +238,30 @@ public class TurretRTP{
         }
     }
 
-    /**
-     * Snap an angle in forbidden zone to nearest safe boundary
-     */
-    public double snapToNearestBoundary(double degrees) {
-        degrees = normalizeAngle(degrees);
+    public double snapToNearestBoundary(double encoderDegrees) {
+        encoderDegrees = normalizeAngle(encoderDegrees);
 
-        if (!isInForbiddenZone(degrees)) {
-            return degrees;
+        if (!isInForbiddenZone(encoderDegrees)) {
+            return encoderDegrees;
         }
 
-        double distToStart = degrees - FORBIDDEN_START_DEGREES;
-        double distToEnd = FORBIDDEN_END_DEGREES - degrees;
+        double distToStart = encoderDegrees - FORBIDDEN_START_DEGREES;
+        double distToEnd = FORBIDDEN_END_DEGREES - encoderDegrees;
 
         return (distToStart < distToEnd) ? FORBIDDEN_START_DEGREES - 1 : FORBIDDEN_END_DEGREES + 1;
     }
 
-    /**
-     * Normalize angle to 0-360
-     */
     public double normalizeAngle(double degrees) {
         degrees = degrees % 360;
         if (degrees < 0) degrees += 360;
         return degrees;
     }
 
-    /**
-     * Check if in forbidden zone
-     */
-    public boolean isInForbiddenZone(double degrees) {
-        degrees = normalizeAngle(degrees);
-        return degrees >= FORBIDDEN_START_DEGREES && degrees <= FORBIDDEN_END_DEGREES;
+    public boolean isInForbiddenZone(double encoderDegrees) {
+        encoderDegrees = normalizeAngle(encoderDegrees);
+        return encoderDegrees >= FORBIDDEN_START_DEGREES && encoderDegrees <= FORBIDDEN_END_DEGREES;
     }
 
-    /**
-     * Check if near forbidden zone
-     */
-    public boolean isNearForbiddenZone(double degrees, double margin) {
-        degrees = normalizeAngle(degrees);
-        return (degrees >= FORBIDDEN_START_DEGREES - margin && degrees < FORBIDDEN_START_DEGREES) ||
-                (degrees > FORBIDDEN_END_DEGREES && degrees <= FORBIDDEN_END_DEGREES + margin);
-    }
-
-    /**
-     * Convert ticks to degrees
-     */
-    public double ticksToDegrees(double ticks) {
-        return ticks * DEGREES_PER_TICK;
-    }
-
-    /**
-     * Set power to both servos
-     */
     public void setTurretPower(double power) {
         turretServo1.setPower(power);
         turretServo2.setPower(INVERT_SERVO2 ? -power : power);
@@ -387,5 +270,14 @@ public class TurretRTP{
     public void stop() {
         turretServo1.setPower(0);
         turretServo2.setPower(0);
+    }
+
+    public void resetEncoder() {
+        turretEncoder.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        turretEncoder.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        targetPosition = 0;
+        integralSum = 0;
+        previousError = 0;
+        firstPIDCall = true;
     }
 }

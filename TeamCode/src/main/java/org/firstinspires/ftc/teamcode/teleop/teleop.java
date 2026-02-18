@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static java.lang.Math.PI;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -14,6 +15,8 @@ import org.firstinspires.ftc.teamcode.components.Drive;
 import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.Turret;
+import org.firstinspires.ftc.teamcode.components.TurretAutoAimODO;
+import org.firstinspires.ftc.teamcode.components.TurretRTP;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Util;
@@ -50,6 +53,8 @@ public class teleop extends OpMode{
     Color color;
 
     TurretSpin turretSpin;
+
+    TurretAutoAimODO aim;
 
     SpindexPID pid;
     Hood hood;
@@ -95,6 +100,8 @@ public class teleop extends OpMode{
         pid = new SpindexPID(hardwareMap);
         color = new Color(hardwareMap);
 
+        aim = new TurretAutoAimODO(hardwareMap);
+
     }
 
     @Override
@@ -102,11 +109,18 @@ public class teleop extends OpMode{
 
         shootSpeed += (gamepad1.right_trigger - gamepad1.left_trigger) * Constants.turretAdjustSpeed;
 
-        turret.loop();
-        //.update();
-        pid.update();
+        if(gamepad1.dpad_right){
+            hoodPosition = Math.min(1, hoodPosition + 0.01f);
+        }
+        if(gamepad1.dpad_left){
+            hoodPosition = Math.max(0, hoodPosition - 0.01f);
+        }
 
-        turretSpin.autoAim();
+        turret.loop();
+        pid.update();
+        //aim.runToAim(telemetry);
+
+        //turretSpin.autoAim();
         updateColor();
         if(intake.getPower() != 0){
             intakeCheck();
@@ -145,11 +159,13 @@ public class teleop extends OpMode{
             flywheel = !flywheel;
         }
         if (flywheel){
-            double scaled = AutoBlueConstants.shootScaled3;
-            hood.setPosition(TurretRegression.getHoodPosition(scaled));
-            telemetry.addData("target hood pos", TurretRegression.getHoodPosition(scaled));
-            turret.setTargetRPM(TurretRegression.getTurretRPM(scaled));
-            telemetry.addData("target turret rpm", TurretRegression.getTurretRPM(scaled));
+            hood.setPosition(hoodPosition);
+//            double scaled = AutoBlueConstants.shootScaled3;
+//            hood.setPosition(TurretRegression.getHoodPosition(scaled));
+            telemetry.addData("current hood pos", hood.getPosition());
+            turret.setTargetRPM(shootSpeed);
+            telemetry.addData("current turret rpm", turret.getCurrentRPM());
+            telemetry.addData("target turret rpm", shootSpeed);
         } else {
             turret.stop();
         }

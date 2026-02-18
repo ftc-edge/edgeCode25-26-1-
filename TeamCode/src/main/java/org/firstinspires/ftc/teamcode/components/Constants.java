@@ -12,7 +12,7 @@ public class Constants {
     public static String defaultMotif = "None Detected";
     public static float intakeReverseTime = 500;
     public static int autoSortDelayMs = 0;
-    public static float turretAdjustSpeed = 0.5f;
+    public static float turretAdjustSpeed = 1f;
     public static float desiredHeading = 180f;
     public static float HOOD1 = 0.5f;
     public static float TURRET1 = 130;
