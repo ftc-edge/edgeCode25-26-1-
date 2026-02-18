@@ -100,7 +100,7 @@ public class teleop extends OpMode{
         pid = new SpindexPID(hardwareMap);
         color = new Color(hardwareMap);
 
-        aim = new TurretAutoAimODO(hardwareMap);
+        aim = new TurretAutoAimODO(hardwareMap, 0, 0.5);
 
     }
 
@@ -118,7 +118,7 @@ public class teleop extends OpMode{
 
         turret.loop();
         pid.update();
-        //aim.runToAim(telemetry);
+        aim.runToAim(telemetry);
 
         //turretSpin.autoAim();
         updateColor();

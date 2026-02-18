@@ -26,9 +26,9 @@ public class TurretRTP{
     public static double FORBIDDEN_END_DEGREES = 145;
 
     // PID Controller constants - Tunable via FTC Dashboard
-    public static double kP = 0.01;   // Tuned down from 0.015
-    public static double kI = 0.003; // Tuned down from 0.0005
-    public static double kD = 0.0005;  // Tuned down from 0.002
+    public static double kP = 0.0005;   // Tuned down from 0.015
+    public static double kI = 0; // Tuned down from 0.0005
+    public static double kD = 0;  // Tuned down from 0.002
 
     // Control variables
     public double targetPosition = 0.0;  // In encoder ticks
@@ -262,7 +262,7 @@ public class TurretRTP{
         double distToStart = degrees - FORBIDDEN_START_DEGREES;
         double distToEnd = FORBIDDEN_END_DEGREES - degrees;
 
-        return (distToStart < distToEnd) ? FORBIDDEN_START_DEGREES - 1 : FORBIDDEN_END_DEGREES + 1;
+        return (distToStart < distToEnd) ? FORBIDDEN_START_DEGREES - 13 : FORBIDDEN_END_DEGREES + 13;
     }
 
     /**

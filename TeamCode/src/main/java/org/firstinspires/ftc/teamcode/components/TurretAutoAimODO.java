@@ -17,14 +17,13 @@ public class TurretAutoAimODO {
     public static double HEADING_SCALAR;
 
     // CRITICAL: Set these to your actual goal position on the field!
-    public static double GOAL_X_CM = -180.0;  // CHANGE THIS
-    public static double GOAL_Y_CM = -180.0;  // CHANGE THIS
+    public static double GOAL_X_CM = 1.0;  // CHANGE THIS
+    public static double GOAL_Y_CM = -1.0;  // CHANGE THIS
 
     // Turret offset on robot (in USER degrees) - if turret 0° is not robot front
     public static double TURRET_OFFSET_DEGREES = 0.0;
 
-    public TurretAutoAimODO(HardwareMap hardwareMap){
-
+    public TurretAutoAimODO(HardwareMap hardwareMap, double startX, double startY){
         rtp = new TurretRTP(hardwareMap);
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
 
@@ -32,13 +31,13 @@ public class TurretAutoAimODO {
             odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
             odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
             odo.setOffsets(12, -17.5, DistanceUnit.CM);
-            odo.setPosition(new Pose2D(DistanceUnit.CM, 90, 0, AngleUnit.RADIANS, 1.578));
+            odo.setPosition(new Pose2D(DistanceUnit.CM, startX, startY / AutoBlueConstants.MODEL_POS_SCALE, AngleUnit.RADIANS, 1.578));
             HEADING_SCALAR = -1;
         }else{
             odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
             odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
             odo.setOffsets(12, -17.5, DistanceUnit.CM);
-            odo.setPosition(new Pose2D(DistanceUnit.CM, 90, 0, AngleUnit.DEGREES, -1.578));
+            odo.setPosition(new Pose2D(DistanceUnit.CM, startX, startY / AutoBlueConstants.MODEL_POS_SCALE, AngleUnit.DEGREES, -1.578));
             HEADING_SCALAR = 1;
         }
     }
@@ -49,20 +48,21 @@ public class TurretAutoAimODO {
         Pose2D currentPose = odo.getPosition();
 
         // Get robot position on field
-        double robotX = currentPose.getX(DistanceUnit.CM) + SCALAR_FACTOR;
-        double robotY = currentPose.getY(DistanceUnit.CM) + SCALAR_FACTOR;
-        double robotHeadingDegrees = currentPose.getHeading(AngleUnit.DEGREES);
+        double scale = AutoBlueConstants.MODEL_POS_SCALE;
+        double robotX = currentPose.getX(DistanceUnit.CM) * scale + SCALAR_FACTOR;
+        double robotY = currentPose.getY(DistanceUnit.CM) * scale+ SCALAR_FACTOR;
+        double robotHeadingDegrees = Math.toDegrees(currentPose.getHeading(AngleUnit.DEGREES));
 
-        // Normalize robot heading to 0-360
-        robotHeadingDegrees = ((robotHeadingDegrees % 360) + 360) % 360;
+        // Normalize robot heading to 0-360, Negate Robot Heading Degrees
+        robotHeadingDegrees = (((-robotHeadingDegrees) % 360) + 360) % 360;
 
         // Calculate vector from robot to goal
         double deltaX = GOAL_X_CM - robotX;
         double deltaY = GOAL_Y_CM - robotY;
-        double distanceToGoal = Math.hypot(deltaX, deltaY);
+        double distanceToGoal = Math.hypot(deltaY, deltaX);
 
         // Calculate absolute angle to goal on the field (in degrees)
-        double fieldAngleToGoalDegrees = Math.toDegrees(Math.atan2(deltaY, deltaX));
+        double fieldAngleToGoalDegrees = Math.toDegrees(Math.atan(-deltaY / deltaX));
         fieldAngleToGoalDegrees = ((fieldAngleToGoalDegrees % 360) + 360) % 360;
 
         // Calculate turret angle in USER space
