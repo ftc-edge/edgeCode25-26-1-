@@ -322,6 +322,17 @@ public class SpindexPID {
                 shooting = false;
             }}
     }
+
+    public void shootConsecutiveAdjust(){
+        if (shot == 0) {
+            setTargetStep(beforeShootAdjust);
+            shootTimer.reset(); shot++; return;
+        }
+        if (shot == 1 && isAtTarget() && shootTimer.seconds() >= adjustDelay) {
+            setTargetStep(-beforeShootAdjust);
+            shootTimer.reset(); shot = 0; return;
+        }
+    }
     public void setTargetStep(double step) {
         targetPosition += (int) Math.round(step * TICKS_PER_STEP);
         atTarget       = false;

@@ -32,6 +32,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -183,7 +184,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1;
                 AutoBlueConstants.driveStrafeMult = -1;
-// TODO: Change Goal
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
@@ -213,14 +213,14 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 arrived = false;
                 intake.setPower(0);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
-                    if (startShoot) {
-                        pid.startShootConsecutive();
+                    if (startShoot && turret.atTarget()) {
+                        pid.setTargetStep(-3);
                         startShoot = false;
                     }
-                    if (!pid.shooting) {
+                    if (pid.isAtTarget() && !startShoot) {
                         intakeCheckEnabled = true;
                         shootCnt++;
-                        if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+                        if (shootCnt == 2) currentStage = autoStage.gatePush;
                         if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
                         if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
                         if (shootCnt == 5) currentStage = autoStage.finish;
@@ -228,12 +228,15 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }
                 }
                 break;
-
+//            if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
+//            if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+//            if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
+//            if (shootCnt == 5) currentStage = autoStage.finish;
             case firstPickupSetup:
                 targetX = AutoBlueConstants.intake1PrepX;
                 targetY = AutoBlueConstants.intakePrepY;
                 targetAngle = -1.578f;
-// TODO: Change Goal
+                //TurretAutoAimODO.GOAL_Y_CM = 0;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.firstPickup;
@@ -269,8 +272,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
-// TODO: Change Goal
+                TurretAutoAimODO.GOAL_Y_CM = 1;
                 buildObservations();
+                pid.shootConsecutiveAdjust();
                 if(DTT< 0.05){
                     startShoot = true;
                     scaled = AutoBlueConstants.shootScaled2;
@@ -292,8 +296,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
             case gatePush:
                 targetX = AutoBlueConstants.gatePushPrepX;
                 targetY = AutoBlueConstants.gatePushY;
-                AutoBlueConstants.driveForwardMult = 0.75f;
-                AutoBlueConstants.driveStrafeMult = -0.75f;
+//                AutoBlueConstants.driveForwardMult = 0.75f;
+//                AutoBlueConstants.driveStrafeMult = -0.75f;
+                AutoBlueConstants.driveForwardMult = 1;
+                AutoBlueConstants.driveStrafeMult = -1;
                 buildObservations();
                 intake.setPower(1);
                 if(DTT < 0.05){
@@ -309,6 +315,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 intake.setPower(1);
                 targetX = AutoBlueConstants.gatePickupX;
                 targetY = AutoBlueConstants.gatePickupY;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 targetAngle = (float) AutoBlueConstants.gateHeading;
                 buildObservations();
                 if(DTT < 0.05){
