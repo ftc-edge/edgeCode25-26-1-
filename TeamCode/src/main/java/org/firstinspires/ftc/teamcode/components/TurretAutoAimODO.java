@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 @Config
 public class TurretAutoAimODO {
+    String mode = "teleop";
     public TurretRTP rtp;
     public GoBildaPinpointDriver odo;
 
@@ -17,15 +18,31 @@ public class TurretAutoAimODO {
     public static double HEADING_SCALAR;
 
     // CRITICAL: Set these to your actual goal position on the field!
-    public static double GOAL_X_CM = 1.0;  // CHANGE THIS
-    public static double GOAL_Y_CM = -1.0;  // CHANGE THIS
+    public static double GOAL_X_TELEOP = 1.0;  // CHANGE THIS
+    public static double GOAL_Y_TELEOP = -1.0;  // CHANGE THIS
+
+    public static double GOAL_X_AUTO = -1.0;
+    public static double GOAL_Y_AUTO = -1.0;
+
+//    public static double MOTIF_X_AUTO = 1;
+//    public static double MOTIF_Y_AUTO = 0;
+//
+//    public static double MOTIF_X_TELEOP = 0;
+//    public static double MOTIF_Y_TELEOP = -1;
+
+    String target = "goal";
+
+    double GOAL_X;
+    double GOAL_Y;
 
     // Turret offset on robot (in USER degrees) - if turret 0° is not robot front
     public static double TURRET_OFFSET_DEGREES = 0.0;
 
-    public TurretAutoAimODO(HardwareMap hardwareMap, double startX, double startY){
+    public TurretAutoAimODO(HardwareMap hardwareMap, double startX, double startY, String mode){
         rtp = new TurretRTP(hardwareMap);
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
+
+        this.mode = mode;
 
         if(currentAlliance.equals("RED")){
             odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
@@ -40,6 +57,30 @@ public class TurretAutoAimODO {
             odo.setPosition(new Pose2D(DistanceUnit.CM, startX, startY / AutoBlueConstants.MODEL_POS_SCALE, AngleUnit.DEGREES, -1.578));
             HEADING_SCALAR = 1;
         }
+
+        setTargetToGoal();
+    }
+
+    public void setTargetToGoal(){
+        target = "goal";
+        if (mode == "teleop"){
+            GOAL_X = GOAL_X_TELEOP;
+            GOAL_Y = GOAL_Y_TELEOP;
+        }else{
+            GOAL_X = GOAL_X_AUTO;
+            GOAL_Y = GOAL_Y_AUTO;
+        }
+    }
+
+    public void setTargetToMotif(){
+        target = "motif";
+//        if (mode == "teleop"){
+//            GOAL_X = MOTIF_X_TELEOP;
+//            GOAL_Y = MOTIF_Y_TELEOP;
+//        }else{
+//            GOAL_X = MOTIF_X_AUTO;
+//            GOAL_Y = MOTIF_Y_AUTO;
+//        }
     }
 
     public void runToAim(Telemetry telemetry){
@@ -57,12 +98,23 @@ public class TurretAutoAimODO {
         robotHeadingDegrees = (((-robotHeadingDegrees) % 360) + 360) % 360;
 
         // Calculate vector from robot to goal
-        double deltaX = GOAL_X_CM - robotX;
-        double deltaY = GOAL_Y_CM - robotY;
+        double deltaX = GOAL_X - robotX;
+        double deltaY = GOAL_Y - robotY;
         double distanceToGoal = Math.hypot(deltaY, deltaX);
 
         // Calculate absolute angle to goal on the field (in degrees)
-        double fieldAngleToGoalDegrees = Math.toDegrees(Math.atan(-deltaY / deltaX));
+        double fieldAngleToGoalDegrees;
+        if(mode == "teleop"){
+            fieldAngleToGoalDegrees = Math.toDegrees(Math.atan(-deltaY / deltaX));
+        } else {
+            fieldAngleToGoalDegrees = Math.toDegrees(Math.atan(deltaX / deltaY));
+            fieldAngleToGoalDegrees = (90+fieldAngleToGoalDegrees);
+        }
+
+        if(target == "motif"){
+            fieldAngleToGoalDegrees = 179.8;
+        }
+
         fieldAngleToGoalDegrees = ((fieldAngleToGoalDegrees % 360) + 360) % 360;
 
         // Calculate turret angle in USER space
@@ -92,8 +144,7 @@ public class TurretAutoAimODO {
 
         // Telemetry - show everything in USER space for clarity
         telemetry.addData("=== GOAL ===", "");
-        telemetry.addData("Goal Position", "X: %.1f, Y: %.1f CM", GOAL_X_CM, GOAL_Y_CM);
-        telemetry.addData("Distance to Goal", "%.1f cm", distanceToGoal);
+        telemetry.addData("Goal Position", "X: %.1f, Y: %.1f CM", GOAL_X, GOAL_Y);
 
         telemetry.addData("=== ROBOT ===", "");
         telemetry.addData("Robot Position", "X: %.1f, Y: %.1f CM", robotX, robotY);

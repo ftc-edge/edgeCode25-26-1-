@@ -183,7 +183,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1;
                 AutoBlueConstants.driveStrafeMult = -1;
-// TODO: Change Goal
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
@@ -233,7 +232,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetX = AutoBlueConstants.intake1PrepX;
                 targetY = AutoBlueConstants.intakePrepY;
                 targetAngle = -1.578f;
-// TODO: Change Goal
+                aim.setTargetToMotif();
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.firstPickup;
@@ -269,7 +268,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
-// TODO: Change Goal
+                aim.setTargetToGoal();
                 buildObservations();
                 if(DTT< 0.05){
                     startShoot = true;
@@ -416,14 +415,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         pid = new SpindexPID(hardwareMap);
 
-        aim = new TurretAutoAimODO(hardwareMap, -0.944, -0.66);
+        aim = new TurretAutoAimODO(hardwareMap, -0.944, -0.66, "auto");
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(12, -17.5, DistanceUnit.CM);
-
-
 
         while (odo.getDeviceStatus() != GoBildaPinpointDriver.DeviceStatus.READY && !Thread.currentThread().isInterrupted()) {
             odo.update();
@@ -449,9 +446,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         android.content.Context context = hardwareMap.appContext;
         assetManager = context.getAssets();
-
-
-
     }
 
     @Override
