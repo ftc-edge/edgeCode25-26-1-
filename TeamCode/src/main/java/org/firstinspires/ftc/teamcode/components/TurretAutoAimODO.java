@@ -24,6 +24,9 @@ public class TurretAutoAimODO {
     public static double GOAL_X_AUTO = -1.0;
     public static double GOAL_Y_AUTO = -1.0;
 
+    public static double BLUE_END_HEADING = 90;
+    public static double RED_END_HEADING = -90;
+
 //    public static double MOTIF_X_AUTO = 1;
 //    public static double MOTIF_Y_AUTO = 0;
 //
@@ -125,12 +128,24 @@ public class TurretAutoAimODO {
         if(target == "motif"){
             fieldAngleToGoalDegrees = 179.8;
         }
+        if(target == "final"){
+            fieldAngleToGoalDegrees = Util.getColor().equals("blue") ? BLUE_END_HEADING : RED_END_HEADING;
+        }
 
         fieldAngleToGoalDegrees = ((fieldAngleToGoalDegrees % 360) + 360) % 360;
 
         // Calculate turret angle in USER space
         // Turret angle = (Field angle to goal) - (Robot heading) + (Turret offset)
         double turretTargetUserDegrees = fieldAngleToGoalDegrees - robotHeadingDegrees + TURRET_OFFSET_DEGREES;
+
+        if(Util.getColor().equals("red") && mode.equals("teleop")){
+            turretTargetUserDegrees += 180;
+        }
+        if(Util.getColor().equals("red") && mode.equals("auto")){
+            turretTargetUserDegrees += 180;
+        }
+
+
         turretTargetUserDegrees = ((turretTargetUserDegrees % 360) + 360) % 360;
 
         // Get current turret position in USER space
@@ -178,5 +193,8 @@ public class TurretAutoAimODO {
     }
     public void adjustOffset(double offset){
         TURRET_OFFSET_DEGREES += offset;
+    }
+    public void setTargetToInitial(){
+        target = "final";
     }
 }

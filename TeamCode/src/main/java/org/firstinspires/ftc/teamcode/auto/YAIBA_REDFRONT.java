@@ -146,6 +146,8 @@ public class YAIBA_REDFRONT extends OpMode {
     public ElapsedTime reverseTimer = new ElapsedTime();
 
     boolean reset = false;
+    boolean started = false;
+    public ElapsedTime globalTimer = new ElapsedTime();
 
     // ── Full-tray reverse ────────────────────────────────────────────────────
     // Triggered once the 3rd ball is confirmed seated in intakeCheck().
@@ -159,6 +161,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
     /** Milliseconds to run the reverse after the settle delay. */
     public static double FULL_TRAY_REVERSE_DURATION_MS = 200;
+    public static double AFTER_REVERSE_POWER = 0.5;
 
     /** Intake power for the gentle reverse. Negative = eject direction. */
     public static double FULL_TRAY_REVERSE_POWER      = -0.35;
@@ -259,7 +262,7 @@ public class YAIBA_REDFRONT extends OpMode {
             case firstPickupSetup:
                 targetX = AutoRedConstants.intake1PrepX;
                 targetY = AutoRedConstants.intakePrepY;
-                targetAngle = -1.578f;
+                targetAngle = 1.578f;
                 aim.setTargetToMotif();
                 intake.setPower(1);           // start intake while driving to position
                 intakeCheckEnabled = true;
@@ -294,10 +297,10 @@ public class YAIBA_REDFRONT extends OpMode {
                 break;
 
             case shootDrive:
-                intake.setPower(0);
+//                intake.setPower(0);
                 targetX = AutoRedConstants.shootX;
                 targetY = AutoRedConstants.shootY;
-                targetAngle = -1.578f;
+                targetAngle = 1.578f;
                 AutoRedConstants.driveForwardMult = 1f;
                 AutoRedConstants.driveStrafeMult = -1f;
                 aim.setTargetToGoal();
@@ -444,8 +447,9 @@ public class YAIBA_REDFRONT extends OpMode {
                 break;
 
             case finish:
-                targetX = -0.5f;
-                targetY = 0f;
+                aim.setTargetToInitial();
+                targetX = -0.8f;
+                targetY = 0.3f;
                 targetAngle = -1.578f;
                 break;
         }
@@ -508,6 +512,15 @@ public class YAIBA_REDFRONT extends OpMode {
     @Override
     public void loop() {
 
+        /* Logic for terminating after 30 seconds */
+        if(!started){
+            started = true;
+            globalTimer.reset();
+        }
+        if(started && globalTimer.seconds() > 26){
+            currentStage = autoStage.finish;
+        }
+
         odo.update();
         turret.loop();
 
@@ -554,7 +567,7 @@ public class YAIBA_REDFRONT extends OpMode {
         strafe /= denominator;
         rotation /= denominator;
 
-        drive.setPower(forward * AutoRedConstants.driveForwardMult, strafe * AutoRedConstants.driveStrafeMult, rotation * AutoRedConstants.driveRotationMult);
+        drive.setPower(forward * AutoRedConstants.driveForwardMult * AutoRedConstants.driveMult, strafe * AutoRedConstants.driveStrafeMult * AutoRedConstants.driveMult, rotation * AutoRedConstants.driveRotationMult * AutoRedConstants.driveMult);
         pid.update();
 
         aim.runToAim(telemetry);
@@ -663,7 +676,7 @@ public class YAIBA_REDFRONT extends OpMode {
 
         telemetry.addData("=== Pathing ===", "");
         telemetry.addData("Current Stage", currentStage);
-        telemetry.addData("Current Auto", AutoRedConstants.currentAuto);
+        //telemetry.addData("Current Auto", AutoRedConstants.currentAuto);
         telemetry.addData("DTT", DTT);
         telemetry.addData("Shooting", pid.shooting);
         telemetry.addData("Sorted", sorted);
@@ -787,7 +800,7 @@ public class YAIBA_REDFRONT extends OpMode {
         } else if (fullTrayReverseRunning) {
             // Phase 2: running the reverse — stop once the duration expires.
             if (fullTrayReverseTimer.milliseconds() >= FULL_TRAY_REVERSE_DURATION_MS) {
-                intake.setPower(0);
+                intake.setPower((float) AFTER_REVERSE_POWER);
                 fullTrayReverseRunning = false;
             }
         }

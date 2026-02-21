@@ -11,6 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.automation.SpindexAutoSort;
+import org.firstinspires.ftc.teamcode.components.AutoRedConstants;
 import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.Constants;
 import org.firstinspires.ftc.teamcode.components.Drive;
@@ -147,6 +148,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     boolean reset = false;
 
+    boolean started = false;
+    public ElapsedTime globalTimer = new ElapsedTime();
+
     // ── Full-tray reverse ────────────────────────────────────────────────────
     // Triggered once the 3rd ball is confirmed seated in intakeCheck().
     // Phase 1: wait FULL_TRAY_SETTLE_DELAY_MS so the ball finishes rolling in.
@@ -162,6 +166,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     /** Intake power for the gentle reverse. Negative = eject direction. */
     public static double FULL_TRAY_REVERSE_POWER      = -0.35;
+    public static double AFTER_REVERSE_POWER = 0.5;
 
     private final ElapsedTime fullTrayReverseTimer = new ElapsedTime();
     private boolean           fullTrayReversePending = false;
@@ -216,7 +221,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 }
                 break;
             case firstShot:
-                intake.setPower(0);
+//                intake.setPower(0);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
                     if (startShoot && turret.atTarget()) {
                         pid.setTargetStep(-4);
@@ -295,7 +300,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case shootDrive:
-                intake.setPower(0);
+//                intake.setPower(0);
                 targetX = AutoBlueConstants.shootX;
                 targetY = AutoBlueConstants.shootY;
                 targetAngle = -1.578f;
@@ -445,8 +450,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case finish:
-                targetX = -0.5f;
-                targetY = 0f;
+                aim.setTargetToInitial();
+                targetX = -0.8f;
+                targetY = -0.3f;
                 break;
         }
         //}
@@ -500,13 +506,18 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         android.content.Context context = hardwareMap.appContext;
         assetManager = context.getAssets();
-
-
-
     }
 
     @Override
     public void loop() {
+        /* Logic for terminating after 30 seconds */
+        if(!started){
+            started = true;
+            globalTimer.reset();
+        }
+        if(started && globalTimer.seconds() > 26){
+            currentStage = autoStage.finish;
+        }
 
         odo.update();
         turret.loop();
@@ -554,7 +565,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         strafe /= denominator;
         rotation /= denominator;
 
-        drive.setPower(forward * AutoBlueConstants.driveForwardMult, strafe * AutoBlueConstants.driveStrafeMult, rotation * AutoBlueConstants.driveRotationMult);
+        drive.setPower(forward * AutoBlueConstants.driveForwardMult * AutoBlueConstants.driveMult, strafe * AutoBlueConstants.driveStrafeMult * AutoBlueConstants.driveMult, rotation * AutoBlueConstants.driveRotationMult * AutoBlueConstants.driveMult);
         pid.update();
 
         aim.runToAim(telemetry);
@@ -787,7 +798,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         } else if (fullTrayReverseRunning) {
             // Phase 2: running the reverse — stop once the duration expires.
             if (fullTrayReverseTimer.milliseconds() >= FULL_TRAY_REVERSE_DURATION_MS) {
-                intake.setPower(0);
+                intake.setPower((float) AFTER_REVERSE_POWER);
                 fullTrayReverseRunning = false;
             }
         }
