@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class Constants {
+    public static double aimAdjust = 1.5;
     public static double shootSpeed = 142;
     public static double regressionScaling = 30;
     public static double autoAimLoseDecayMultiplier = 0.92;
