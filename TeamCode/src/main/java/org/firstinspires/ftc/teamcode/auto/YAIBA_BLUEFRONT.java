@@ -4,7 +4,6 @@ import static java.lang.Thread.sleep;
 
 import android.content.res.AssetManager;
 
-import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -22,20 +21,14 @@ import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.Turret;
 import org.firstinspires.ftc.teamcode.components.TurretAutoAimODO;
-import org.firstinspires.ftc.teamcode.components.TurretRTP;
-import org.firstinspires.ftc.teamcode.components.TurretRegression;
 import org.firstinspires.ftc.teamcode.components.TurretSpin;
-import org.firstinspires.ftc.teamcode.components.Util;
-import org.firstinspires.ftc.teamcode.yaiba.BODYONNX;
+import org.firstinspires.ftc.teamcode.yaiba.YAIBAONNX;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.dashboard.canvas.Canvas;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
 import ai.onnxruntime.OrtException;
 
@@ -45,7 +38,7 @@ import org.firstinspires.ftc.teamcode.components.AutoBlueConstants;
 @TeleOp
 public class YAIBA_BLUEFRONT extends OpMode {
 
-    private BODYONNX model;
+    private YAIBAONNX model;
 
     private GoBildaPinpointDriver odo;
 
@@ -137,12 +130,43 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     public ElapsedTime intakeTimer = new ElapsedTime();
 
+    public ElapsedTime jamTimer = new ElapsedTime();
+
     boolean prevShootingBoolean = false;
 
     boolean hasPushed = false;
 
     boolean motifCheck = false;
 
+    boolean adjusted = false;
+
+    public float shootSpeed = AutoBlueConstants.shootSpeed;
+
+    public boolean wasAtTarget;
+
+    public ElapsedTime reverseTimer = new ElapsedTime();
+
+    boolean reset = false;
+
+    // ── Full-tray reverse ────────────────────────────────────────────────────
+    // Triggered once the 3rd ball is confirmed seated in intakeCheck().
+    // Phase 1: wait FULL_TRAY_SETTLE_DELAY_MS so the ball finishes rolling in.
+    // Phase 2: run intake in reverse at FULL_TRAY_REVERSE_POWER for
+    //          FULL_TRAY_REVERSE_DURATION_MS to eject any trailing 4th ball.
+    // Tune all three values via FTC Dashboard.
+
+    /** Milliseconds to wait after the 3rd ball is confirmed before reversing. */
+    public static double FULL_TRAY_SETTLE_DELAY_MS    = 350;
+
+    /** Milliseconds to run the reverse after the settle delay. */
+    public static double FULL_TRAY_REVERSE_DURATION_MS = 200;
+
+    /** Intake power for the gentle reverse. Negative = eject direction. */
+    public static double FULL_TRAY_REVERSE_POWER      = -0.35;
+
+    private final ElapsedTime fullTrayReverseTimer = new ElapsedTime();
+    private boolean           fullTrayReversePending = false;
+    private boolean           fullTrayReverseRunning = false;
 
     private float[] buildObservations() {
         float[] obs = new float[9];
@@ -184,6 +208,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1;
                 AutoBlueConstants.driveStrafeMult = -1;
+// TODO: Change Goal
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
@@ -196,7 +221,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 intake.setPower(0);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
                     if (startShoot && turret.atTarget()) {
-                        pid.setTargetStep(-3);
+                        pid.setTargetStep(-4);
+                        currentPosition = (currentPosition + 2) % 3; // -4 steps ≡ +2 mod 3
                         startShoot = false;
                     }
                     if (pid.isAtTarget() && !startShoot) {
@@ -211,16 +237,20 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
             case shoot:
                 arrived = false;
-                intake.setPower(0);
+                reset = false;
+                intake.setPower(1);
                 if(timer.milliseconds() > AutoBlueConstants.beforeShootDelayMS) {
-                    if (startShoot && turret.atTarget()) {
-                        pid.setTargetStep(-3);
+                    if (!adjusted) {
+                        adjusted = pid.shootConsecutiveAdjust();
+                    } else if (startShoot && turret.atTarget() && pid.isAtTarget()) {
+                        pid.startShootConsecutive();
                         startShoot = false;
-                    }
-                    if (pid.isAtTarget() && !startShoot) {
+                    } else if (pid.isAtTarget() && !startShoot && !pid.shooting) {
                         intakeCheckEnabled = true;
+                        pid.shot = 0;
+                        sorted = false;
                         shootCnt++;
-                        if (shootCnt == 2) currentStage = autoStage.gatePush;
+                        if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
                         if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
                         if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
                         if (shootCnt == 5) currentStage = autoStage.finish;
@@ -228,15 +258,16 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }
                 }
                 break;
-//            if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
-//            if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-//            if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-//            if (shootCnt == 5) currentStage = autoStage.finish;
+
             case firstPickupSetup:
                 targetX = AutoBlueConstants.intake1PrepX;
                 targetY = AutoBlueConstants.intakePrepY;
                 targetAngle = -1.578f;
-                //TurretAutoAimODO.GOAL_Y_CM = 0;
+                aim.setTargetToMotif();
+                intake.setPower(1);           // start intake while driving to position
+                intakeCheckEnabled = true;
+                autoSortTimerStarted = false; // clear stale timer state from previous cycle
+                sorted = false;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.firstPickup;
@@ -247,8 +278,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 intake.setPower(1);
                 targetX = AutoBlueConstants.intake1PrepX;
                 targetY = AutoBlueConstants.intakeY;
-                AutoBlueConstants.driveForwardMult = 0.75f;
-                AutoBlueConstants.driveStrafeMult = -0.75f;
+                AutoBlueConstants.driveForwardMult = 0.5f;
+                AutoBlueConstants.driveStrafeMult = -0.5f;
                 buildObservations();
                 intakeCheckEnabled = true;
                 if(DTT < 0.05){
@@ -261,25 +292,37 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }
                 }
                 if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
-                    intake.setPower(-0.25f);
                     currentStage = autoStage.shootDrive;
                 }
                 break;
 
             case shootDrive:
+                intake.setPower(0);
                 targetX = AutoBlueConstants.shootX;
                 targetY = AutoBlueConstants.shootY;
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
-                TurretAutoAimODO.GOAL_Y_CM = 1;
+                aim.setTargetToGoal();
                 buildObservations();
-                pid.shootConsecutiveAdjust();
-                if(DTT< 0.05){
+                if(!reset){
+                    reverseTimer.reset();
+                    adjusted = false;
+                    pid.shot = 0;
+                    // Cancel any lingering fullTrayReverse state so it doesn't fight
+                    // the in-transit reverse or the shooter sequence.
+                    fullTrayReversePending = false;
+                    fullTrayReverseRunning = false;
+                    reset = true;
+                }else if(reverseTimer.seconds() > AutoBlueConstants.reverseTime) intake.setPower((float) AutoBlueConstants.reversePower);
+                if (!adjusted && pid.isAtTarget()) {
+                    adjusted = pid.shootConsecutiveAdjust();
+                }
+                if(DTT < 0.05){
                     startShoot = true;
                     scaled = AutoBlueConstants.shootScaled2;
                     currentStage = autoStage.shoot;
-                    // NOTE: red version does NOT reset timer here, so we keep behavior consistent
+                    timer.reset();
                 }
                 break;
 
@@ -288,7 +331,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = AutoBlueConstants.gatePushPrepY;
                 //targetAngle = -2.0944f;
                 buildObservations();
-                if(DTT< 0.05){
+                if(DTT< 0.1){
                     currentStage = autoStage.gatePush;
                 }
                 break;
@@ -296,10 +339,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
             case gatePush:
                 targetX = AutoBlueConstants.gatePushPrepX;
                 targetY = AutoBlueConstants.gatePushY;
-//                AutoBlueConstants.driveForwardMult = 0.75f;
-//                AutoBlueConstants.driveStrafeMult = -0.75f;
-                AutoBlueConstants.driveForwardMult = 1;
-                AutoBlueConstants.driveStrafeMult = -1;
+                AutoBlueConstants.driveForwardMult = 0.75f;
+                AutoBlueConstants.driveStrafeMult = -0.75f;
                 buildObservations();
                 intake.setPower(1);
                 if(DTT < 0.05){
@@ -325,12 +366,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         gateTimer.reset();
                         startedTimer = true;
                     }else if(gateTimer.seconds() > AutoBlueConstants.gateTime){
-                        intake.setPower(-0.25f);
                         currentStage = autoStage.shootDrive;
                     }
                 }
                 if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
-                    intake.setPower(-0.25f);
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -339,6 +378,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = AutoBlueConstants.intakePrepY;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
+                intake.setPower(1);           // start intake while driving to position
+                intakeCheckEnabled = true;
+                autoSortTimerStarted = false;
+                sorted = false;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.secondPickup;
@@ -348,9 +391,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
             case secondPickup:
                 targetX = AutoBlueConstants.intake2PrepX;
                 targetY = AutoBlueConstants.intakeY;
-                AutoBlueConstants.driveForwardMult = 0.75f;
-                AutoBlueConstants.driveStrafeMult = -0.75f;
+                AutoBlueConstants.driveForwardMult = 0.5f;
+                AutoBlueConstants.driveStrafeMult = -0.5f;
                 intake.setPower(1);
+                intakeCheckEnabled = true;
                 buildObservations();
                 //intake issue
                 if(DTT < 0.05){
@@ -362,7 +406,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }
                 }
                 if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
-                    intake.setPower(-0.25f);
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -372,6 +415,10 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetY = AutoBlueConstants.intakePrepY;
                 AutoBlueConstants.driveForwardMult = 1f;
                 AutoBlueConstants.driveStrafeMult = -1f;
+                intake.setPower(1);           // start intake while driving to position
+                intakeCheckEnabled = true;
+                autoSortTimerStarted = false;
+                sorted = false;
                 buildObservations();
                 if(DTT < 0.05){
                     currentStage = autoStage.thirdPickup;
@@ -380,11 +427,12 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
             case thirdPickup:
                 targetX = AutoBlueConstants.intake3PrepX;
-                targetY = AutoBlueConstants.intakeY;
-                AutoBlueConstants.driveForwardMult = 0.75f;
-                AutoBlueConstants.driveStrafeMult = -0.75f;
+                targetY = AutoBlueConstants.intake3y;
+                AutoBlueConstants.driveForwardMult = 0.5f;
+                AutoBlueConstants.driveStrafeMult = -0.5f;
                 buildObservations();
                 intake.setPower(1);
+                intakeCheckEnabled = true;
                 if(DTT < 0.05){
                     if(!arrived){
                         intakeTimer.reset();
@@ -394,7 +442,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     }
                 }
                 if(Math.abs(currentLayout[0]) == 1 && Math.abs(currentLayout[1]) == 1 && Math.abs(currentLayout[2]) == 1){
-                    intake.setPower(-0.25f);
                     currentStage = autoStage.shootDrive;
                 }
                 break;
@@ -417,14 +464,13 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
         turret = new Turret(hardwareMap);
         intake = new Intake(hardwareMap);
-        spindex = new Spindex(hardwareMap);
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
         autoSort = new SpindexAutoSort(hardwareMap, telemetry);
 
         pid = new SpindexPID(hardwareMap);
 
-        aim = new TurretAutoAimODO(hardwareMap, -0.944, -0.66);
+        aim = new TurretAutoAimODO(hardwareMap, -0.944, -0.66, "auto");
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
@@ -444,7 +490,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
         currentStage = autoStage.firstShootDrive;
         try {
             // Load AI model
-            model = new BODYONNX(hardwareMap.appContext.getAssets());
+            model = new YAIBAONNX(hardwareMap.appContext.getAssets());
             telemetry.addData("Status", "Model loaded successfully");
             telemetry.addData("initial position", odo.getPosition().getX(DistanceUnit.CM));
             telemetry.update();
@@ -517,19 +563,24 @@ public class YAIBA_BLUEFRONT extends OpMode {
         aim.runToAim(telemetry);
 
         pid.shootConsecutive(color);
+
         //motifCheck();
 
 
         updateColor();
-        if(intake.getPower() != 0 && intakeCheckEnabled){
+        if(intake.getPower() != 0 && intakeCheckEnabled && !sorted && !fullTrayReversePending && !fullTrayReverseRunning){
             intakeCheck();
         }
         if(intake.paused) intake.pause(Constants.intakeReverseTime, intakePauseTimer, Intake.intakePower);
 
+        jamCorrection();
+        fullTrayReverse();
 
 
-        hood.setPosition(0.675);
-        turret.setTargetRPM(135);
+        wasAtTarget = pid.isAtTarget();
+
+        hood.setPosition(AutoBlueConstants.hoodPos);
+        turret.setTargetRPM(shootSpeed);
         telemetry.addData("target hood pos", hood.getPosition());
         telemetry.addData("target turret rpm", 140);
 
@@ -618,9 +669,15 @@ public class YAIBA_BLUEFRONT extends OpMode {
         telemetry.addData("Current Auto", AutoBlueConstants.currentAuto);
         telemetry.addData("DTT", DTT);
         telemetry.addData("Shooting", pid.shooting);
+        telemetry.addData("Sorted", sorted);
+        telemetry.addData("IntakeCheckEnabled", intakeCheckEnabled);
+        telemetry.addData("CurrentPosition", currentPosition);
+        telemetry.addData("Layout", currentLayout[0] + " " + currentLayout[1] + " " + currentLayout[2]);
 
         telemetry.addData("=== COLOR ===", "");
         telemetry.addData("Color", color.getColor());
+        telemetry.addData("Full Tray Settle", fullTrayReversePending);
+        telemetry.addData("Full Tray Reversing", fullTrayReverseRunning);
 
 
         telemetry.update();
@@ -636,13 +693,13 @@ public class YAIBA_BLUEFRONT extends OpMode {
         if(!pid.isAtTarget()){
             return;
         }
-        else if(color.getColor() == "GREEN") {
+        else if("GREEN".equals(color.getColor())) {
             currentLayout[currentPosition] = 1;
         }
-        else if(color.getColor() == "PURPLE") {
+        else if("PURPLE".equals(color.getColor())) {
             currentLayout[currentPosition] = -1;
         }
-        else if(color.getColor() == "NONE"){
+        else if("NONE".equals(color.getColor())){
             currentLayout[currentPosition] = 0;
         }
 
@@ -665,7 +722,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
             return;
         }
 
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && pid.isAtTarget()){
+        if (("GREEN".equals(detectedColor) || "PURPLE".equals(detectedColor)) && pid.isAtTarget()){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){
                 if(purCount + grnCount <= 2){
                     sorted = false;
@@ -685,13 +742,67 @@ public class YAIBA_BLUEFRONT extends OpMode {
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;
                     sorted = true;
+                    pid.shot = 0;
+                    autoSortTimerStarted = false;
+                    autoSortTimer.reset();
                     intake.togglePower(Intake.intakePower);
+                    // Start the settle-then-reverse sequence now that the 3rd ball is confirmed.
+                    fullTrayReversePending = true;
+                    fullTrayReverseRunning = false;
+                    fullTrayReverseTimer.reset();
                 }
             } else if(!autoSortTimerStarted){
                 autoSortTimerStarted = true;
                 autoSortTimer.reset();
             }
         }
+    }
+
+    /**
+     * Two-phase gentle reverse after the 3rd ball is confirmed seated.
+     *
+     * Phase 1 — Settle: waits FULL_TRAY_SETTLE_DELAY_MS after the trigger so
+     *            the ball that just entered has time to roll fully into the chamber
+     *            before anything happens.
+     * Phase 2 — Eject:  runs the intake at FULL_TRAY_REVERSE_POWER for
+     *            FULL_TRAY_REVERSE_DURATION_MS to push any trailing 4th ball back
+     *            out without disturbing the 3 already seated.
+     *
+     * Call once per loop(). Triggered by setting fullTrayReversePending = true.
+     * Cancels automatically if the robot transitions to shoot (pid.shooting).
+     */
+    public void fullTrayReverse() {
+        // Cancel cleanly if shooting has started — don't fight the shooter sequence.
+        if (pid.shooting) {
+            fullTrayReversePending = false;
+            fullTrayReverseRunning = false;
+            return;
+        }
+
+        if (fullTrayReversePending) {
+            // Phase 1: waiting for the ball to fully seat before we touch intake.
+            if (fullTrayReverseTimer.milliseconds() >= FULL_TRAY_SETTLE_DELAY_MS) {
+                intake.setPower((float) FULL_TRAY_REVERSE_POWER);
+                fullTrayReversePending = false;
+                fullTrayReverseRunning = true;
+                fullTrayReverseTimer.reset();
+            }
+        } else if (fullTrayReverseRunning) {
+            // Phase 2: running the reverse — stop once the duration expires.
+            if (fullTrayReverseTimer.milliseconds() >= FULL_TRAY_REVERSE_DURATION_MS) {
+                intake.setPower(0);
+                fullTrayReverseRunning = false;
+            }
+        }
+    }
+
+    public void jamCorrection(){
+//        if(!pid.isAtTarget() && wasAtTarget){
+//            jamTimer.reset();
+//        }else if(!pid.isAtTarget() && jamTimer.seconds() > 1.5){
+//            pid.stop();
+//            pid.spin(pid.getCurrentPosition() - pid.getTargetPosition());
+//        }
     }
 
 //    public void motifCheck(){

@@ -38,7 +38,7 @@ public class Intake{
 
     public void pause(float time, ElapsedTime timer , float power){
             if (timer.milliseconds() < time) {
-                this.setPower(-0.25f);
+                this.setPower(reversePower);
             } else {
                 this.setPower(power);
                 paused = false;

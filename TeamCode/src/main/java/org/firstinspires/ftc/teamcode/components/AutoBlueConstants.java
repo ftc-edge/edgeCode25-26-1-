@@ -3,6 +3,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class AutoBlueConstants {
+    public static float shootSpeed = 135;
     public static double shootScaled1 = 160;
     public static double shootScaled2 = 175;
     public static double shootScaled3 = 175;
@@ -24,12 +25,13 @@ public class AutoBlueConstants {
 
     public static autoMode currentAuto;
 
-    public static double intakePrepY = -0.33;
-    public static double intakeY = -0.9;
-    public static double intake1PrepX = 0.125;
+    public static double intakePrepY = -0.45;
+    public static double intakeY = -0.95;
+    public static double intake3y = -0.75;
+    public static double intake1PrepX = 0.1375;
     public static double intake2PrepX = 0.48;
     public static double intake3PrepX = -0.20;
-    public static double gatePushPrepX = 0.075;
+    public static double gatePushPrepX = 0.0625;
     public static double gatePushPrepY = -0.5;
     public static double gatePushY = -0.85;
     public static double gateHeading = -2;
@@ -40,6 +42,10 @@ public class AutoBlueConstants {
     public static double shootY = -0.25;
 
     public static double gateTime = 3;
-    public static double pushTime = 0.25;
+    public static double pushTime = 0.75;
     public static double intakeTime = 1.5;
+    public static double hoodPos = 0.8;
+
+    public static double reversePower = -0.6;
+    public static double reverseTime = 0.5;
 }

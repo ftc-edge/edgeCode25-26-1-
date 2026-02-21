@@ -75,7 +75,8 @@ public class teleop extends OpMode{
 
     private float shootSpeed = 0;
     boolean flywheel = true;
-    public boolean sorted = false;
+    public boolean sorted    = false;
+    boolean        adjusting = false;  // true while shootConsecutiveAdjust is running
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
@@ -100,7 +101,7 @@ public class teleop extends OpMode{
         pid = new SpindexPID(hardwareMap);
         color = new Color(hardwareMap);
 
-        aim = new TurretAutoAimODO(hardwareMap, 0, 0.5);
+        aim = new TurretAutoAimODO(hardwareMap, 0, 0.5, "teleop");
 
     }
 
@@ -143,8 +144,20 @@ public class teleop extends OpMode{
             pid.setTargetStep(1);
             currentPosition = (currentPosition + 1 ) % 3;
         }
-        if (gamepad1.dpad_up  && !prevGamepad1.dpad_up) {
+        if (gamepad1.dpad_up && !prevGamepad1.dpad_up) {
             pid.stop();
+        }
+        // Circle — manually trigger the pre-shoot adjustment nudge.
+        // Press once after sorting; the two slow nudges run across loop iterations
+        // and finish automatically. Then press right_bumper to shoot.
+        if (gamepad1.circle && !prevGamepad1.circle) {
+            pid.shot   = 0;
+            adjusting  = true;
+        }
+        if (adjusting && !pid.shooting) {
+            if (pid.shootConsecutiveAdjust()) {
+                adjusting = false;   // both nudges settled — ready to fire
+            }
         }
 
         // Intake
@@ -175,6 +188,8 @@ public class teleop extends OpMode{
         // Telemetry
 //        telemetry.addData("Spindex position", spindex.getCurrentPosition());
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
+        telemetry.addData("Sorted", sorted);
+        telemetry.addData("Adjusting", adjusting);
         telemetry.addData("Alliance Color", AutoBlueConstants.allianceColor);
         telemetry.addData("Distance to April Tag", turretSpin.distToAprilTag);
         telemetry.addData("Hood Position", hood.getPosition());
@@ -229,13 +244,13 @@ public class teleop extends OpMode{
         if(!pid.isAtTarget()){
             return;
         }
-        else if(color.getColor() == "GREEN") {
+        else if("GREEN".equals(color.getColor())) {
             currentLayout[currentPosition] = 1;
         }
-        else if(color.getColor() == "PURPLE") {
+        else if("PURPLE".equals(color.getColor())) {
             currentLayout[currentPosition] = -1;
         }
-        else if(color.getColor() == "NONE"){
+        else if("NONE".equals(color.getColor())){
             currentLayout[currentPosition] = 0;
         }
 
@@ -258,7 +273,7 @@ public class teleop extends OpMode{
         }
 
 
-        if ((detectedColor == "GREEN" || detectedColor == "PURPLE") && pid.isAtTarget()){
+        if (("GREEN".equals(detectedColor) || "PURPLE".equals(detectedColor)) && pid.isAtTarget()){
             if(autoSortTimerStarted && autoSortTimer.milliseconds() >= Constants.autoSortDelayMs){ // Timer expired: we should sort or spin spindex
                 if(purCount + grnCount <= 2){
                     sorted = false;
@@ -278,6 +293,9 @@ public class teleop extends OpMode{
                     currentPosition = (currentPosition + turns) % 3;
                     fortelemetry2 = currentPosition;
                     sorted = true;
+                    pid.shot = 0;           // reset adjust state machine so it starts from nudge step 0
+                    autoSortTimerStarted = false;  // prevent re-triggering if intakeCheck runs again
+                    autoSortTimer.reset();
                     intake.togglePower(Intake.intakePower);
                 }
             } else if(!autoSortTimerStarted){ // We should start the timer

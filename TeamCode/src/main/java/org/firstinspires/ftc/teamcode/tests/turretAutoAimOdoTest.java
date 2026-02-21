@@ -16,7 +16,7 @@ public class turretAutoAimOdoTest extends OpMode {
 
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        turretAutoAimODO = new TurretAutoAimODO(hardwareMap, 0, 0.5);
+        turretAutoAimODO = new TurretAutoAimODO(hardwareMap, 0, 0.5, "teleop");
         drive = new Drive(hardwareMap);
     }
 
