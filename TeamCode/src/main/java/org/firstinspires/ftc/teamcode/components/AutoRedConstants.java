@@ -7,7 +7,6 @@ public class AutoRedConstants {
     public static double shootScaled1 = 160;
     public static double shootScaled2 = 175;
     public static double shootScaled3 = 175;
-    public static String allianceColor = "Red";
     public static String startingPosition = "Front";
     public static double telemetryScale = 60;
     public static double driveForwardMult = 1;

@@ -192,7 +192,7 @@ public class teleop extends OpMode{
 //        telemetry.addData("Spindex Target", spindex.getTargetPosition());
         telemetry.addData("Sorted", sorted);
         telemetry.addData("Adjusting", adjusting);
-        telemetry.addData("Alliance Color", AutoBlueConstants.allianceColor);
+        telemetry.addData("Alliance Color", Constants.allianceColor);
         telemetry.addData("Distance to April Tag", turretSpin.distToAprilTag);
         telemetry.addData("Hood Position", hood.getPosition());
         telemetry.addData("Auto Sort Telemetry", "Original Pos " + fortelemetry + " -> " + fortelemetry2);
