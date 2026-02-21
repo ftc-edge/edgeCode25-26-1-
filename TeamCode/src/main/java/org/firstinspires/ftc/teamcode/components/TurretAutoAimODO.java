@@ -176,4 +176,7 @@ public class TurretAutoAimODO {
         telemetry.addData("Power", "%.3f", power);
         //telemetry.addData("Angle Inversion", rtp.INVERT_ANGLES ? "ON (45°→315°)" : "OFF");
     }
+    public void adjustOffset(double offset){
+        TURRET_OFFSET_DEGREES += offset;
+    }
 }

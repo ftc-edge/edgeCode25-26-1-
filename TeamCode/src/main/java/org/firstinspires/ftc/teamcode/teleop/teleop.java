@@ -151,22 +151,15 @@ public class teleop extends OpMode{
             pid.setTargetStep(1);
             currentPosition = (currentPosition + 1 ) % 3;
         }
-        if (gamepad1.dpad_up && !prevGamepad1.dpad_up) {
+        if (gamepad1.circle && !prevGamepad1.circle) {
             pid.stop();
         }
 
-        // Circle — manually trigger the pre-shoot adjustment nudge.
-        // Press once after sorting; the two slow nudges run across loop iterations
-        // and finish automatically. Then press right_bumper to shoot.
-
-        if (gamepad1.circle && !prevGamepad1.circle) {
-            pid.shot   = 0;
-            adjusting  = true;
+        if(gamepad1.dpad_up){
+            aim.adjustOffset(Constants.aimAdjust);
         }
-        if (adjusting && !pid.shooting) {
-            if (pid.shootConsecutiveAdjust()) {
-                adjusting = false;   // both nudges settled — ready to fire
-            }
+        if(gamepad1.dpad_down) {
+            aim.adjustOffset(-Constants.aimAdjust);
         }
 
         // Intake
