@@ -102,8 +102,8 @@ public class SpindexPID {
      */
     public static double MAX_POWER           = 1.0;
 
-    public static double beforeShootAdjust = 0.5;
-    public static double adjustDelay       = 0.450;
+    public static double beforeShootAdjust = 0.57;
+    public static double adjustDelay       = 0.50;
     public static double adjustDelay2      = 0.100;
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -117,30 +117,6 @@ public class SpindexPID {
      * Range: 0.0 – 1.0.
      */
     public static double ADJUST_POWER_FACTOR = 0.5;
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Jam Detection Settings
-    // ──────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Seconds without meaningful encoder movement before a jam is declared.
-     * Start conservatively high (e.g. 0.6 s) and lower if jams go undetected.
-     */
-    public static double JAM_TIMEOUT_SECONDS  = 0.6;
-
-    /**
-     * Minimum encoder ticks of movement required within JAM_TIMEOUT_SECONDS
-     * to prove the motor is still making progress. Below this threshold the
-     * spindex is considered jammed.
-     */
-    public static int    JAM_MOVEMENT_TICKS   = 5;
-
-    /**
-     * How many back-and-retry cycles to attempt before giving up and holding
-     * position. Prevents an infinite jam loop if the mechanism is truly stuck.
-     */
-    public static int    JAM_MAX_RETRIES      = 3;
-
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Internal State
@@ -161,13 +137,6 @@ public class SpindexPID {
     public  int     shot      = 0;
     public  boolean shooting  = false;
 
-    // ── Jam detection state ───────────────────────────────────────────────────
-    private final ElapsedTime jamTimer           = new ElapsedTime();
-    private int               jamCheckPosition   = 0;   // encoder snapshot for movement check
-    private int               preAttemptPosition = 0;   // position recorded when a new move starts
-    private int               jamRetryCount      = 0;
-    private boolean           isJammed           = false;
-
 
     // ──────────────────────────────────────────────────────────────────────────
     //  Constructor
@@ -179,7 +148,6 @@ public class SpindexPID {
         motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         timer.reset();
-        jamTimer.reset();
     }
 
 
@@ -187,32 +155,7 @@ public class SpindexPID {
     //  Public Control Methods
     // ──────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Command the spindex to advance forward by exactly 1/3 rotation.
-     * Safe to call even while a previous move is in progress — the new
-     * target is stacked on top of the current one.
-     */
-    public void advance() {
-        currentStep++;
-        setTargetStep(currentStep);
-    }
 
-    /**
-     * Command the spindex to reverse by exactly 1/3 rotation.
-     */
-    public void reverse() {
-        currentStep--;
-        setTargetStep(currentStep);
-    }
-
-    /**
-     * Jump directly to a numbered slot (0-indexed).
-     * Slot 0 = home/reset position.
-     */
-    public void goToSlot(int slot) {
-        currentStep = slot;
-        setTargetStep(currentStep);
-    }
 
     /**
      * Reset the encoder and zero all state. Call when spindex is physically
@@ -226,11 +169,8 @@ public class SpindexPID {
         lastError          = 0;
         integralSum        = 0;
         atTarget           = true;
-        isJammed           = false;
-        jamRetryCount      = 0;
         motor.setPower(0);
         timer.reset();
-        jamTimer.reset();
     }
 
 
@@ -239,17 +179,7 @@ public class SpindexPID {
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * Runs one PID iteration and performs jam detection. MUST be called once
-     * per OpMode loop.
-     *
-     * Jam detection logic:
-     *   Every JAM_TIMEOUT_SECONDS, the encoder position is compared against the
-     *   snapshot taken at the start of that window. If the motor has moved fewer
-     *   than JAM_MOVEMENT_TICKS it is declared jammed. The controller then
-     *   commands a return to the position held before the stalled move and
-     *   immediately re-issues the original target, up to JAM_MAX_RETRIES times.
-     *   After exhausting retries the motor holds its current position and
-     *   isJammed is set true.
+     * Runs one PID iteration. MUST be called once per OpMode loop.
      *
      * @return The motor power output applied this cycle (for telemetry).
      */
@@ -262,58 +192,6 @@ public class SpindexPID {
 
         int    currentPosition = motor.getCurrentPosition();
         double error           = targetPosition - currentPosition;
-
-        // ── Jam detection ─────────────────────────────────────────────────────
-        if (!atTarget) {
-            if (jamTimer.seconds() >= JAM_TIMEOUT_SECONDS) {
-                int movement = Math.abs(currentPosition - jamCheckPosition);
-                if (movement < JAM_MOVEMENT_TICKS) {
-                    // Motor has not made meaningful progress — it's jammed.
-                    if (jamRetryCount < JAM_MAX_RETRIES) {
-                        jamRetryCount++;
-                        int pendingTarget = targetPosition;          // remember where we were going
-                        // Step 1 — back up to the pre-attempt position to clear the jam.
-                        targetPosition = preAttemptPosition;
-                        integralSum    = 0;
-                        lastError      = 0;
-                        // Step 2 — re-queue the original target so the next call to
-                        //          setTargetStep (or the resume below) re-issues it.
-                        // We do a two-phase approach: first move back, then on the
-                        // next jam-window expiry (or once atTarget) re-issue the move.
-                        // For simplicity we store the pending target and let the
-                        // next jam window issue it after we reach preAttemptPosition.
-                        jamRetryPendingTarget = pendingTarget;
-                        jamRetryPending       = true;
-                        jamTimer.reset();
-                        jamCheckPosition = currentPosition;
-                    } else {
-                        // Exhausted retries — hold here and flag jammed.
-                        isJammed           = true;
-                        targetPosition     = currentPosition;
-                        integralSum        = 0;
-                        motor.setPower(0);
-                        return 0;
-                    }
-                } else {
-                    // Making progress — update snapshot and keep going.
-                    jamCheckPosition = currentPosition;
-                    jamTimer.reset();
-                }
-            }
-
-            // Once we've returned to preAttemptPosition after a jam, re-issue
-            // the original target so the retry move begins.
-            if (jamRetryPending && Math.abs(currentPosition - preAttemptPosition) <= POSITION_TOLERANCE) {
-                targetPosition    = jamRetryPendingTarget;
-                jamRetryPending   = false;
-                integralSum       = 0;
-                lastError         = 0;
-                preAttemptPosition = currentPosition;
-                jamTimer.reset();
-                jamCheckPosition   = currentPosition;
-                error              = targetPosition - currentPosition;
-            }
-        }
 
         // ── Proportional ──────────────────────────────────────────────────────
         double pOut = Kp * error;
@@ -336,8 +214,6 @@ public class SpindexPID {
         if (Math.abs(error) <= POSITION_TOLERANCE) {
             atTarget      = true;
             integralSum   = 0;       // reset integral when settled
-            jamRetryCount = 0;       // clear retry counter on successful arrival
-            isJammed      = false;
             motor.setPower(0);
             return 0;
         }
@@ -373,14 +249,11 @@ public class SpindexPID {
     /** @return The current 1/3-rotation step index. */
     public int getCurrentStep() { return currentStep; }
 
-    /**
-     * @return true if the motor has jammed and exhausted all retries.
-     *         Call resetHome() or goToSlot() to clear this flag.
-     */
-    public boolean isJammed() { return isJammed; }
+    /** @return false (jam detection removed). */
+    public boolean isJammed() { return false; }
 
-    /** @return How many jam-recovery attempts have been made on the current move. */
-    public int getJamRetryCount() { return jamRetryCount; }
+    /** @return 0 (jam retry tracking removed). */
+    public int getJamRetryCount() { return 0; }
 
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -464,46 +337,27 @@ public class SpindexPID {
         }
         if (shot >= 2 && isAtTarget()) {
             powerFactor = 1.0;    // restore full speed now that adjustment is done
+            shot = 0;
             return true;
         }
         return false;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    //  Jam Detection — Internal State (declared here so update() can see them)
-    // ──────────────────────────────────────────────────────────────────────────
-
-    private int     jamRetryPendingTarget = 0;
-    private boolean jamRetryPending       = false;
-
-
-    // ──────────────────────────────────────────────────────────────────────────
     //  Helpers
-    // ──────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
 
     public void setTargetStep(double step) {
-        preAttemptPosition = motor.getCurrentPosition();   // snapshot for jam detection
         targetPosition    += (int) Math.round(step * TICKS_PER_STEP);
         atTarget           = false;
         integralSum        = 0;
-        isJammed           = false;
-        jamRetryCount      = 0;
-        jamRetryPending    = false;
-        jamCheckPosition   = preAttemptPosition;
-        jamTimer.reset();
         timer.reset();
     }
 
     public void spin(double ticks) {
-        preAttemptPosition = motor.getCurrentPosition();
         targetPosition    += (int) ticks;
         atTarget           = false;
         integralSum        = 0;
-        isJammed           = false;
-        jamRetryCount      = 0;
-        jamRetryPending    = false;
-        jamCheckPosition   = preAttemptPosition;
-        jamTimer.reset();
         timer.reset();
     }
 

@@ -64,11 +64,22 @@ public class TurretAutoAimODO {
     public void setTargetToGoal(){
         target = "goal";
         if (mode == "teleop"){
-            GOAL_X = GOAL_X_TELEOP;
-            GOAL_Y = GOAL_Y_TELEOP;
+            if(Util.getColor().equals("blue")){
+                GOAL_X = GOAL_X_TELEOP;
+                GOAL_Y = GOAL_Y_TELEOP;
+            } else {
+                GOAL_X = -GOAL_X_TELEOP;
+                GOAL_Y = GOAL_Y_TELEOP;
+            }
         }else{
-            GOAL_X = GOAL_X_AUTO;
-            GOAL_Y = GOAL_Y_AUTO;
+            if(Util.getColor().equals("blue")){
+                GOAL_X = GOAL_X_AUTO;
+                GOAL_Y = GOAL_Y_AUTO;
+            } else {
+                GOAL_X = GOAL_X_AUTO;
+                GOAL_Y = -GOAL_Y_AUTO;
+            }
+
         }
     }
 

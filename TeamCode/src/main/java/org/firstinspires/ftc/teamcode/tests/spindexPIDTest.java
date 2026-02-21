@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+import org.firstinspires.ftc.teamcode.components.Color;
 import org.firstinspires.ftc.teamcode.components.Spindex;
 import org.firstinspires.ftc.teamcode.components.SpindexPID;
 import org.firstinspires.ftc.teamcode.components.trapezoidalPIDSpindexer;
@@ -19,11 +20,17 @@ public class spindexPIDTest extends OpMode {
 
     Gamepad prevGamepad1 = new Gamepad();
 
+    int teleopSortStage = 0;
     SpindexPID pid;
+    Color color;
+
+    boolean finishedAdjusting = false;
+    boolean adjusting = false;
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         pid = new SpindexPID(hardwareMap);
+        color = new Color(hardwareMap);
     }
 
     @Override
@@ -42,15 +49,31 @@ public class spindexPIDTest extends OpMode {
         if(gamepad1.square && !prevGamepad1.square){
             pid.setTargetStep(-2);
         }
-        if(gamepad1.left_bumper && !prevGamepad1.left_bumper){
-            pid.setTargetStep(-3);
+
+        if(gamepad1.left_bumper && !prevGamepad1.left_bumper) {
+            pid.shootConsecutiveAdjust();
+            adjusting = true;
         }
-        if(gamepad1.right_bumper && !prevGamepad1.right_bumper){
-            pid.setTargetStep(3);
+        if(adjusting){
+            finishedAdjusting = pid.shootConsecutiveAdjust();
+            if(finishedAdjusting) adjusting = false;
+        }
+        
+        if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
+            teleopSortStage = 1;
+            pid.shootConsecutiveAdjust();
         }
 
+        if(teleopSortStage == 1){
+            finishedAdjusting = pid.shootConsecutiveAdjust();
+            if (finishedAdjusting) {
+                pid.startShootConsecutive();
+                teleopSortStage = 0;
+            }
+        }
+
+        pid.shootConsecutive(color);
         pid.update();
-
 
 //        power = (float) spindex.update(spindexer.spinMotor.getCurrentPosition());
 //
@@ -61,9 +84,10 @@ public class spindexPIDTest extends OpMode {
         targetPosition = (float) pid.getTargetPosition();
         currentPosition = pid.getCurrentPosition();
 
-
         telemetry.addData("currentPosition", currentPosition);
         telemetry.addData("targetPosition", targetPosition);
+        telemetry.addData("Finished Adjusting", finishedAdjusting);
+        telemetry.addData("At target", pid.isAtTarget());
         telemetry.addData("power", pid.isAtTarget());
         telemetry.update();
 

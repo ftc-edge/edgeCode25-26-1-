@@ -73,10 +73,11 @@ public class teleop extends OpMode{
 
     SpindexAutoSort autoSort;
 
-    private float shootSpeed = 0;
+    private double shootSpeed = Constants.shootSpeed;
     boolean flywheel = true;
     public boolean sorted    = false;
     boolean        adjusting = false;  // true while shootConsecutiveAdjust is running
+    int teleopSortStage = 0;
 
     public ElapsedTime autoSortTimer = new ElapsedTime();
     public ElapsedTime intakePauseTimer = new ElapsedTime();
@@ -93,7 +94,6 @@ public class teleop extends OpMode{
 
         turret = new Turret(hardwareMap);
         intake = new Intake(hardwareMap);
-        spindex = new Spindex(hardwareMap);
         hood = new Hood(hardwareMap);
         turretSpin = new TurretSpin(hardwareMap);
         drive = new Drive(hardwareMap);
@@ -133,11 +133,18 @@ public class teleop extends OpMode{
 
         // Spindex
         if (gamepad1.right_bumper && !prevGamepad1.right_bumper) {
+            teleopSortStage = 1;
             sorted = false;
-            pid.startShootConsecutive();
-            currentPosition = (currentPosition + 2 ) % 3;
-            currentLayout[currentPosition] = 0;
+            pid.shootConsecutiveAdjust();
         }
+        if(teleopSortStage == 1){
+            boolean finishedAdjusting = pid.shootConsecutiveAdjust();
+            if (finishedAdjusting) {
+                pid.startShootConsecutive();
+                teleopSortStage = 0;
+            }
+        }
+
         pid.shootConsecutive(color);
 
         if (gamepad1.left_bumper && !prevGamepad1.left_bumper) {
@@ -147,9 +154,11 @@ public class teleop extends OpMode{
         if (gamepad1.dpad_up && !prevGamepad1.dpad_up) {
             pid.stop();
         }
+
         // Circle — manually trigger the pre-shoot adjustment nudge.
         // Press once after sorting; the two slow nudges run across loop iterations
         // and finish automatically. Then press right_bumper to shoot.
+
         if (gamepad1.circle && !prevGamepad1.circle) {
             pid.shot   = 0;
             adjusting  = true;
@@ -202,7 +211,7 @@ public class teleop extends OpMode{
 //        telemetry.addData("Hue", JavaUtil.colorToHue(colors.toColor()));
         telemetry.addData("Ball Colors", "%s, %s, %s", numberToColor(currentLayout[0]), numberToColor(currentLayout[1]), numberToColor(currentLayout[2]));
         telemetry.addData("Current Position", currentPosition);
-        telemetry.addData("Spindex is within target", spindex.withinTarget());
+        telemetry.addData("Spindex is within target", pid.isAtTarget());
         telemetry.addData("Detected Motif", turretSpin.detectedMotif);
         telemetry.addData("Linelight Error", turretSpin.lastError);
         //telemetry.addData("purple + green count", )

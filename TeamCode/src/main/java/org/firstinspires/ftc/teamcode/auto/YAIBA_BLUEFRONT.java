@@ -94,7 +94,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
 
     public float DTT;
 
-    Spindex spindex;
 
     Intake intake;
 
@@ -208,7 +207,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 targetAngle = -1.578f;
                 AutoBlueConstants.driveForwardMult = 1;
                 AutoBlueConstants.driveStrafeMult = -1;
-// TODO: Change Goal
                 buildObservations();
                 if(DTT < 0.05){
                     startShoot = true;
@@ -459,7 +457,6 @@ public class YAIBA_BLUEFRONT extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         drive = new Drive(hardwareMap);
         color = new Color(hardwareMap);
-        spindex = new Spindex(hardwareMap);
         intake = new Intake(hardwareMap);
 
         turret = new Turret(hardwareMap);

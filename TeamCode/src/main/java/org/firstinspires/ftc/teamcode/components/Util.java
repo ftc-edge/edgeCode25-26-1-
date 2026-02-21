@@ -8,4 +8,9 @@ public class Util {
         }
         return 20;
     }
+
+    public static String getColor(){
+        String color = AutoBlueConstants.allianceColor.toLowerCase().replace(" ", "");
+        return color;
+    }
 }
