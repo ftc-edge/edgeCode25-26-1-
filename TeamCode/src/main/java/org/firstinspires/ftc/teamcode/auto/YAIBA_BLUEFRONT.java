@@ -249,9 +249,9 @@ public class YAIBA_BLUEFRONT extends OpMode {
                         sorted = false;
                         shootCnt++;
                         if (shootCnt == 2) currentStage = autoStage.gatePushSetup;
-                        if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
-                        if (shootCnt == 4) currentStage = autoStage.thirdPickupSetup;
-                        if (shootCnt == 5) currentStage = autoStage.finish;
+                        //if (shootCnt == 3) currentStage = autoStage.secondPickupSetup;
+                        if (shootCnt == 3) currentStage = autoStage.thirdPickupSetup;
+                        if (shootCnt == 4) currentStage = autoStage.finish;
                         timer.reset();
                     }
                 }
@@ -445,7 +445,7 @@ public class YAIBA_BLUEFRONT extends OpMode {
                 break;
 
             case finish:
-                targetX = 0.5f;
+                targetX = -0.5f;
                 targetY = 0f;
                 break;
         }
