@@ -164,7 +164,8 @@ public class YAIBA_BLUEFRONT extends OpMode {
     /** Milliseconds to run the reverse after the settle delay. */
     public static double FULL_TRAY_REVERSE_DURATION_MS = 200;
 
-    /** Intake power for the gentle reverse. Negative = eject direction. */
+    /** Intake power for the gentl
+     * e reverse. Negative = eject direction. */
     public static double FULL_TRAY_REVERSE_POWER      = -0.35;
     public static double AFTER_REVERSE_POWER = 0.5;
 

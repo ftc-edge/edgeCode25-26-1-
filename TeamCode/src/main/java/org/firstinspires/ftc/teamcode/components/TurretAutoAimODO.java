@@ -26,6 +26,7 @@ public class TurretAutoAimODO {
 
     public static double BLUE_END_HEADING = 90;
     public static double RED_END_HEADING = -90;
+    public static double SPECIAL_ANGLE = 45;
 
 //    public static double MOTIF_X_AUTO = 1;
 //    public static double MOTIF_Y_AUTO = 0;
@@ -131,6 +132,9 @@ public class TurretAutoAimODO {
         if(target == "final"){
             fieldAngleToGoalDegrees = Util.getColor().equals("blue") ? BLUE_END_HEADING : RED_END_HEADING;
         }
+        if(mode == "special"){
+            fieldAngleToGoalDegrees = SPECIAL_ANGLE;
+        }
 
         fieldAngleToGoalDegrees = ((fieldAngleToGoalDegrees % 360) + 360) % 360;
 
@@ -178,18 +182,8 @@ public class TurretAutoAimODO {
 
         telemetry.addData("=== TURRET (User Space) ===", "");
         telemetry.addData("Field Angle to Goal", "%.1f°", fieldAngleToGoalDegrees);
-        telemetry.addData("Turret Target", "%.1f°", turretTargetUserDegrees);
-        telemetry.addData("Turret Current", "%.1f°", currentTurretUserDegrees);
-        telemetry.addData("Error", "%.1f°", turretTargetUserDegrees - currentTurretUserDegrees);
+        telemetry.addData("Offset", "%.1f°", TURRET_OFFSET_DEGREES);
 
-        telemetry.addData("=== TURRET (Encoder Space) ===", "");
-        telemetry.addData("Target", "%.1f°", targetEncoderDegrees);
-        telemetry.addData("Current", "%.1f°", currentEncoderDegrees);
-        telemetry.addData("Route", rtp.getRouteInfo(currentEncoderDegrees, targetEncoderDegrees));
-
-        telemetry.addData("=== CONTROL ===", "");
-        telemetry.addData("Power", "%.3f", power);
-        //telemetry.addData("Angle Inversion", rtp.INVERT_ANGLES ? "ON (45°→315°)" : "OFF");
     }
     public void adjustOffset(double offset){
         TURRET_OFFSET_DEGREES += offset;

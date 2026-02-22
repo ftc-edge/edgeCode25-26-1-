@@ -24,4 +24,6 @@ public class Constants {
     public static float imuKp = 0.6f;
     public static String allianceColor = "Red";
 
+    public static float HOOD2 = 0.775f;
+    public static float shootSpeed2 = 140;
 }
