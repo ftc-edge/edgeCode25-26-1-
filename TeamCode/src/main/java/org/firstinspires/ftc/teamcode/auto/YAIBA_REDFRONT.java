@@ -663,7 +663,6 @@ public class YAIBA_REDFRONT extends OpMode {
 
         telemetry.addData("=== Pathing ===", "");
         telemetry.addData("Current Stage", currentStage);
-        telemetry.addData("Current Auto", AutoRedConstants.currentAuto);
         telemetry.addData("DTT", DTT);
         telemetry.addData("Shooting", pid.shooting);
         telemetry.addData("Sorted", sorted);
