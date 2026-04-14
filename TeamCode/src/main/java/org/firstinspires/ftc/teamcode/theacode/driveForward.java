@@ -8,12 +8,13 @@ public class driveForward extends OpMode {
     private static DcMotor leftBack;
     private static DcMotor rightFront;
     private static DcMotor rightBack;
+    double speed = 0.0;
 
-    private void forward(){
-        leftFront.setPower(1);
-        leftBack.setPower(1);
-        rightFront.setPower(1);
-        rightBack.setPower(1);
+    private void setDrivePower(){
+        leftFront.setPower(speed);
+        leftBack.setPower(speed);
+        rightFront.setPower(speed);
+        rightBack.setPower(speed);
     }
 
     @Override
@@ -23,6 +24,7 @@ public class driveForward extends OpMode {
 
     @Override
     public void loop() {
-        forward();
+        setDrivePower();
+        speed += .01;
     }
 }
