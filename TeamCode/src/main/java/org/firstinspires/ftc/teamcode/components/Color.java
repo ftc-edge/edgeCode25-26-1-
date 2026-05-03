@@ -5,12 +5,12 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 @Config
 public class Color {
-    public static int saturationLimit = 14;
-    public static int brightnessLimit = 25;
+    public static int saturationLimit = 3;
+    public static int brightnessLimit = 33;
     public static int greenHueLowerLimit = 120;
     public static int greenHueUpperLimit = 225;
     public static int purpleHueLowerLimit = 225;
-    public static int purpleHueUpperLimit = 330;
+    public static int purpleHueUpperLimit = 340;
 
     ColorSamplerUtil colorSampler;
 

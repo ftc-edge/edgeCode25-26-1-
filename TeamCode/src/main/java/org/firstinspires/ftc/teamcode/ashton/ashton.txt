@@ -1,0 +1,9 @@
+
+boolean ashton = false
+boolean life = true
+
+when(life){ ashton = true}
+
+if(ashton){
+crash out
+}

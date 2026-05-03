@@ -3,6 +3,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class AutoBlueConstants {
+    public static double driveMult = 1;
     public static float shootSpeed = 135;
     public static double shootScaled1 = 160;
     public static double shootScaled2 = 175;
