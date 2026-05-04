@@ -34,3 +34,7 @@ public class theaGamepadAssignment extends OpMode{
     }
 
 }
+
+//excellent i would run this right now
+//good e
+//extra credit your hardware map works

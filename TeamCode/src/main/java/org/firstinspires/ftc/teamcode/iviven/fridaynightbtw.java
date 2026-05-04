@@ -35,6 +35,12 @@ public class fridaynightbtw extends OpMode {
 
     @Override
     public void loop() {
+        /*
+    double LFM  = x + y + hx;
+    double RFM = x - y - hx;
+    double LBM   = x - y + hx;
+    double RBM  = x + y - hx;
+         */
         LF.setPower(LFM);
         RF.setPower(RFM);
         LB.setPower(LBM);
@@ -43,5 +49,8 @@ public class fridaynightbtw extends OpMode {
 
 
 }
+
+
+//g
 
 
