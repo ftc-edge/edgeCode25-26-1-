@@ -1,10 +1,9 @@
-package Piper;
+package org.firstinspires.ftc.teamcode.Piper;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Gamepad;
-
-public class CameronsAssignment {
+@TeleOp
+public class CameronsAssignment extends OpMode{
     DcMotor FL;
     DcMotor FR;
     DcMotor BL;
@@ -16,14 +15,14 @@ public class CameronsAssignment {
 //I know that technically this doesn't work but I think the logic is there I just don't know how to import stuff.
 
     public void init(){
-        DcMotor FL = hardwareMap.get(class DcMotor);
-        DcMotor FR = hardwareMap.get(class DcMotor);
-        DcMotor BL = hardwareMap.get(class DcMotor);
-        DcMotor BR = hardwareMap.get(class DcMotor);
+        DcMotor FL = hardwareMap.get(DcMotor.class, "FL");
+        DcMotor FR = hardwareMap.get(DcMotor.class, "FR");
+        DcMotor BL = hardwareMap.get(DcMotor.class, "BL");
+        DcMotor BR = hardwareMap.get(DcMotor.class, "BR");
 
-        float LeftStick_x = Gamepad.get(float left_stick_x);
-        float LeftStick_y = Gamepad.get(float left_stick_y);
-        float RightStick_x = Gamepad.get(float right_stick_x);
+        float LeftStick_x = gamepad1.left_stick_x;
+        float LeftStick_y = gamepad1.left_stick_y;
+        float RightStick_x = gamepad1.right_stick_x;
 
     }
 
