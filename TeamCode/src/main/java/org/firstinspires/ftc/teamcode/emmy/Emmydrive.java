@@ -10,8 +10,6 @@ public class Emmydrive extends OpMode {
     DcMotor leftback;
     DcMotor rightback;
 
-    float speed = 0;
-
     @Override
     public void init() {
         leftfront = hardwareMap.get(DcMotor.class, "leftfrontdrive");
@@ -21,15 +19,23 @@ public class Emmydrive extends OpMode {
 
     }
 
-    void SetDrivePower (float speed){
-        leftfront.setPower(speed);
-        rightfront.setPower(speed);
-        leftback.setPower(speed);
-        rightback.setPower(speed);
+    void SetDrivePower (){
+        float y = gamepad1.left_stick_y;
+        float x = gamepad1.left_stick_x;
+        float z = gamepad1.right_stick_x;
+        float LEFTFRONTpower = (y+x+z);
+        float LEFTBACKpower = (y-x+z);
+        float RIGHTFRONTpower = (y-x-z);
+        float RIGHTBACKpower = (y+x-z);
+
+        leftfront.setPower(LEFTFRONTpower);
+        rightfront.setPower(RIGHTFRONTpower);
+        leftback.setPower(LEFTBACKpower);
+        rightback.setPower(RIGHTBACKpower);
     }
 
     @Override
     public void loop() {
-        SetDrivePower(1);
+        SetDrivePower();
     }
 }
