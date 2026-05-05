@@ -3,9 +3,10 @@ package org.firstinspires.ftc.teamcode.theacode;
 import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+@TeleOp
 public class theaGamepadAssignment extends OpMode{
     DcMotor leftFront = hardwareMap.dcMotor.get("leftFront");
     DcMotor leftBack = hardwareMap.dcMotor.get("leftBack");
