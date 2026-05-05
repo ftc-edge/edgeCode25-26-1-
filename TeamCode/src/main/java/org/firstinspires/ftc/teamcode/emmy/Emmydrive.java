@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode.emmy;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-
+@TeleOp
 public class Emmydrive extends OpMode {
     DcMotor leftfront;
     DcMotor rightfront;
@@ -38,4 +39,7 @@ public class Emmydrive extends OpMode {
     public void loop() {
         SetDrivePower();
     }
+
+    //great work this should work
+    //good e
 }
