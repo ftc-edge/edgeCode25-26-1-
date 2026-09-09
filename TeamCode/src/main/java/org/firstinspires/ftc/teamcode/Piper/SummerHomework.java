@@ -56,8 +56,9 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
         boolean B;
         boolean Left;
         boolean Right;
-
+    //nice naming conventions, really easy to read for an unfamiliar teammate (me)
         int Position = 1; //Based on starting Position: 1 is Blue Far, 2 is Blue Near, 3 is Red Far, 4 is Red Near
+    //Nice commenting!!
 
         public void init(){
             DcMotor FL = hardwareMap.get(DcMotor.class, "FL");
@@ -83,6 +84,8 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
                 Pose2D startingPosition = new Pose2D(DistanceUnit.INCH, 22, 122, AngleUnit.DEGREES, 135);
             }
 
+            //i really really like this ^. This shows some real, practical, thinking going on piper. way to think not just as a programmer but as a roboticist and a competitor
+
             Servo HoodServo1 = hardwareMap.get(Servo.class, "HoodServo1");
             Servo HoodServo2 = hardwareMap.get(Servo.class, "HoodServo2");
             Servo HoodServo3 = hardwareMap.get(Servo.class, "HoodServo3");
@@ -107,6 +110,12 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
             boolean Up = gamepad1.dpad_up;
             boolean Left = gamepad1.dpad_left;
             boolean right = gamepad1.dpad_right;
+
+            //I totally see where your head is at with this - establishing that these variables are the same as those functions, right?
+            //From a logic perspective this makes total sense, but when you run the code its going to set the variable once and never again
+            //so your driver inputs aren't going to have any affect. Copying this code into loop() totally fixes this.
+            //I would even put it into a function and then run that before any important functions as well as in update!
+            //Perfect thinking though.
         }
 
         public void Drive(){
@@ -132,6 +141,8 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
             v = n / w;
             f = 45*v;
             HoodServo3.setPosition(f);
+            //yes!! way to use what you know. its best to avoid free floating numbers, we call those "magic numbers" in the business. Just in case you have the same number in two places.\
+            //just a formatting thing to make more legible code, but this is really good work.
         }
 
         public void Sort(){
@@ -182,3 +193,15 @@ import org.firstinspires.ftc.teamcode.components.GoBildaPinpointDriver;
         }
         
     }
+
+    /*This is really really good work overall Piper. I can tell you put some work into this over the summer,
+    which means a lot to me and will mean a lot to the other leads as well. This is technically flawless and logically
+    perfect too, aside from that one little fix. This is really promising work and gives me a lot of faith in what
+    you'll be able to do this year. Super proud of you <3.
+
+    For next steps, I'd like you to think about checks and fallbacks. What happens in case of driver or mechanical error? What
+    can WE do to prevent or solve those scenarios? For example, in your Sort function you set the power to 1. What happens in the user keeps holding it?
+    Will it break the robot? Can we be sure? Those are the scenarios where it's a good idea to have a safety switch, like "if the power has been 1 for more than 1.5 seconds, override
+    and set power to zero until the power is reversed" or something like that. These are just things to think about as we move into the season
+    and you start to take on more important and technical jobs. You don't have to write anything, just think about it!
+     */
